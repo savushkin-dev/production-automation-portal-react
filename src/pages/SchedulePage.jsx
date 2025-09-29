@@ -284,11 +284,24 @@ function SchedulerPage() {
         fetchPlan();
     }
 
+    // useEffect(() => {
+    //     fetchLines();
+    //     assignSettings(selectDate);
+    //     setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
+    // }, [selectDate])
+
     useEffect(() => {
         fetchLines();
         assignSettings(selectDate);
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
-    }, [selectDate])
+    }, [])
+
+    async function selectSettings(){
+        // fetchLines();
+        await assignSettings(selectDate);
+        await fetchPlan();
+        setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
+    }
 
 
     const [selectedItem, setSelectedItem] = useState(null);
@@ -458,7 +471,7 @@ function SchedulerPage() {
                                                            selectDate={selectDate} setDate={onChangeSelectDate}
                                                            selectEndDate={selectEndDate} setSelectEndDate={onChangeEndDate}
                                                            lines={startTimeLines} setLines={setStartTimeLines}
-                                                           apply={assignSettings}
+                                                           apply={selectSettings}
                                                            idealEndDateTime={idealEndDateTime} setIdealEndDateTime={setIdealEndDateTime}
                                                            maxEndDateTime={maxEndDateTime} setMaxEndDateTime={setMaxEndDateTime}
                 />}

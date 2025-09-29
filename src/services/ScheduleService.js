@@ -214,7 +214,7 @@ export default class ScheduleService {
     }
 
     static async savePlan() {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/save`, {})
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/saveToDb`, {})
     }
 
     static async stopSolving() {
