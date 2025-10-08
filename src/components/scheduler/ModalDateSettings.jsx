@@ -45,7 +45,7 @@ export function ModalDateSettings({lines, setLines, selectDate, setDate, selectE
                     <div className="grid my-3 grid-cols-2 gap-x-8 gap-y-2">
                         {lines.map((line, index) => (
                             <div key={index} className="flex flex-row">
-                                <span className={styleLable}>Старт линии №{line.id}:</span>
+                                <span className={styleLable}>Старт линии №{line.name}:</span>
                                 <input className={styleInfo} type={"time"}
                                        value={line.startDateTime}
                                        onChange={(e) => handleTimeChange(line.id, e.target.value)}
