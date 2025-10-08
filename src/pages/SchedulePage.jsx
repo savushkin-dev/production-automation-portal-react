@@ -52,64 +52,62 @@ function SchedulerPage() {
     const [idealEndDateTime, setIdealEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().replace(/T.*/, 'T02:00'));
     const [maxEndDateTime, setMaxEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().replace(/T.*/, 'T07:00'));
 
-    const [startTimeLines, setStartTimeLines] = useState([
-        {
-            id: "1",
-            name: "Line1",
-            operator: null,
-            startDateTime: "08:00"
-        },
-        {
-            id: "2",
-            name: "Line2",
-            operator: null,
-            startDateTime: "08:00"
-        },
-        {
-            id: "3",
-            name: "Line3",
-            operator: null,
-            startDateTime: "08:00"
-        },
-        {
-            id: "4",
-            name: "Line4",
-            operator: null,
-            startDateTime: "08:00"
-        },
-        {
-            id: "5",
-            name: "Line5",
-            operator: null,
-            startDateTime: "08:00"
-        },
-        {
-            id: "6",
-            name: "Line6",
-            operator: null,
-            startDateTime: "08:00"
-        },
-    ])
+    // const [startTimeLines, setStartTimeLines] = useState([
+    //     {
+    //         id: "1",
+    //         name: "Line1",
+    //         operator: null,
+    //         startDateTime: "08:00"
+    //     },
+    //     {
+    //         id: "2",
+    //         name: "Line2",
+    //         operator: null,
+    //         startDateTime: "08:00"
+    //     },
+    //     {
+    //         id: "3",
+    //         name: "Line3",
+    //         operator: null,
+    //         startDateTime: "08:00"
+    //     },
+    //     {
+    //         id: "4",
+    //         name: "Line4",
+    //         operator: null,
+    //         startDateTime: "08:00"
+    //     },
+    //     {
+    //         id: "5",
+    //         name: "Line5",
+    //         operator: null,
+    //         startDateTime: "08:00"
+    //     },
+    //     {
+    //         id: "6",
+    //         name: "Line6",
+    //         operator: null,
+    //         startDateTime: "08:00"
+    //     },
+    // ])
+
+    const [startTimeLines, setStartTimeLines] = useState(undefined);
 
 
     const [timelineKey, setTimelineKey] = useState(0);
 
 
-    const prepareDataForApi = () => {
-        const lineStartTimes = {};
-
-        startTimeLines.forEach(line => {
-            lineStartTimes[line.id] = line.startDateTime;
-        });
-
-        return lineStartTimes;
-    };
 
     async function assignSettings() {
-        const requestData = prepareDataForApi();
+console.log(startTimeLines)
+        const finalObject =startTimeLines.reduce((acc, line) => {
+            acc[line.lineId] = line.startDateTime;
+            return acc;
+        }, {});
+        // console.log(finalObject)
 
         try {
-            await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, requestData);
+            await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, finalObject);
         } catch (e) {
             console.error(e)
             setMsg(e.message)
@@ -129,7 +127,16 @@ function SchedulerPage() {
 
     async function fetchLines() {
         try {
-            await SchedulerService.getLines();
+            const response = await SchedulerService.getLines();
+
+            setStartTimeLines( Object.entries(response.data)
+                .map(([lineId, lineName], index) => ({
+                    id: String(index + 1), // "1", "2", "3" и т.д.
+                    name: lineName.trim(), // "Line1", "Line2", "Line3" и т.д.
+                    lineId: lineId, // "170610060000", "170610010000" и т.д.
+                    originalName: lineName.trim(), // оригинальное название для информации
+                    startDateTime: "08:00"
+                })))
         } catch (e) {
             console.error(e)
             setMsg("Ошибка загрузки линий отчета: " + e.message)
@@ -292,9 +299,18 @@ function SchedulerPage() {
 
     useEffect(() => {
         fetchLines();
-        assignSettings(selectDate);
+        // assignSettings(selectDate);
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }, [])
+
+    useEffect(() => {
+        if(startTimeLines){
+            // console.log("true")
+            assignSettings(selectDate);
+            setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
+        }
+
+    }, [startTimeLines])
 
     async function selectSettings(){
         // fetchLines();
