@@ -13,7 +13,7 @@ export function ModalInfoItem({info, onClose}) {
             />
             <div className="fixed inset-0 flex  items-center justify-center p-4 z-100 pointer-events-none"
                  style={{zIndex: 100}}>
-                <div className="w-auto min-w-[500px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
+                <div className="w-auto min-w-[700px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
                     <h1 className="text-xl font-medium text-start mb-2">{info.name}</h1>
                     <hr/>
 

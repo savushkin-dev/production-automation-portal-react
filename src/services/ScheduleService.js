@@ -217,6 +217,10 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/saveToDb`, {})
     }
 
+    static async removePlan() {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/removeSolution`, {})
+    }
+
     static async stopSolving() {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/stopSolving`, {})
     }
@@ -229,6 +233,10 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/export`, {}, {
             responseType: 'blob'
         });
+    }
+
+    static async pinItem(lineId, pinCount) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/pin`, {lineId, pinCount})
     }
 
 }

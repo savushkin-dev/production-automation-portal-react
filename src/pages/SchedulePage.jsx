@@ -1,5 +1,5 @@
 import "./../App.css";
-import React, {useEffect, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import moment from 'moment'
 import {Timeline} from "react-calendar-timeline";
@@ -12,6 +12,8 @@ import {ModalDateSettings} from "../components/scheduler/ModalDateSettings";
 import {ModalAnalyze} from "../components/scheduler/ModalAnalyze";
 import {ModalNotify} from "../components/modal/ModalNotify";
 import {observer} from "mobx-react-lite";
+import {ModalConfirmation} from "../components/modal/ModalConfirmation";
+import {DropDownActionsItem} from "../components/scheduler/DropDownActionsItem";
 
 
 function SchedulerPage() {
@@ -35,6 +37,8 @@ function SchedulerPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [msg, setMsg] = useState("");
     const [isModalNotify, setIsModalNotify] = useState(false);
+    const [isModalRemove, setIsModalRemove] = useState(false);
+    const [isModalInfoItem, setIsModalInfoItem] = useState(false);
 
     const [isSolve, setIsSolve] = useState(false);
     const [score, setScore] = useState("-0hard/-0medium/-0soft");
@@ -50,7 +54,15 @@ function SchedulerPage() {
     const [selectEndDate, setSelectEndDate] = useState(new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0])
 
     const [idealEndDateTime, setIdealEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().replace(/T.*/, 'T02:00'));
-    const [maxEndDateTime, setMaxEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().replace(/T.*/, 'T07:00'));
+    const [maxEndDateTime, setMaxEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().replace(/T.*/, 'T03:00'));
+
+
+    const [contextMenu, setContextMenu] = useState({
+        visible: false,
+        x: 0,
+        y: 0,
+        item: null
+    })
 
     // const [startTimeLines, setStartTimeLines] = useState([
     //     {
@@ -97,10 +109,9 @@ function SchedulerPage() {
     const [timelineKey, setTimelineKey] = useState(0);
 
 
-
     async function assignSettings() {
-console.log(startTimeLines)
-        const finalObject =startTimeLines.reduce((acc, line) => {
+// console.log(startTimeLines)
+        const finalObject = startTimeLines.reduce((acc, line) => {
             acc[line.lineId] = line.startDateTime;
             return acc;
         }, {});
@@ -118,6 +129,8 @@ console.log(startTimeLines)
     async function savePlan() {
         try {
             await SchedulerService.savePlan();
+            setMsg("План успешно сохранен.")
+            setIsModalNotify(true);
         } catch (e) {
             console.error(e)
             setMsg("Ошибка сохранения отчета: " + e.message)
@@ -125,11 +138,28 @@ console.log(startTimeLines)
         }
     }
 
+    async function removePlan() {
+        try {
+            await SchedulerService.removePlan();
+            setMsg("План успешно удален.")
+            setIsModalNotify(true);
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка удаления отчета: " + e.message)
+            setIsModalNotify(true);
+        }
+    }
+
+    function clickRemovePlan() {
+        setMsg("Вы уверены что хотите удалить план?")
+        setIsModalRemove(true);
+    }
+
     async function fetchLines() {
         try {
             const response = await SchedulerService.getLines();
 
-            setStartTimeLines( Object.entries(response.data)
+            setStartTimeLines(Object.entries(response.data)
                 .map(([lineId, lineName], index) => ({
                     id: String(index + 1), // "1", "2", "3" и т.д.
                     name: lineName.trim(), // "Line1", "Line2", "Line3" и т.д.
@@ -304,7 +334,7 @@ console.log(startTimeLines)
     }, [])
 
     useEffect(() => {
-        if(startTimeLines){
+        if (startTimeLines) {
             // console.log("true")
             assignSettings(selectDate);
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
@@ -312,7 +342,7 @@ console.log(startTimeLines)
 
     }, [startTimeLines])
 
-    async function selectSettings(){
+    async function selectSettings() {
         // fetchLines();
         await assignSettings(selectDate);
         await fetchPlan();
@@ -325,8 +355,10 @@ console.log(startTimeLines)
     function onItemSelect(itemId, e, time) {
         if (isDisplayByHardware) {
             setSelectedItem(planByHardware.find(item => item.id === itemId))
+            setIsModalInfoItem(true)
         } else {
             setSelectedItem(planByParty.find(item => item.id === itemId))
+            setIsModalInfoItem(true)
         }
     }
 
@@ -364,16 +396,155 @@ console.log(startTimeLines)
     }, []);
 
     function onChangeSelectDate(e) {
+        const selectedDate = new Date(e);
         setSelectDate(e);
-        setSelectEndDate(new Date(new Date().setDate(new Date(e).getDate() + 1)).toISOString().split('T')[0]);
-        setIdealEndDateTime(new Date(new Date().setDate(new Date(e).getDate() + 1)).toISOString().replace(/T.*/, 'T02:00'));
-        setMaxEndDateTime(new Date(new Date().setDate(new Date(e).getDate() + 1)).toISOString().replace(/T.*/, 'T07:00'));
+
+        // Следующий день от выбранной даты
+        const nextDay = new Date(selectedDate);
+        nextDay.setDate(selectedDate.getDate() + 1);
+
+        const dateString = nextDay.toISOString().split('T')[0];
+
+        setSelectEndDate(dateString);
+        setIdealEndDateTime(`${dateString}T02:00`);
+        setMaxEndDateTime(`${dateString}T03:00`);
     }
 
     function onChangeEndDate(e) {
         setSelectEndDate(e);
         setIdealEndDateTime(new Date(e).toISOString().replace(/T.*/, 'T02:00'));
-        setMaxEndDateTime(new Date(e).toISOString().replace(/T.*/, 'T07:00'));
+        setMaxEndDateTime(new Date(e).toISOString().replace(/T.*/, 'T03:00'));
+    }
+
+
+    // const handleItemSelect = (itemId, e, time) => {
+    //     console.log('Выбран элемент:', itemId)
+    //     // Здесь можно найти полный объект элемента по ID
+    // }
+
+    const handleGroupSelect = (groupId, e) => {
+        console.log('Выбрана группа:', groupId)
+    }
+
+    // Позиция в общей временной линии
+    const getGlobalPosition = (itemId, allItems) => {
+        const sorted = [...allItems].sort((a, b) =>
+            new Date(a.start_time) - new Date(b.start_time)
+        )
+        const index = sorted.findIndex(item => item.id === itemId)
+        return index >= 0 ? index + 1 : -1
+    }
+
+    // Позиция в своей группе
+    const getGroupPosition = (itemId, allItems) => {
+        const item = allItems.find(i => i.id === itemId)
+        if (!item) return {position: -1, total: 0}
+
+        const groupItems = allItems.filter(i => i.group === item.group)
+        const sorted = groupItems.sort((a, b) =>
+            new Date(a.start_time) - new Date(b.start_time)
+        )
+
+        const position = sorted.findIndex(i => i.id === itemId) + 1
+        return {
+            position,
+            total: sorted.length
+        }
+    }
+
+    // Все элементы, которые пересекаются по времени
+    const getConcurrentItems = (itemId, allItems) => {
+        const selected = allItems.find(i => i.id === itemId)
+        if (!selected) return []
+
+        return allItems.filter(item =>
+            item.id !== itemId && // исключаем сам элемент
+            new Date(item.start_time) < new Date(selected.end_time) &&
+            new Date(item.end_time) > new Date(selected.start_time)
+        )
+    }
+
+    function handleItemSelect(itemId, e) {
+        const item = items.find(i => i.id === itemId)
+        setSelectedItem(item)
+
+        console.log(item)
+        console.log(itemId)
+        const globalPos = getGlobalPosition(itemId, items)
+        const groupPos = getGroupPosition(itemId, items)
+        const concurrentItems = getConcurrentItems(itemId, items)
+
+        console.log('=== ИНФОРМАЦИЯ О ПОЗИЦИИ ===')
+        console.log(`Элемент: "${item.title}"`)
+        console.log(`Общая позиция в timeline: ${globalPos} из ${items.length}`)
+        console.log(`Позиция в группе: ${groupPos.position} из ${groupPos.total}`)
+        console.log(`Одновременно выполняется задач: ${concurrentItems.length}`)
+        console.log('============================')
+
+        console.log(startTimeLines)
+        console.log(item.group)
+    }
+
+    const handleItemDeselect = useCallback(() => {
+        setSelectedItem(null)
+    }, [])
+
+    // Обработчик правой кнопки мыши
+    function handleItemRightClick(itemId, e) {
+        console.log("handleItemRightClick")
+
+        const item = items.find(i => i.id === itemId)
+        setSelectedItem(item)
+
+        e.preventDefault() // Предотвращаем стандартное контекстное меню браузера
+
+
+        setContextMenu({
+            visible: true,
+            x: e.clientX,
+            y: e.clientY,
+            item: item
+        })
+
+        console.log('Правый клик по элементу:', item)
+    }
+
+
+    // Закрытие контекстного меню
+    const closeContextMenu = useCallback(() => {
+        setContextMenu({
+            visible: false,
+            x: 0,
+            y: 0,
+            item: null
+        })
+    }, [])
+
+    // Закрытие меню при клике вне его
+    React.useEffect(() => {
+        const handleClickOutside = () => {
+            if (contextMenu.visible === true) {
+                closeContextMenu()
+            }
+        }
+
+        document.addEventListener('click', handleClickOutside)
+        return () => {
+            document.removeEventListener('click', handleClickOutside)
+        }
+    }, [contextMenu.visible, closeContextMenu])
+
+    async function pinItem() {
+        try {
+            const groupPos = getGroupPosition(selectedItem?.id, items).position
+            await SchedulerService.pinItem(selectedItem.group, groupPos);
+            // setMsg("Job успешно прикреплен.")
+            // setIsModalNotify(true);
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка прикрепления: " + e.message)
+            setIsModalNotify(true);
+        }
     }
 
 
@@ -381,7 +552,10 @@ console.log(startTimeLines)
         <>
             <div className="w-full">
 
-                {selectedItem && <ModalInfoItem info={selectedItem.info} onClose={() => setSelectedItem(null)}/>}
+                {isModalInfoItem && selectedItem && <ModalInfoItem info={selectedItem.info} onClose={() => {
+                    setSelectedItem(null);
+                    setIsModalInfoItem(false)
+                }}/>}
 
                 {isLoading &&
                     <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>
@@ -459,6 +633,11 @@ console.log(startTimeLines)
                             Сохранить
                             <i className="pl-2 fa-solid fa-floppy-disk"></i>
                         </button>
+                        <button onClick={clickRemovePlan}
+                                className="h-[30px] px-2 mx-2 rounded shadow-sm border border-slate-400 hover:bg-gray-200">
+                            Удалить
+                            <i className="pl-2 fa-solid fa-trash-can"></i>
+                        </button>
                         <button onClick={exportExel}
                                 className="h-[30px] px-2 mx-2 rounded shadow-sm border border-slate-400 hover:bg-gray-200">
                             Excel экспорт
@@ -476,6 +655,14 @@ console.log(startTimeLines)
                         defaultTimeStart={moment(selectDate).startOf('day').add(-2, 'hour')} //период начального отображения
                         defaultTimeEnd={moment(selectDate).startOf('day').add(30, 'hour')}
                         onItemDoubleClick={onItemSelect}
+                        // onItemSelect={handleItemSelect}
+                        // onGroupSelect={handleGroupSelect}
+
+                        // onItemContextMenu={handleItemRightClick}
+                        // onItemSelect={handleItemRightClick}
+
+                        // onTimeChange={closeContextMenu}
+
                         sidebarWidth={150}
                         lineHeight={90}>
                     </Timeline>
@@ -483,13 +670,18 @@ console.log(startTimeLines)
 
                 </div>
 
-                {isModalDateSettings && <ModalDateSettings onClose={() => {setIsModalDateSettings(false)}}
+                {isModalDateSettings && <ModalDateSettings onClose={() => {
+                    setIsModalDateSettings(false)
+                }}
                                                            selectDate={selectDate} setDate={onChangeSelectDate}
-                                                           selectEndDate={selectEndDate} setSelectEndDate={onChangeEndDate}
+                                                           selectEndDate={selectEndDate}
+                                                           setSelectEndDate={onChangeEndDate}
                                                            lines={startTimeLines} setLines={setStartTimeLines}
                                                            apply={selectSettings}
-                                                           idealEndDateTime={idealEndDateTime} setIdealEndDateTime={setIdealEndDateTime}
-                                                           maxEndDateTime={maxEndDateTime} setMaxEndDateTime={setMaxEndDateTime}
+                                                           idealEndDateTime={idealEndDateTime}
+                                                           setIdealEndDateTime={setIdealEndDateTime}
+                                                           maxEndDateTime={maxEndDateTime}
+                                                           setMaxEndDateTime={setMaxEndDateTime}
                 />}
 
                 {isModalAnalyze && <ModalAnalyze onClose={() => setIsModalAnalyze(false)}
@@ -497,8 +689,19 @@ console.log(startTimeLines)
                 />}
 
                 {isModalNotify &&
-                    <ModalNotify title={"Ошибка"} message={msg} onClose={() => setIsModalNotify(false)}/>}
+                    <ModalNotify title={"Результат операции"} message={msg} onClose={() => setIsModalNotify(false)}/>}
 
+                {isModalRemove &&
+                    <ModalConfirmation title={"Подтверждение действия"} message={msg}
+                                       onClose={() => setIsModalRemove(false)}
+                                       onAgree={() => {
+                                           setIsModalRemove(false);
+                                           removePlan();
+                                       }} onDisagree={() => setIsModalRemove(false)}/>}
+
+
+                {/* Контекстное меню */}
+                {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItem}/>}
 
             </div>
         </>
@@ -510,49 +713,61 @@ console.log(startTimeLines)
 const customItemRenderer = ({item, itemContext, getItemProps}) => {  //кастомный item
 
     return (
-        <div
-            key={item.id} // Ключ передаётся напрямую
-            {...getItemProps({
-                style: {
-                    background: itemContext.selected ? "#d0ff9a" : item.itemProps.style.background,
-                    border: '1px solid #aeaeae',
-                    textAlign: 'start',
-                    color: item.itemProps.style.color || 'black',
-                    margin: 0,
-                    padding: '0',
+        <>
+            <div
+                key={item.id} // Ключ передаётся напрямую
+                {...getItemProps({
+                    style: {
+                        background: itemContext.selected ? "#d0ff9a" : item.itemProps.style.background,
+                        border: '1px solid #aeaeae',
+                        textAlign: 'start',
+                        color: item.itemProps.style.color || 'black',
+                        margin: 0,
+                        padding: '0',
 
-                    whiteSpace: 'nowrap',      /* Запрет переноса строк */
-                    overflow: 'hidden',          /* Скрытие выходящего за границы текста */
-                    textOverflow: 'ellipsis',   /* Добавление "..." */
-                    maxWidth: '100%',           /* Ограничение ширины */
+                        whiteSpace: 'nowrap',      /* Запрет переноса строк */
+                        overflow: 'hidden',          /* Скрытие выходящего за границы текста */
+                        textOverflow: 'ellipsis',   /* Добавление "..." */
+                        maxWidth: '100%',           /* Ограничение ширины */
 
-                },
-                onMouseDown: getItemProps().onMouseDown,
-                onTouchStart: getItemProps().onTouchStart
-            })}
-            className="rct-item"
-        >
-            <div className="flex px-1 justify-between font-medium text-sm text-black">
-                {item.title}
-            </div>
-            <div className="flex flex-col justify-start text-xs">
-                {item.info?.np &&
-                    <span className=" px-1 rounded">№ партии: <span
-                        className="text-blue-500">{item.info.np}</span></span>
-                }
-                {item.info?.duration &&
-                    <span className=" px-1 rounded">Длительность: <span
-                        className="text-pink-500">{item.info.duration} мин.</span></span>
-                }
-                <span className=" px-1 rounded">
+                    },
+                    onMouseDown: getItemProps().onMouseDown,
+                    onTouchStart: getItemProps().onTouchStart
+                })}
+                className="rct-item"
+            >
+
+
+                <div className="flex px-1 justify-between font-medium text-sm text-black">
+                    {item.info?.pinned &&
+                        <>
+                            <div className="h-2 absolute p-0"><i className=" p-0 m-0 fa-solid fa-thumbtack"></i></div>
+                            <span className="ml-4">{item.title}</span>
+                        </>
+                    }
+                    {!item.info?.pinned &&
+                        <span className="">{item.title}</span>
+                    }
+                </div>
+                <div className="flex flex-col justify-start text-xs">
+                    {item.info?.np &&
+                        <span className=" px-1 rounded">№ партии: <span
+                            className="text-blue-500">{item.info.np}</span></span>
+                    }
+                    {item.info?.duration &&
+                        <span className=" px-1 rounded">Длительность: <span
+                            className="text-pink-500">{item.info.duration} мин.</span></span>
+                    }
+                    <span className=" px-1 rounded">
                      Время: <span className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
                     - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span>
                 </span>
 
+                </div>
+
+
             </div>
-
-
-        </div>
+        </>
     );
 };
 

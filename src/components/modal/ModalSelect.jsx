@@ -21,11 +21,11 @@ export function ModalSelect({title, message, onClose, onAgreement, options}) {
     return (
         <>
             <div
-                className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0"
+                className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0" style={{zIndex: 99}}
                 onClick={onClose}
             />
             <div
-                className="w-full max-w-[500px] lg:w-[500px] p-5 z-30 rounded bg-white absolute top-1/3 left-1/2 -translate-x-1/2 px-8"
+                className="w-full max-w-[500px] lg:w-[500px] p-5 z-30 rounded bg-white absolute top-1/3 left-1/2 -translate-x-1/2 px-8" style={{zIndex: 100}}
             >
                 <h1 className="text-2xl font-medium text-start mb-6">{title}</h1>
                 <div className="flex flex-col">
