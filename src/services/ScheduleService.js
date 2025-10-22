@@ -51,6 +51,8 @@ export default class ScheduleService {
                 end: filteredData[i].startProductionDateTime,
                 line: filteredData[i].line.name,
                 duration: Math.round(new Date(filteredData[i].startProductionDateTime) - new Date(filteredData[i].startCleaningDateTime))/ 60000,
+                pinned: json.jobs[i].pinned,
+                lineInfo: json.jobs[i].line,
             }
         }
         return cleaning;
@@ -81,6 +83,8 @@ export default class ScheduleService {
                 end: filteredData[i].startProductionDateTime,
                 line: filteredData[i].line.name,
                 duration: Math.round(new Date(filteredData[i].startProductionDateTime) - new Date(filteredData[i].startCleaningDateTime))/ 60000,
+                pinned: json.jobs[i].pinned,
+                lineInfo: json.jobs[i].line,
             }
         }
         return cleaning;
@@ -136,7 +140,7 @@ export default class ScheduleService {
                 name: json.jobs[i].name,
                 start: json.jobs[i].startProductionDateTime,
                 end: json.jobs[i].endDateTime,
-                line: json.jobs[i].line.name,
+                line: json.jobs[i].line?.name || "",
                 quantity: json.jobs[i].quantity,
                 np: json.jobs[i].np,
                 duration: Math.round(new Date(json.jobs[i].endDateTime) - new Date(json.jobs[i].startProductionDateTime))/ 60000,
@@ -152,6 +156,8 @@ export default class ScheduleService {
 
         let cleaning = await this.parseCleaningByParty(json)
         let result = [...planByParty, ...cleaning]
+
+        // result = ScheduleService.defineAssignedJobs(result, json) //временно отключено
         return result;
     }
 
@@ -164,7 +170,7 @@ export default class ScheduleService {
             planByHardware[i].start_time = new Date(json.jobs[i].startProductionDateTime).getTime();
             planByHardware[i].end_time = new Date(json.jobs[i].endDateTime).getTime();
             planByHardware[i].title = json.jobs[i].name;
-            planByHardware[i].group = json.jobs[i].line.id;
+            planByHardware[i].group = json.jobs[i].line?.id || "";
 
             planByHardware[i].itemProps = {
                 style: {
@@ -177,7 +183,7 @@ export default class ScheduleService {
                 name: json.jobs[i].name,
                 start: json.jobs[i].startProductionDateTime,
                 end: json.jobs[i].endDateTime,
-                line: json.jobs[i].line.name,
+                line: json.jobs[i].line?.name,
                 quantity: json.jobs[i].quantity,
                 np: json.jobs[i].np,
                 duration: Math.round(new Date(json.jobs[i].endDateTime) - new Date(json.jobs[i].startProductionDateTime))/ 60000,
@@ -188,12 +194,48 @@ export default class ScheduleService {
                 filling: json.jobs[i].product.filling,
                 _allergen: json.jobs[i].product._allergen,
                 pinned: json.jobs[i].pinned,
+                lineInfo: json.jobs[i].line,
             }
         }
         // console.log(planByHardware)
         let cleaning = await this.parseCleaningByHardware(json)
         let result = [...planByHardware, ...cleaning]
+
+
+        result = ScheduleService.defineAssignedJobs(result, json)
         return result;
+    }
+
+    static defineAssignedJobs(result, json){
+        for (let i = 0; i < result.length; i++) {
+            if(result[i].group === ""){
+                // console.log("return")
+                return result
+            }
+            const index = json.lines.find(item => item.id === result[i].group).firstUnpinnedIndex
+            const groupPos = ScheduleService.getGroupPosition(result[i].id, result).position
+            if(groupPos <= index){
+                result[i].info.pinned = true;
+            }
+        }
+        return result;
+    }
+
+    // Позиция в своей группе
+    static getGroupPosition (itemId, allItems)  {
+        const item = allItems.find(i => i.id === itemId)
+        if (!item) return {position: -1, total: 0}
+
+        const groupItems = allItems.filter(i => i.group === item.group)
+        const sorted = groupItems.sort((a, b) =>
+            new Date(a.start_time) - new Date(b.start_time)
+        )
+
+        const position = sorted.findIndex(i => i.id === itemId) + 1
+        return {
+            position,
+            total: sorted.length
+        }
     }
 
 

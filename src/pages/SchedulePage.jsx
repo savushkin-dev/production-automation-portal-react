@@ -1,5 +1,5 @@
 import "./../App.css";
-import React, {useCallback, useEffect, useState} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import moment from 'moment'
 import {Timeline} from "react-calendar-timeline";
@@ -50,11 +50,11 @@ function SchedulerPage() {
     const [downloadedPlan, setDownloadedPlan] = useState(null);
     const [analyzeObj, setAnalyzeObj] = useState(null);
 
-    const [selectDate, setSelectDate] = useState(new Date().toISOString().split('T')[0])
-    const [selectEndDate, setSelectEndDate] = useState(new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0])
+    const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0])
+    const [selectEndDate, setSelectEndDate] = useState(new Date(new Date().setDate(new Date().getDate() + 0)).toISOString().split('T')[0])
 
-    const [idealEndDateTime, setIdealEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().replace(/T.*/, 'T02:00'));
-    const [maxEndDateTime, setMaxEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().replace(/T.*/, 'T03:00'));
+    const [idealEndDateTime, setIdealEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 0)).toISOString().replace(/T.*/, 'T02:00'));
+    const [maxEndDateTime, setMaxEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 0)).toISOString().replace(/T.*/, 'T03:00'));
 
 
     const [contextMenu, setContextMenu] = useState({
@@ -64,45 +64,6 @@ function SchedulerPage() {
         item: null
     })
 
-    // const [startTimeLines, setStartTimeLines] = useState([
-    //     {
-    //         id: "1",
-    //         name: "Line1",
-    //         operator: null,
-    //         startDateTime: "08:00"
-    //     },
-    //     {
-    //         id: "2",
-    //         name: "Line2",
-    //         operator: null,
-    //         startDateTime: "08:00"
-    //     },
-    //     {
-    //         id: "3",
-    //         name: "Line3",
-    //         operator: null,
-    //         startDateTime: "08:00"
-    //     },
-    //     {
-    //         id: "4",
-    //         name: "Line4",
-    //         operator: null,
-    //         startDateTime: "08:00"
-    //     },
-    //     {
-    //         id: "5",
-    //         name: "Line5",
-    //         operator: null,
-    //         startDateTime: "08:00"
-    //     },
-    //     {
-    //         id: "6",
-    //         name: "Line6",
-    //         operator: null,
-    //         startDateTime: "08:00"
-    //     },
-    // ])
-
     const [startTimeLines, setStartTimeLines] = useState(undefined);
 
 
@@ -110,19 +71,31 @@ function SchedulerPage() {
 
 
     async function assignSettings() {
-// console.log(startTimeLines)
-        const finalObject = startTimeLines.reduce((acc, line) => {
+
+        await stopSolving();
+
+        const lineTimes = startTimeLines.reduce((acc, line) => {
             acc[line.lineId] = line.startDateTime;
             return acc;
         }, {});
-        // console.log(finalObject)
+
 
         try {
-            await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, finalObject);
+            setVisibleTimeRange(prevState => ({
+                ...prevState,
+                visibleTimeStart: moment(selectDate).startOf('day').add(-2, 'hour'),
+                visibleTimeEnd: moment(selectDate).startOf('day').add(30, 'hour')
+            }));
+
+            await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, lineTimes);
+            await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg(e.message)
+            setMsg(e.response.data.error)
             setIsModalNotify(true);
+
+            setItems([])
+            setScore("-0hard/-0medium/-0soft")
         }
     }
 
@@ -161,10 +134,10 @@ function SchedulerPage() {
 
             setStartTimeLines(Object.entries(response.data)
                 .map(([lineId, lineName], index) => ({
-                    id: String(index + 1), // "1", "2", "3" и т.д.
-                    name: lineName.trim(), // "Line1", "Line2", "Line3" и т.д.
-                    lineId: lineId, // "170610060000", "170610010000" и т.д.
-                    originalName: lineName.trim(), // оригинальное название для информации
+                    id: String(index + 1),
+                    name: lineName.trim(),
+                    lineId: lineId,
+                    originalName: lineName.trim(),
                     startDateTime: "08:00"
                 })))
         } catch (e) {
@@ -195,10 +168,12 @@ function SchedulerPage() {
             // setIsLoading(true);
             const response = await SchedulerService.getPlan()
             setDownloadedPlan(response.data)
-            setScore(response.data.score)
+            setScore(response.data.score || "-0hard/-0medium/-0soft")
             setSolverStatus(response.data.solverStatus)
         } catch (e) {
             console.error(e)
+            setDownloadedPlan(null)
+            setScore("-0hard/-0medium/-0soft")
         }
     }
 
@@ -318,7 +293,7 @@ function SchedulerPage() {
     async function stopSolving() {
         setIsSolve(false)
         await fetchStopSolving();
-        fetchPlan();
+        await fetchPlan();
     }
 
     // useEffect(() => {
@@ -336,7 +311,7 @@ function SchedulerPage() {
     useEffect(() => {
         if (startTimeLines) {
             // console.log("true")
-            assignSettings(selectDate);
+            selectSettings()
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
         }
 
@@ -345,7 +320,7 @@ function SchedulerPage() {
     async function selectSettings() {
         // fetchLines();
         await assignSettings(selectDate);
-        await fetchPlan();
+        // await fetchPlan();
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }
 
@@ -355,6 +330,7 @@ function SchedulerPage() {
     function onItemSelect(itemId, e, time) {
         if (isDisplayByHardware) {
             setSelectedItem(planByHardware.find(item => item.id === itemId))
+
             setIsModalInfoItem(true)
         } else {
             setSelectedItem(planByParty.find(item => item.id === itemId))
@@ -534,12 +510,16 @@ function SchedulerPage() {
         }
     }, [contextMenu.visible, closeContextMenu])
 
-    async function pinItem() {
+    async function pinItems() {
         try {
+            // console.log(items)
+            // console.log(selectedItem)
             const groupPos = getGroupPosition(selectedItem?.id, items).position
             await SchedulerService.pinItem(selectedItem.group, groupPos);
-            // setMsg("Job успешно прикреплен.")
-            // setIsModalNotify(true);
+            // setTimeout(()=> {
+            //     fetchPlan()
+            // }, 100)
+            await fetchPlan();
         } catch (e) {
             console.error(e)
             setMsg("Ошибка прикрепления: " + e.message)
@@ -547,8 +527,48 @@ function SchedulerPage() {
         }
     }
 
+    async function unpinLine() {
+        try {
+            await SchedulerService.pinItem(selectedItem.group, 0);
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка открепления: " + e.message)
+            setIsModalNotify(true);
+        }
+    }
 
-    return (
+    const [visibleTimeRange, setVisibleTimeRange] = useState(null);
+    const timelineRef = useRef();
+
+    // Сохраняем текущий видимый диапазон
+    const handleTimeChange = useCallback((visibleTimeStart, visibleTimeEnd, updateScrollCanvas) => {
+        setVisibleTimeRange({
+            visibleTimeStart,
+            visibleTimeEnd,
+            updateScrollCanvas
+        });
+
+        // Немедленно обновляем canvas
+        updateScrollCanvas(visibleTimeStart, visibleTimeEnd);
+    }, []);
+
+    // Восстановление масштаба после обновления данных
+    React.useEffect(() => {
+        if (visibleTimeRange && visibleTimeRange.updateScrollCanvas) {
+            // Небольшая задержка для гарантии, что DOM обновился
+            setTimeout(() => {
+                visibleTimeRange.updateScrollCanvas(
+                    visibleTimeRange.visibleTimeStart,
+                    visibleTimeRange.visibleTimeEnd
+                );
+            }, 100);
+        }
+    }, [downloadedPlan]);
+
+
+
+        return (
         <>
             <div className="w-full">
 
@@ -652,16 +672,22 @@ function SchedulerPage() {
                         key={timelineKey} //для корректной прокрутки в начале
                         groups={groups}
                         items={items}
-                        defaultTimeStart={moment(selectDate).startOf('day').add(-2, 'hour')} //период начального отображения
-                        defaultTimeEnd={moment(selectDate).startOf('day').add(30, 'hour')}
+                        // defaultTimeStart={moment(selectDate).startOf('day').add(-2, 'hour')} //период начального отображения
+                        // defaultTimeEnd={moment(selectDate).startOf('day').add(30, 'hour')}
                         onItemDoubleClick={onItemSelect}
                         // onItemSelect={handleItemSelect}
                         // onGroupSelect={handleGroupSelect}
 
-                        // onItemContextMenu={handleItemRightClick}
+                        onItemContextMenu={handleItemRightClick}
                         // onItemSelect={handleItemRightClick}
 
                         // onTimeChange={closeContextMenu}
+                        ref={timelineRef}
+                        onTimeChange={handleTimeChange}
+                        defaultTimeStart={visibleTimeRange?.visibleTimeStart || new Date().getTime() - (24 * 60 * 60 * 1000)}
+                        defaultTimeEnd={visibleTimeRange?.visibleTimeEnd || new Date().getTime() + (24 * 60 * 60 * 1000)}
+
+
 
                         sidebarWidth={150}
                         lineHeight={90}>
@@ -701,7 +727,7 @@ function SchedulerPage() {
 
 
                 {/* Контекстное меню */}
-                {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItem}/>}
+                {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItems} unpin={unpinLine}/>}
 
             </div>
         </>
@@ -711,6 +737,7 @@ function SchedulerPage() {
 
 
 const customItemRenderer = ({item, itemContext, getItemProps}) => {  //кастомный item
+
 
     return (
         <>
@@ -741,10 +768,11 @@ const customItemRenderer = ({item, itemContext, getItemProps}) => {  //каст�
                 <div className="flex px-1 justify-between font-medium text-sm text-black">
                     {item.info?.pinned &&
                         <>
-                            <div className="h-2 absolute p-0"><i className=" p-0 m-0 fa-solid fa-thumbtack"></i></div>
+                            <div className="h-2 absolute p-0"><i className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i></div>
                             <span className="ml-4">{item.title}</span>
                         </>
                     }
+
                     {!item.info?.pinned &&
                         <span className="">{item.title}</span>
                     }
