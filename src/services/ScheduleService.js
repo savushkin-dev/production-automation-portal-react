@@ -196,6 +196,7 @@ export default class ScheduleService {
                 pinned: json.jobs[i].pinned,
                 lineInfo: json.jobs[i].line,
             }
+            // planByHardware[i].canMove = true
         }
         // console.log(planByHardware)
         let cleaning = await this.parseCleaningByHardware(json)
@@ -279,6 +280,10 @@ export default class ScheduleService {
 
     static async pinItem(lineId, pinCount) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/pin`, {lineId, pinCount})
+    }
+
+    static async moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/moveJobs`, {fromLineId, toLineId, fromIndex, count, insertIndex})
     }
 
 }

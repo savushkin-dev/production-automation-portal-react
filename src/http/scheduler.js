@@ -1,7 +1,7 @@
 import axios from "axios";
 
-export const API_URL_SCHEDULER = 'http://localhost:8081'
-// export const API_URL_SCHEDULER = 'http://10.30.0.5:8080'
+// export const API_URL_SCHEDULER = 'http://localhost:8081'
+export const API_URL_SCHEDULER = 'http://10.30.0.5:8080'
 
 const $apiSchedule = axios.create({
     withCredentials: true,

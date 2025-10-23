@@ -1,11 +1,12 @@
 import React from "react";
 
 
-export function DropDownActionsItem({contextMenu, pin, unpin}) {
+export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs, isDisplayByHardware}) {
 
 
     return (
         <>
+            {isDisplayByHardware &&
             <div
                 className="bg-white border rounded-md shadow"
                 style={{
@@ -13,10 +14,11 @@ export function DropDownActionsItem({contextMenu, pin, unpin}) {
                     top: contextMenu.y,
                     left: contextMenu.x,
                     zIndex: 1000,
-                    minWidth: '150px',
-                    // maxWidth: '300px'
+                    // minWidth: '150px',
+                    maxWidth: '300px'
                 }}
             >
+
                 <div className="py-2 px-4 border-b">
                     <strong>{contextMenu.item?.title}</strong>
                 </div>
@@ -25,16 +27,21 @@ export function DropDownActionsItem({contextMenu, pin, unpin}) {
                     <button onClick={() => {
                         pin()
                     }} className="hover:bg-gray-100 w-full text-start px-2 rounded">
-                        Закрепить
+                        Закрепить линию по
                     </button>
                     <button onClick={() => {
                         unpin()
                     }} className="hover:bg-gray-100 w-full text-start px-2 rounded">
                         Открепить линию
                     </button>
+                    <button onClick={() => {
+                        openModalMoveJobs()
+                    }} className="hover:bg-gray-100 w-full text-start px-2 rounded">
+                        Переместить
+                    </button>
                 </div>
 
-            </div>
+            </div>}
         </>
     )
 }
