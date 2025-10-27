@@ -1,11 +1,13 @@
 import "./../App.css";
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import moment from 'moment'
 import {Timeline} from "react-calendar-timeline";
 import ScheduleService from "../services/ScheduleService";
 import SchedulerService from "../services/ScheduleService";
 import "./../components/scheduler/scheduler.css"
+
+import {useTable, useExpanded} from 'react-table';
 
 import {ModalInfoItem} from "../components/scheduler/ModalInfoItem";
 import {ModalDateSettings} from "../components/scheduler/ModalDateSettings";
@@ -329,16 +331,6 @@ function SchedulerPage() {
 
     const [selectedItem, setSelectedItem] = useState(null);
 
-    function onItemSelect(itemId, e, time) {
-        if (isDisplayByHardware) {
-            setSelectedItem(planByHardware.find(item => item.id === itemId))
-
-            setIsModalInfoItem(true)
-        } else {
-            setSelectedItem(planByParty.find(item => item.id === itemId))
-            setIsModalInfoItem(true)
-        }
-    }
 
     //Обертка для исключения в библиотеке о передаче пропсов
     const originalConsoleError = console.error;
@@ -395,24 +387,6 @@ function SchedulerPage() {
     }
 
 
-    // const handleItemSelect = (itemId, e, time) => {
-    //     console.log('Выбран элемент:', itemId)
-    //     // Здесь можно найти полный объект элемента по ID
-    // }
-
-    const handleGroupSelect = (groupId, e) => {
-        console.log('Выбрана группа:', groupId)
-    }
-
-    // Позиция в общей временной линии
-    const getGlobalPosition = (itemId, allItems) => {
-        const sorted = [...allItems].sort((a, b) =>
-            new Date(a.start_time) - new Date(b.start_time)
-        )
-        const index = sorted.findIndex(item => item.id === itemId)
-        return index >= 0 ? index + 1 : -1
-    }
-
     // Позиция в своей группе
     const getGroupPosition = (itemId, allItems) => {
         const item = allItems.find(i => i.id === itemId)
@@ -430,63 +404,18 @@ function SchedulerPage() {
         }
     }
 
-    // Все элементы, которые пересекаются по времени
-    const getConcurrentItems = (itemId, allItems) => {
-        const selected = allItems.find(i => i.id === itemId)
-        if (!selected) return []
-
-        return allItems.filter(item =>
-            item.id !== itemId && // исключаем сам элемент
-            new Date(item.start_time) < new Date(selected.end_time) &&
-            new Date(item.end_time) > new Date(selected.start_time)
-        )
-    }
-
-    function handleItemSelect(itemId, e) {
-        const item = items.find(i => i.id === itemId)
-        setSelectedItem(item)
-
-        console.log(item)
-        console.log(itemId)
-        const globalPos = getGlobalPosition(itemId, items)
-        const groupPos = getGroupPosition(itemId, items)
-        const concurrentItems = getConcurrentItems(itemId, items)
-
-        console.log('=== ИНФОРМАЦИЯ О ПОЗИЦИИ ===')
-        console.log(`Элемент: "${item.title}"`)
-        console.log(`Общая позиция в timeline: ${globalPos} из ${items.length}`)
-        console.log(`Позиция в группе: ${groupPos.position} из ${groupPos.total}`)
-        console.log(`Одновременно выполняется задач: ${concurrentItems.length}`)
-        console.log('============================')
-
-        console.log(startTimeLines)
-        console.log(item.group)
-    }
-
-    const handleItemDeselect = useCallback(() => {
-        setSelectedItem(null)
-    }, [])
-
     // Обработчик правой кнопки мыши
     function handleItemRightClick(itemId, e) {
-        console.log("handleItemRightClick")
-
         const item = items.find(i => i.id === itemId)
         setSelectedItem(item)
-
         e.preventDefault() // Предотвращаем стандартное контекстное меню браузера
-
-
         setContextMenu({
             visible: true,
             x: e.clientX,
             y: e.clientY,
             item: item
         })
-
-        console.log('Правый клик по элементу:', item)
     }
-
 
     // Закрытие контекстного меню
     const closeContextMenu = useCallback(() => {
@@ -505,7 +434,6 @@ function SchedulerPage() {
                 closeContextMenu()
             }
         }
-
         document.addEventListener('click', handleClickOutside)
         return () => {
             document.removeEventListener('click', handleClickOutside)
@@ -514,13 +442,8 @@ function SchedulerPage() {
 
     async function pinItems() {
         try {
-            // console.log(items)
-            // console.log(selectedItem)
             const groupPos = getGroupPosition(selectedItem?.id, items).position
             await SchedulerService.pinItem(selectedItem.group, groupPos);
-            // setTimeout(()=> {
-            //     fetchPlan()
-            // }, 100)
             await fetchPlan();
         } catch (e) {
             console.error(e)
@@ -569,280 +492,24 @@ function SchedulerPage() {
     }, [downloadedPlan]);
 
 
-    const handleItemMove = (itemId, dragTime, newGroupOrder) => {
-        const newGroupId = groups[newGroupOrder].id;
 
-        if (isDisplayByHardware) {
-            setPlanByHardware(prev => prev.map(item =>
-                item.id === itemId
-                    ? {
-                        ...item,
-                        start_time: new Date(dragTime),
-                        end_time: new Date(dragTime + (item.end_time - item.start_time)),
-                        group: newGroupId
-                    }
-                    : item
-            ));
-        } else {
-            setPlanByParty(prev => prev.map(item =>
-                item.id === itemId
-                    ? {
-                        ...item,
-                        start_time: new Date(dragTime),
-                        end_time: new Date(dragTime + (item.end_time - item.start_time)),
-                        group: newGroupId
-                    }
-                    : item
-            ));
-        }
 
-        console.log("Moved", itemId, new Date(dragTime), newGroupOrder);
-    };
-
-    useEffect(()=>{
+    useEffect(() => {
         displayByHardware()
-    },[planByHardware])
+    }, [planByHardware])
 
 
 
-    const insertItemWithShift = (newItem, targetGroupId, targetTime, originalItem = null) => {
-        const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
 
-        // 1. Обрабатываем место ВСТАВКИ (целевая группа)
-        const targetGroupItems = itemsArray
-            .filter(item => item.group === targetGroupId && item.id !== newItem.id)
-            .sort((a, b) => a.start_time - b.start_time);
-
-        // Время окончания нового элемента
-        const newItemEnd = targetTime + (newItem.end_time - newItem.start_time);
-
-        // Находим ВСЕ элементы, которые пересекаются с новым элементом или находятся после
-        const itemsToShiftInTarget = targetGroupItems.filter(item =>
-            item.start_time >= targetTime || // Все элементы после точки вставки
-            (item.start_time < targetTime && item.end_time > targetTime) // Элементы, которые пересекаются с новым
-        );
-
-        console.log(itemsToShiftInTarget)
-        console.log('Элементы для сдвига в целевой группе:', itemsToShiftInTarget.map(item => ({
-            id: item.id,
-            start: new Date(item.start_time),
-            end: new Date(item.end_time)
-        })));
-
-        // 2. Обрабатываем место ИСХОДНОЕ (если элемент перемещается между группами)
-        let itemsToShiftInSource = [];
-        if (originalItem && originalItem.group !== targetGroupId) {
-            const sourceGroupItems = itemsArray
-                .filter(item => item.group === originalItem.group && item.id !== newItem.id)
-                .sort((a, b) => a.start_time - b.start_time);
-
-            // Находим элементы после исходного элемента
-            itemsToShiftInSource = sourceGroupItems.filter(item => item.start_time >= originalItem.start_time);
-        }
-
-
-
-        // Создаем обновленный массив элементов
-        const updatedItems = itemsArray.map(item => {
-            // 1. Обновляем перемещаемый элемент
-            if (item.id === newItem.id) {
-                return {
-                    ...item,
-                    start_time: targetTime,
-                    end_time: newItemEnd,
-                    group: targetGroupId
-                };
-            }
-
-            // 2. Сдвигаем элементы в ЦЕЛЕВОЙ группе (вперед)
-            if (itemsToShiftInTarget.some(shiftItem => shiftItem.id === item.id)) {
-                const shiftAmount = newItem.end_time - newItem.start_time;
-                return {
-                    ...item,
-                    start_time: item.start_time + shiftAmount,
-                    end_time: item.end_time + shiftAmount
-                };
-            }
-
-            // 3. Сдвигаем элементы в ИСХОДНОЙ группе (назад, чтобы закрыть пробел)
-            if (originalItem && itemsToShiftInSource.some(shiftItem => shiftItem.id === item.id)) {
-                const shiftAmount = originalItem.end_time - originalItem.start_time;
-                return {
-                    ...item,
-                    start_time: item.start_time - shiftAmount,
-                    end_time: item.end_time - shiftAmount
-                };
-            }
-
-            return item;
-        });
-
-        // Обновляем состояние
+    function onItemDoubleClick(itemId, e, time) {
         if (isDisplayByHardware) {
-            setPlanByHardware(updatedItems);
+            setSelectedItem(planByHardware.find(item => item.id === itemId))
+            setIsModalInfoItem(true)
         } else {
-            setPlanByParty(updatedItems);
+            setSelectedItem(planByParty.find(item => item.id === itemId))
+            setIsModalInfoItem(true)
         }
-    };
-
-    const insertBetweenItems = (newItem, targetGroupId, beforeItemId, afterItemId, originalItem = null) => {
-        const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
-
-        const beforeItem = itemsArray.find(item => item.id === beforeItemId);
-        const afterItem = itemsArray.find(item => item.id === afterItemId);
-
-//разобраться при вставке между, остальное вроде работает корректно
-        console.log(beforeItem)
-        console.log(afterItem)
-
-        if (!beforeItem || !afterItem) return;
-
-        // Время вставки (сразу после beforeItem)
-        const insertTime = beforeItem.end_time;
-        const newItemDuration = newItem.end_time - newItem.start_time;
-        const newItemEnd = insertTime + newItemDuration;
-
-
-
-
-
-            // Находим ВСЕ элементы для сдвига в целевой группе (включая afterItem)
-            const itemsToShiftInTarget = itemsArray
-                .filter(item => item.group === targetGroupId &&
-                    item.id !== newItem.id &&
-                    // item.start_time >= afterItem.start_time)
-                    item.start_time >= beforeItem.end_time)
-                .sort((a, b) => a.start_time - b.start_time);
-//Неучитывается объект которого заменяют!!!!
-            console.log('Элементы для сдвига при вставке между:', itemsToShiftInTarget.map(item => ({
-                id: item.id,
-                start: new Date(item.start_time+newItemDuration),
-                end: new Date(item.end_time+newItemDuration)
-            })));
-console.log(itemsToShiftInTarget)
-            // Обрабатываем ИСХОДНУЮ группу
-            let itemsToShiftInSource = [];
-            if (originalItem && originalItem.group !== targetGroupId) {
-                const sourceGroupItems = itemsArray
-                    .filter(item => item.group === originalItem.group && item.id !== newItem.id)
-                    .sort((a, b) => a.start_time - b.start_time);
-//Нужно правильно отфильтровать массив, ибо пока для сдвига доступны только правые элементы от места вставки (и то вроде не сдвигаются),
-// до вставки надо сдвинуть влево наоборот
-                itemsToShiftInSource = sourceGroupItems.filter(item => item.start_time >= originalItem.start_time);
-            }
-
-            const shiftAmount = newItemDuration;
-let removeTime = 0;
-
-            const updatedItems = itemsArray.map(item => {
-                // Новый элемент
-                if (item.id === newItem.id) {
-                    return {
-                        ...item,
-                        start_time: insertTime,
-                        end_time: newItemEnd,
-                        group: targetGroupId
-                    };
-                }
-
-                // console.log(newItem.end_time)
-                // console.log(item.start_time)
-
-                if(newItem.end_time === item.start_time && newItem.group === beforeItem.group){
-                    console.log("Та же линия")
-                    removeTime = -(newItemDuration);
-
-                } //Сделал если двигать с право на лево на той же линии, надо сделать еще в другую сторону
-
-                // Сдвигаем элементы в ЦЕЛЕВОЙ группе ВПЕРЕД (включая afterItem)
-                if (itemsToShiftInTarget.some(shiftItem => shiftItem.id === item.id)) {
-                    return {
-                        ...item,
-                        start_time: item.start_time + shiftAmount + removeTime,
-                        end_time: item.end_time + shiftAmount  + removeTime
-                    };
-                }
-
-                // Сдвигаем элементы в ИСХОДНОЙ группе НАЗАД
-                if (originalItem && itemsToShiftInSource.some(shiftItem => shiftItem.id === item.id)) {
-                    const sourceShiftAmount = originalItem.end_time - originalItem.start_time;
-                    return {
-                        ...item,
-                        start_time: item.start_time - sourceShiftAmount,
-                        end_time: item.end_time - sourceShiftAmount
-                    };
-                }
-
-                return item;
-            });
-
-            if (isDisplayByHardware) {
-                setPlanByHardware(updatedItems);
-            } else {
-                setPlanByParty(updatedItems);
-            }
-
-    };
-
-    const handleItemMoveWithSmartPlacement = (itemId, dragTime, newGroupOrder) => {
-        const newGroupId = groups[newGroupOrder].id;
-        const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
-        const movedItem = itemsArray.find(item => item.id === itemId);
-
-        if (!movedItem) return;
-
-        console.log('=== НАЧАЛО ПЕРЕМЕЩЕНИЯ ===');
-        console.log('Перемещаемый элемент:', {
-            id: movedItem.id,
-            start: new Date(movedItem.start_time),
-            end: new Date(movedItem.end_time),
-            group: movedItem.group
-        });
-
-        const groupItems = itemsArray
-            .filter(item => item.group === newGroupId && item.id !== itemId)
-            .sort((a, b) => a.start_time - b.start_time);
-
-        console.log('Элементы в целевой группе:', groupItems.map(item => ({
-            id: item.id,
-            start: new Date(item.start_time),
-            end: new Date(item.end_time)
-        })));
-
-        // Сохраняем исходные данные элемента ДО перемещения
-        const originalItem = {
-            ...movedItem,
-            start_time: movedItem.start_time,
-            end_time: movedItem.end_time,
-            group: movedItem.group
-        };
-
-        // Находим ближайшие элементы
-        const beforeItem = groupItems.filter(item => item.end_time <= dragTime).pop();
-        const afterItem = groupItems.find(item => item.start_time >= dragTime);
-
-        console.log('Найденные элементы для вставки:', {
-            beforeItem: beforeItem ? { id: beforeItem.id, end: new Date(beforeItem.end_time) } : null,
-            afterItem: afterItem ? { id: afterItem.id, start: new Date(afterItem.start_time) } : null
-        });
-
-        if (beforeItem && afterItem) {
-            console.log('Вставка МЕЖДУ элементами');
-            insertBetweenItems(movedItem, newGroupId, beforeItem.id, afterItem.id, originalItem);
-        } else if (beforeItem) {
-            console.log('Вставка ПОСЛЕ элемента');
-            insertItemWithShift(movedItem, newGroupId, beforeItem.end_time, originalItem);
-        } else if (afterItem) {
-            console.log('Вставка ПЕРЕД элементом');
-            // Вставляем перед afterItem, но не перекрывая его
-            const maxInsertTime = afterItem.start_time - (movedItem.end_time - movedItem.start_time);
-            const insertTime = Math.min(dragTime, maxInsertTime);
-            insertItemWithShift(movedItem, newGroupId, insertTime, originalItem);
-        } else {
-            console.log('Группа ПУСТАЯ');
-            insertItemWithShift(movedItem, newGroupId, dragTime, originalItem);
-        }
-    };
+    }
 
 
     function onItemSelect(itemId, e, time) {
@@ -852,21 +519,8 @@ let removeTime = 0;
         if (e.shiftKey && lastSelectedItem) {
             // Shift+click - выделяем диапазон ТОЛЬКО в той же группе
             handleShiftSelect(itemId, itemsArray, clickedItem.group);
-        }
-            // else if (e.ctrlKey || e.metaKey) {
-            //     // Ctrl+click - добавляем/убираем из выделения
-            //     setSelectedItems(prev => {
-            //         const newSelection = prev.includes(itemId)
-            //             ? prev.filter(id => id !== itemId)
-            //             : [...prev, itemId];
-            //
-            //         setSelectedItem(clickedItem);
-            //         setLastSelectedItem(clickedItem);
-            //         return newSelection;
-            //     });
-        // }
-        else {
-            // Обычный клик - выделяем один элемент
+        } else {
+
             setSelectedItem(clickedItem);
             setSelectedItems([itemId]);
             setLastSelectedItem(clickedItem);
@@ -875,7 +529,7 @@ let removeTime = 0;
         // setIsModalInfoItem(true);
     }
 
-// Функция для выделения диапазона по Shift ТОЛЬКО в одной группе
+    // Функция для выделения диапазона по Shift ТОЛЬКО в одной группе
     const handleShiftSelect = (itemId, itemsArray, groupId) => {
         const lastItem = lastSelectedItem;
         const currentItem = itemsArray.find(item => item.id === itemId);
@@ -908,7 +562,7 @@ let removeTime = 0;
         setLastSelectedItem(currentItem);
     };
 
-// Функция для сброса выделения при клике на пустую область
+    // Функция для сброса выделения при клике на пустую область
     const handleCanvasClick = useCallback((e) => {
         // Проверяем, что клик не на элементе timeline
         if (!e.target.closest('.rct-item') && !e.target.closest('.rct-group')) {
@@ -923,96 +577,11 @@ let removeTime = 0;
     const [selectedItems, setSelectedItems] = useState([]);
     const [lastSelectedItem, setLastSelectedItem] = useState(null);
 
-    // function move() {
-    //     console.log('Выделенные элементы:', selectedItems);
-    //
-    //     const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
-    //
-    //     if (selectedItems.length === 0) {
-    //         console.log('Нет выделенных элементов');
-    //         return null;
-    //     }
-    //
-    //     // Получаем массив выделенных объектов
-    //     const selectedItemsArray = itemsArray.filter(item => selectedItems.includes(item.id));
-    //
-    //     // Получаем группу (должна быть одна)
-    //     const groupId = selectedItemsArray[0].group;
-    //
-    //     // Проверяем, что все элементы в одной группе
-    //     const allSameGroup = selectedItemsArray.every(item => item.group === groupId);
-    //
-    //     if (!allSameGroup) {
-    //         console.warn('Элементы в разных группах! Это не должно происходить');
-    //         return null;
-    //     }
-    //
-    //     // Получаем все элементы группы и сортируем
-    //     const groupItems = itemsArray
-    //         .filter(item => item.group === groupId)
-    //         .sort((a, b) => a.start_time - b.start_time);
-    //
-    //     // Сортируем выделенные элементы по времени
-    //     const sortedSelected = selectedItemsArray
-    //         .sort((a, b) => a.start_time - b.start_time);
-    //
-    //     const firstItem = sortedSelected[0];
-    //     const lastItem = sortedSelected[sortedSelected.length - 1];
-    //
-    //     // Находим позиции в группе
-    //     const firstItemIndex = groupItems.findIndex(item => item.id === firstItem.id);
-    //     const lastItemIndex = groupItems.findIndex(item => item.id === lastItem.id);
-    //
-    //     const result = {
-    //         groupId: groupId,
-    //         selectedCount: selectedItemsArray.length,
-    //         firstItem: {
-    //             id: firstItem.id,
-    //             position: firstItemIndex + 1, // Позиция в группе (начиная с 1)
-    //             start_time: firstItem.start_time,
-    //             end_time: firstItem.end_time,
-    //             index: firstItemIndex // Индекс в массиве (начиная с 0)
-    //         },
-    //         lastItem: {
-    //             id: lastItem.id,
-    //             position: lastItemIndex + 1, // Позиция в группе (начиная с 1)
-    //             start_time: lastItem.start_time,
-    //             end_time: lastItem.end_time,
-    //             index: lastItemIndex // Индекс в массиве (начиная с 0)
-    //         },
-    //         positionRange: {
-    //             start: firstItemIndex + 1, // Позиция первого (начиная с 1)
-    //             end: lastItemIndex + 1,    // Позиция последнего (начиная с 1)
-    //             startIndex: firstItemIndex, // Индекс первого (начиная с 0)
-    //             endIndex: lastItemIndex     // Индекс последнего (начиная с 0)
-    //         },
-    //         allSelectedItems: sortedSelected.map(item => ({
-    //             id: item.id,
-    //             position: groupItems.findIndex(groupItem => groupItem.id === item.id) + 1,
-    //             start_time: item.start_time,
-    //             end_time: item.end_time
-    //         }))
-    //     };
-    //
-    //     console.log('Информация для перемещения:');
-    //     console.log(`Группа: ${result.groupId}`);
-    //     console.log(`Количество элементов: ${result.selectedCount}`);
-    //     console.log(`Позиции: с ${result.positionRange.start} по ${result.positionRange.end}`);
-    //     console.log(`Первый элемент: ${result.firstItem.id} (позиция ${result.firstItem.position})`);
-    //     console.log(`Последний элемент: ${result.lastItem.id} (позиция ${result.lastItem.position})`);
-    //
-    //
-    //     moveJobs(groupId, "170610100000", firstItemIndex, selectedItemsArray.length, 2)
-    //
-    //     return result;
-    // }
 
     async function moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex) {
         try {
             await SchedulerService.moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex);
             await fetchPlan();
-            // setMsg("Job-ы успешно перемещены.")
-            // setIsModalNotify(true);
         } catch (e) {
             console.error(e)
             setMsg("Ошибка перемещения job-ов: " + e.message)
@@ -1074,11 +643,13 @@ let removeTime = 0;
                         {item.info?.pinned &&
                             <>
                                 {isSelected && selectedItems.length > 1 && (
-                                    <div className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                                    <div
+                                        className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
                                         {selectedItems.indexOf(item.id) + 1}
                                     </div>
                                 )}
-                                <div className="h-2 absolute p-0"><i className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i></div>
+                                <div className="h-2 absolute p-0"><i
+                                    className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i></div>
                                 <span className="ml-4">{item.title}</span>
                             </>
                         }
@@ -1118,7 +689,122 @@ let removeTime = 0;
         );
     };
 
-        return (
+    const data = useMemo(() => [
+        {
+            id: 1,
+            firstName: 'Иван',
+            lastName: 'Петров',
+            age: 30,
+            subRows: [
+                {
+                    id: 11,
+                    firstName: 'Деталь 1',
+                    lastName: 'Петрова',
+                    age: 5
+                },
+                {
+                    id: 12,
+                    firstName: 'Деталь 2',
+                    lastName: 'Петрова',
+                    age: 3
+                }
+            ]
+        },
+        {
+            id: 2,
+            firstName: 'Мария',
+            lastName: 'Иванова',
+            age: 25,
+            subRows: [
+                {
+                    id: 21,
+                    firstName: 'Проект А',
+                    lastName: 'Иванова',
+                    age: 2
+                }
+            ]
+        },
+        {
+            id: 3,
+            firstName: 'Алексей',
+            lastName: 'Сидоров',
+            age: 35,
+            subRows: [{
+                id: 31,
+                firstName: 'Проект А',
+                lastName: 'Иванова1',
+                age: 2
+            },
+                {
+                    id: 32,
+                    firstName: 'Проект А',
+                    lastName: 'Иванова1',
+                    age: 4
+                },
+                {
+                    id: 33,
+                    firstName: 'Проект А',
+                    lastName: 'Иванова1',
+                    age: 5
+                }
+            ] // Нет дочерних строк
+        }
+    ], []);
+
+    const columns = useMemo(() => [
+        {
+            // Колонка для кнопки расширения
+            id: 'expander',
+            Header: ({getToggleAllRowsExpandedProps, isAllRowsExpanded}) => (
+                <span {...getToggleAllRowsExpandedProps()}>
+          {isAllRowsExpanded ? '👇' : '👉'}
+        </span>
+            ),
+            Cell: ({row}) =>
+                row.canExpand ? (
+                    <span
+                        {...row.getToggleRowExpandedProps({
+                            style: {
+                                paddingLeft: `${row.depth * 2}rem`,
+                            },
+                        })}
+                    >
+            {row.isExpanded ? '👇' : '👉'}
+          </span>
+                ) : null,
+        },
+        {
+            Header: 'Имя',
+            accessor: 'firstName',
+        }
+        ,
+        {
+            Header: 'Фамилия',
+            accessor: 'lastName',
+        },
+        {
+            Header: 'Возраст',
+            accessor: 'age',
+        }
+    ], []);
+
+    const {
+        getTableProps,
+        getTableBodyProps,
+        headerGroups,
+        rows,
+        prepareRow,
+    } = useTable(
+        {
+            columns,
+            data,
+            // Дополнительные настройки расширения
+            autoResetExpanded: false, // Сохранять состояние при обновлении данных
+        },
+        useExpanded // Подключаем плагин расширения
+    );
+
+    return (
         <>
             <div className="w-full">
 
@@ -1224,7 +910,7 @@ let removeTime = 0;
                         items={items}
                         // defaultTimeStart={moment(selectDate).startOf('day').add(-2, 'hour')} //период начального отображения
                         // defaultTimeEnd={moment(selectDate).startOf('day').add(30, 'hour')}
-                        onItemDoubleClick={onItemSelect}
+                        onItemDoubleClick={onItemDoubleClick}
                         // onItemSelect={handleItemSelect}
                         // onGroupSelect={handleGroupSelect}
 
@@ -1244,7 +930,7 @@ let removeTime = 0;
                         // onItemMove={handleItemMove}
 
                         // Используем умное размещение
-                        onItemMove={handleItemMoveWithSmartPlacement}
+                        // onItemMove={handleItemMoveWithSmartPlacement}
                         // onItemMoveEnd={handleItemMoveEnd}
 
                         onItemSelect={onItemSelect}
@@ -1255,6 +941,38 @@ let removeTime = 0;
 
 
                 </div>
+
+                {/*<div>*/}
+                {/*    <table {...getTableProps()} style={{border: '1px solid black', width: '100%'}}>*/}
+                {/*        <thead>*/}
+                {/*        {headerGroups.map(headerGroup => (*/}
+                {/*            <tr {...headerGroup.getHeaderGroupProps()}>*/}
+                {/*                {headerGroup.headers.map(column => (*/}
+                {/*                    <th {...column.getHeaderProps()} style={{borderBottom: '1px solid black'}}>*/}
+                {/*                        {column.render('Header')}*/}
+                {/*                    </th>*/}
+                {/*                ))}*/}
+                {/*            </tr>*/}
+                {/*        ))}*/}
+                {/*        </thead>*/}
+                {/*        <tbody {...getTableBodyProps()}>*/}
+                {/*        {rows.map(row => {*/}
+                {/*            prepareRow(row);*/}
+                {/*            return (*/}
+                {/*                <tr {...row.getRowProps()}>*/}
+                {/*                    {row.cells.map(cell => (*/}
+                {/*                        <td {...cell.getCellProps()}*/}
+                {/*                            style={{padding: '0.5rem', borderBottom: '1px solid #ccc'}}>*/}
+                {/*                            {cell.render('Cell')}*/}
+                {/*                        </td>*/}
+                {/*                    ))}*/}
+                {/*                </tr>*/}
+                {/*            );*/}
+                {/*        })}*/}
+                {/*        </tbody>*/}
+                {/*    </table>*/}
+                {/*</div>*/}
+
 
                 {isModalDateSettings && <ModalDateSettings onClose={() => {
                     setIsModalDateSettings(false)
@@ -1286,23 +1004,21 @@ let removeTime = 0;
                                        }} onDisagree={() => setIsModalRemove(false)}/>}
 
 
+                {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItems} unpin={unpinLine}
+                                                             isDisplayByHardware={isDisplayByHardware}
+                                                             openModalMoveJobs={() => setIsModalMoveJobs(true)}/>}
 
-                {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItems} unpin={unpinLine} isDisplayByHardware={isDisplayByHardware}
-                                                             openModalMoveJobs={()=> setIsModalMoveJobs(true)}/>}
-
-                {isModalMoveJobs && <ModalMoveJobs selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}
-                                                   moveJobs={moveJobs} onClose={() => setIsModalMoveJobs(false)}
-                                                   lines={startTimeLines} planByParty={planByParty} planByHardware={planByHardware}
-                />}
+                {isModalMoveJobs &&
+                    <ModalMoveJobs selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}
+                                   moveJobs={moveJobs} onClose={() => setIsModalMoveJobs(false)}
+                                   lines={startTimeLines} planByParty={planByParty} planByHardware={planByHardware}
+                    />}
 
             </div>
         </>
     )
 
 }
-
-
-
 
 
 export default observer(SchedulerPage)
