@@ -404,18 +404,43 @@ function SchedulerPage() {
         }
     }
 
-    // Обработчик правой кнопки мыши
-    function handleItemRightClick(itemId, e) {
-        const item = items.find(i => i.id === itemId)
-        setSelectedItem(item)
-        e.preventDefault() // Предотвращаем стандартное контекстное меню браузера
-        setContextMenu({
-            visible: true,
-            x: e.clientX,
-            y: e.clientY,
-            item: item
-        })
-    }
+// Обработчик правой кнопки мыши
+    const handleItemRightClick = (itemId, e) => {
+        e.preventDefault();
+
+        const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
+        const clickedItem = itemsArray.find(item => item.id === itemId);
+
+        // Проверяем, кликнули на уже выделенный элемент
+        const isClickingSelected = selectedItems.includes(itemId);
+
+        if (isClickingSelected && selectedItems.length > 1) {
+            // Клик правой кнопкой на уже выделенный элемент при множественном выделении
+            // НЕ меняем выделение, просто показываем контекстное меню для всех выделенных
+            setContextMenu({
+                visible: true,
+                x: e.clientX,
+                y: e.clientY,
+                item: clickedItem,
+                forMultiple: true, // Флаг что меню для нескольких элементов
+                selectedItems: selectedItems // Передаем все выделенные ID
+            });
+        } else {
+            // Клик на невыделенный элемент или одиночное выделение
+            setSelectedItems([itemId]);
+            setSelectedItem(clickedItem);
+            setLastSelectedItem(clickedItem);
+
+            setContextMenu({
+                visible: true,
+                x: e.clientX,
+                y: e.clientY,
+                item: clickedItem,
+                forMultiple: false,
+                selectedItems: [itemId]
+            });
+        }
+    };
 
     // Закрытие контекстного меню
     const closeContextMenu = useCallback(() => {
@@ -520,14 +545,23 @@ function SchedulerPage() {
             // Shift+click - выделяем диапазон ТОЛЬКО в той же группе
             handleShiftSelect(itemId, itemsArray, clickedItem.group);
         } else {
+            // Проверяем, кликаем на уже выделенный элемент
+            const isClickingSelected = selectedItems.includes(itemId);
 
-            setSelectedItem(clickedItem);
-            setSelectedItems([itemId]);
-            setLastSelectedItem(clickedItem);
+            if (isClickingSelected && selectedItems.length > 1) {
+                // Клик на уже выделенный элемент при множественном выделении
+                // НЕ меняем выделение, просто обновляем lastSelectedItem
+                setLastSelectedItem(clickedItem);
+            } else {
+                // Клик на невыделенный элемент или одиночное выделение
+                setSelectedItem(clickedItem);
+                setSelectedItems([itemId]);
+                setLastSelectedItem(clickedItem);
+            }
         }
-
-        // setIsModalInfoItem(true);
     }
+
+
 
     // Функция для выделения диапазона по Shift ТОЛЬКО в одной группе
     const handleShiftSelect = (itemId, itemsArray, groupId) => {
@@ -689,120 +723,6 @@ function SchedulerPage() {
         );
     };
 
-    const data = useMemo(() => [
-        {
-            id: 1,
-            firstName: 'Иван',
-            lastName: 'Петров',
-            age: 30,
-            subRows: [
-                {
-                    id: 11,
-                    firstName: 'Деталь 1',
-                    lastName: 'Петрова',
-                    age: 5
-                },
-                {
-                    id: 12,
-                    firstName: 'Деталь 2',
-                    lastName: 'Петрова',
-                    age: 3
-                }
-            ]
-        },
-        {
-            id: 2,
-            firstName: 'Мария',
-            lastName: 'Иванова',
-            age: 25,
-            subRows: [
-                {
-                    id: 21,
-                    firstName: 'Проект А',
-                    lastName: 'Иванова',
-                    age: 2
-                }
-            ]
-        },
-        {
-            id: 3,
-            firstName: 'Алексей',
-            lastName: 'Сидоров',
-            age: 35,
-            subRows: [{
-                id: 31,
-                firstName: 'Проект А',
-                lastName: 'Иванова1',
-                age: 2
-            },
-                {
-                    id: 32,
-                    firstName: 'Проект А',
-                    lastName: 'Иванова1',
-                    age: 4
-                },
-                {
-                    id: 33,
-                    firstName: 'Проект А',
-                    lastName: 'Иванова1',
-                    age: 5
-                }
-            ] // Нет дочерних строк
-        }
-    ], []);
-
-    const columns = useMemo(() => [
-        {
-            // Колонка для кнопки расширения
-            id: 'expander',
-            Header: ({getToggleAllRowsExpandedProps, isAllRowsExpanded}) => (
-                <span {...getToggleAllRowsExpandedProps()}>
-          {isAllRowsExpanded ? '👇' : '👉'}
-        </span>
-            ),
-            Cell: ({row}) =>
-                row.canExpand ? (
-                    <span
-                        {...row.getToggleRowExpandedProps({
-                            style: {
-                                paddingLeft: `${row.depth * 2}rem`,
-                            },
-                        })}
-                    >
-            {row.isExpanded ? '👇' : '👉'}
-          </span>
-                ) : null,
-        },
-        {
-            Header: 'Имя',
-            accessor: 'firstName',
-        }
-        ,
-        {
-            Header: 'Фамилия',
-            accessor: 'lastName',
-        },
-        {
-            Header: 'Возраст',
-            accessor: 'age',
-        }
-    ], []);
-
-    const {
-        getTableProps,
-        getTableBodyProps,
-        headerGroups,
-        rows,
-        prepareRow,
-    } = useTable(
-        {
-            columns,
-            data,
-            // Дополнительные настройки расширения
-            autoResetExpanded: false, // Сохранять состояние при обновлении данных
-        },
-        useExpanded // Подключаем плагин расширения
-    );
 
     return (
         <>
@@ -942,36 +862,6 @@ function SchedulerPage() {
 
                 </div>
 
-                {/*<div>*/}
-                {/*    <table {...getTableProps()} style={{border: '1px solid black', width: '100%'}}>*/}
-                {/*        <thead>*/}
-                {/*        {headerGroups.map(headerGroup => (*/}
-                {/*            <tr {...headerGroup.getHeaderGroupProps()}>*/}
-                {/*                {headerGroup.headers.map(column => (*/}
-                {/*                    <th {...column.getHeaderProps()} style={{borderBottom: '1px solid black'}}>*/}
-                {/*                        {column.render('Header')}*/}
-                {/*                    </th>*/}
-                {/*                ))}*/}
-                {/*            </tr>*/}
-                {/*        ))}*/}
-                {/*        </thead>*/}
-                {/*        <tbody {...getTableBodyProps()}>*/}
-                {/*        {rows.map(row => {*/}
-                {/*            prepareRow(row);*/}
-                {/*            return (*/}
-                {/*                <tr {...row.getRowProps()}>*/}
-                {/*                    {row.cells.map(cell => (*/}
-                {/*                        <td {...cell.getCellProps()}*/}
-                {/*                            style={{padding: '0.5rem', borderBottom: '1px solid #ccc'}}>*/}
-                {/*                            {cell.render('Cell')}*/}
-                {/*                        </td>*/}
-                {/*                    ))}*/}
-                {/*                </tr>*/}
-                {/*            );*/}
-                {/*        })}*/}
-                {/*        </tbody>*/}
-                {/*    </table>*/}
-                {/*</div>*/}
 
 
                 {isModalDateSettings && <ModalDateSettings onClose={() => {
