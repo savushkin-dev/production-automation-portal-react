@@ -516,15 +516,9 @@ function SchedulerPage() {
         }
     }, [downloadedPlan]);
 
-
-
-
     useEffect(() => {
         displayByHardware()
     }, [planByHardware])
-
-
-
 
     function onItemDoubleClick(itemId, e, time) {
         if (isDisplayByHardware) {
@@ -535,7 +529,6 @@ function SchedulerPage() {
             setIsModalInfoItem(true)
         }
     }
-
 
     function onItemSelect(itemId, e, time) {
         const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
@@ -648,10 +641,10 @@ function SchedulerPage() {
                             margin: 0,
                             padding: '0',
 
-                            whiteSpace: 'nowrap',      /* Запрет переноса строк */
-                            overflow: 'hidden',          /* Скрытие выходящего за границы текста */
-                            textOverflow: 'ellipsis',   /* Добавление "..." */
-                            maxWidth: '100%',           /* Ограничение ширины */
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '100%',
 
                         },
                         onMouseDown: getItemProps().onMouseDown,
@@ -659,19 +652,6 @@ function SchedulerPage() {
                     })}
                     className="rct-item"
                 >
-
-                    {/*/!* Индикатор множественного выделения *!/*/}
-                    {/*{isSelected && selectedItems.length > 1 && (*/}
-                    {/*    <div className="absolute top-1 left-1 z-10 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">*/}
-                    {/*        {selectedItems.indexOf(item.id) + 1}*/}
-                    {/*    </div>*/}
-                    {/*)}*/}
-
-                    {/*<div className={`flex px-1 justify-between font-medium text-sm text-black ${*/}
-                    {/*    isSelected && selectedItems.length > 1 ? 'pl-5' : ''*/}
-                    {/*}`}>*/}
-                    {/*    {item.title}*/}
-                    {/*</div>*/}
 
                     <div className="flex px-1 justify-between font-medium text-sm text-black">
                         {item.info?.pinned &&
@@ -711,9 +691,9 @@ function SchedulerPage() {
                                 className="text-pink-500">{item.info.duration} мин.</span></span>
                         }
                         <span className=" px-1 rounded">
-                     Время: <span className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
-                    - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span>
-                </span>
+                            Время: <span className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
+                            - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span>
+                        </span>
 
                     </div>
 
@@ -789,7 +769,6 @@ function SchedulerPage() {
                             }}
                                     className={" h-full border-gray-300 rounded-r-md px-2 shadow-inner bg-blue-800 hover:bg-blue-700 text-white"}>
                                 Подробнее
-                                {/*<i className="fa-solid fa-question"></i>*/}
                             </button>
                         </div>
 
@@ -828,17 +807,12 @@ function SchedulerPage() {
                         key={timelineKey} //для корректной прокрутки в начале
                         groups={groups}
                         items={items}
-                        // defaultTimeStart={moment(selectDate).startOf('day').add(-2, 'hour')} //период начального отображения
-                        // defaultTimeEnd={moment(selectDate).startOf('day').add(30, 'hour')}
                         onItemDoubleClick={onItemDoubleClick}
-                        // onItemSelect={handleItemSelect}
-                        // onGroupSelect={handleGroupSelect}
 
                         onItemContextMenu={handleItemRightClick}
-                        // onItemSelect={handleItemRightClick}
 
+                        onItemSelect={onItemSelect}
 
-                        // onTimeChange={closeContextMenu}
                         ref={timelineRef}
                         onTimeChange={handleTimeChange}
                         defaultTimeStart={visibleTimeRange?.visibleTimeStart || new Date().getTime() - (24 * 60 * 60 * 1000)}
@@ -853,7 +827,7 @@ function SchedulerPage() {
                         // onItemMove={handleItemMoveWithSmartPlacement}
                         // onItemMoveEnd={handleItemMoveEnd}
 
-                        onItemSelect={onItemSelect}
+
 
                         sidebarWidth={150}
                         lineHeight={90}>
@@ -864,9 +838,7 @@ function SchedulerPage() {
 
 
 
-                {isModalDateSettings && <ModalDateSettings onClose={() => {
-                    setIsModalDateSettings(false)
-                }}
+                {isModalDateSettings && <ModalDateSettings onClose={() => {setIsModalDateSettings(false)}}
                                                            selectDate={selectDate} setDate={onChangeSelectDate}
                                                            selectEndDate={selectEndDate}
                                                            setSelectEndDate={onChangeEndDate}
