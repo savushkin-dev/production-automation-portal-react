@@ -286,4 +286,8 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/moveJobs`, {fromLineId, toLineId, fromIndex, count, insertIndex})
     }
 
+    static async loadPday(startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes ) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/loadpday`, {startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes: JSON.stringify(lineStartTimes)})
+    }
+
 }

@@ -17,6 +17,7 @@ import {observer} from "mobx-react-lite";
 import {ModalConfirmation} from "../components/modal/ModalConfirmation";
 import {DropDownActionsItem} from "../components/scheduler/DropDownActionsItem";
 import {ModalMoveJobs} from "../components/scheduler/ModalMoveJobs";
+import {DataTable} from "../components/scheduler/DataTable";
 
 
 function SchedulerPage() {
@@ -36,6 +37,7 @@ function SchedulerPage() {
 
     const [groups, setGroups] = useState([]);
     const [items, setItems] = useState([]);
+    const [pdayData, setPdayData] = useState([]);
 
     const [isLoading, setIsLoading] = useState(false);
     const [msg, setMsg] = useState("");
@@ -50,6 +52,7 @@ function SchedulerPage() {
 
     const [isModalDateSettings, setIsModalDateSettings] = useState(false);
     const [isModalAnalyze, setIsModalAnalyze] = useState(false);
+    const [isViewDataTable, setIsViewDataTable] = useState(false);
 
     const [downloadedPlan, setDownloadedPlan] = useState(null);
     const [analyzeObj, setAnalyzeObj] = useState(null);
@@ -59,6 +62,8 @@ function SchedulerPage() {
 
     const [idealEndDateTime, setIdealEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().replace(/T.*/, 'T02:00'));
     const [maxEndDateTime, setMaxEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().replace(/T.*/, 'T03:00'));
+
+    const [selectDateTable, setSelectDateTable] = useState(new Date(new Date().setDate(new Date().getDate() +1)).toISOString().split('T')[0])
 
 
     const [contextMenu, setContextMenu] = useState({
@@ -102,6 +107,35 @@ function SchedulerPage() {
             setScore("-0hard/-0medium/-0soft")
         }
     }
+
+    async function loadPday() {
+        const lineTimes = startTimeLines.reduce((acc, line) => {
+            acc[line.lineId] = line.startDateTime;
+            return acc;
+        }, {});
+
+        try {
+            const nextDay = new Date(selectDateTable);
+            nextDay.setDate(nextDay.getDate() + 1);
+            const selectEndDateTable = nextDay.toISOString().split('T')[0];
+
+            const response = await SchedulerService.loadPday(selectDateTable, selectEndDateTable, idealEndDateTime, maxEndDateTime, lineTimes);
+            setPdayData(response.data)
+        } catch (e) {
+            console.error(e)
+            setMsg(e.response.data.error)
+            setIsModalNotify(true);
+            setPdayData([])
+        }
+    }
+
+    useEffect(()=>{
+        if (startTimeLines) {
+
+            loadPday();
+            setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
+        }
+    }, [selectDateTable])
 
     async function savePlan() {
         try {
@@ -315,6 +349,7 @@ function SchedulerPage() {
     useEffect(() => {
         if (startTimeLines) {
             // console.log("true")
+            loadPday();
             selectSettings()
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
         }
@@ -327,6 +362,10 @@ function SchedulerPage() {
         // await fetchPlan();
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }
+
+    useEffect(()=>{
+        console.log(selectDateTable)
+    }, [selectDateTable])
 
 
     const [selectedItem, setSelectedItem] = useState(null);
@@ -378,6 +417,7 @@ function SchedulerPage() {
         setSelectEndDate(dateString);
         setIdealEndDateTime(`${dateString}T02:00`);
         setMaxEndDateTime(`${dateString}T03:00`);
+        setSelectDateTable(dateString)
     }
 
     function onChangeEndDate(e) {
@@ -553,7 +593,6 @@ function SchedulerPage() {
             }
         }
     }
-
 
 
     // Функция для выделения диапазона по Shift ТОЛЬКО в одной группе
@@ -774,13 +813,21 @@ function SchedulerPage() {
 
                     </div>
 
-                    <div>
+                    <div className="flex flex-row">
                         <button onClick={() => {
                             setIsModalDateSettings(true)
                         }}
                                 className={"border h-[30px] border-gray-300 rounded-md px-2 shadow-inner bg-blue-800 hover:bg-blue-700 text-white"}>Настроить
                             дату
                         </button>
+
+                        <button onClick={() => {
+                            setIsViewDataTable(prevState => !prevState)
+                        }}
+                                className={"border h-[30px] ml-2 border-gray-300 rounded-md px-2 shadow-inner bg-blue-800 hover:bg-blue-700 text-white"}>
+                            Показать/скрыть таблицу
+                        </button>
+
                     </div>
                     <div>
                         <button onClick={savePlan}
@@ -828,7 +875,6 @@ function SchedulerPage() {
                         // onItemMoveEnd={handleItemMoveEnd}
 
 
-
                         sidebarWidth={150}
                         lineHeight={90}>
                     </Timeline>
@@ -837,8 +883,9 @@ function SchedulerPage() {
                 </div>
 
 
-
-                {isModalDateSettings && <ModalDateSettings onClose={() => {setIsModalDateSettings(false)}}
+                {isModalDateSettings && <ModalDateSettings onClose={() => {
+                    setIsModalDateSettings(false)
+                }}
                                                            selectDate={selectDate} setDate={onChangeSelectDate}
                                                            selectEndDate={selectEndDate}
                                                            setSelectEndDate={onChangeEndDate}
@@ -875,6 +922,10 @@ function SchedulerPage() {
                                    moveJobs={moveJobs} onClose={() => setIsModalMoveJobs(false)}
                                    lines={startTimeLines} planByParty={planByParty} planByHardware={planByHardware}
                     />}
+
+
+                {isViewDataTable && <DataTable data={pdayData} selectDate={selectDateTable} setSelectDateTable={setSelectDateTable}/>}
+
 
             </div>
         </>
