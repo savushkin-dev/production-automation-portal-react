@@ -239,6 +239,33 @@ export default class ScheduleService {
         }
     }
 
+    static parseScoreString(errorString) {
+        try {
+            // Разбиваем строку по слэшам и убираем пустые элементы
+            const parts = errorString.split('/').filter(part => part.length > 0);
+
+            if (parts.length !== 3) {
+                throw new Error('Неверный формат строки');
+            }
+
+            // Извлекаем числовые значения
+            const hard = parseInt(parts[0].replace('hard', '')) || 0;
+            const medium = parseInt(parts[1].replace('medium', '')) || 0;
+            const soft = parseInt(parts[2].replace('soft', '')) || 0;
+
+            // Вычисляем корень и округляем
+            const softSqrt = Math.round(Math.sqrt(Math.abs(soft)));
+
+            // Берем абсолютное значение для medium (убираем минус)
+            const mediumAbs = Math.abs(medium);
+
+            return `Ошибки ${hard} | Время простоя ${mediumAbs} | Время выполнения ${softSqrt}`;
+
+        } catch (error) {
+            return `Ошибки 0 | Время простоя 0 | Время выполнения 0`;
+        }
+    }
+
 
     static async assignSettings(startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes ) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/load`, {startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes: JSON.stringify(lineStartTimes)})
@@ -288,6 +315,14 @@ export default class ScheduleService {
 
     static async loadPday(startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes ) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/loadpday`, {startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes: JSON.stringify(lineStartTimes)})
+    }
+
+    static async updatePday(body) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/updatepday`, body, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
     }
 
 }

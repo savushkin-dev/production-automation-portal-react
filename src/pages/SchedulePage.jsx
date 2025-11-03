@@ -38,6 +38,7 @@ function SchedulerPage() {
     const [groups, setGroups] = useState([]);
     const [items, setItems] = useState([]);
     const [pdayData, setPdayData] = useState([]);
+    const [pdayDataNextDay, setPdayDataNextDay] = useState([]);
 
     const [isLoading, setIsLoading] = useState(false);
     const [msg, setMsg] = useState("");
@@ -52,7 +53,7 @@ function SchedulerPage() {
 
     const [isModalDateSettings, setIsModalDateSettings] = useState(false);
     const [isModalAnalyze, setIsModalAnalyze] = useState(false);
-    const [isViewDataTable, setIsViewDataTable] = useState(false);
+
 
     const [downloadedPlan, setDownloadedPlan] = useState(null);
     const [analyzeObj, setAnalyzeObj] = useState(null);
@@ -63,7 +64,7 @@ function SchedulerPage() {
     const [idealEndDateTime, setIdealEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().replace(/T.*/, 'T02:00'));
     const [maxEndDateTime, setMaxEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().replace(/T.*/, 'T03:00'));
 
-    const [selectDateTable, setSelectDateTable] = useState(new Date(new Date().setDate(new Date().getDate() +1)).toISOString().split('T')[0])
+    const [selectDateTable, setSelectDateTable] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0])
 
 
     const [contextMenu, setContextMenu] = useState({
@@ -81,7 +82,7 @@ function SchedulerPage() {
 
     async function assignSettings() {
 
-        await stopSolving();
+        // await stopSolving();
 
         const lineTimes = startTimeLines.reduce((acc, line) => {
             acc[line.lineId] = line.startDateTime;
@@ -98,14 +99,24 @@ function SchedulerPage() {
 
             await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, lineTimes);
             await fetchPlan();
+            await loadPday();
+            setPdayDataNextDay([])
         } catch (e) {
             console.error(e)
             setMsg(e.response.data.error)
             setIsModalNotify(true);
 
             setItems([])
-            setScore("-0hard/-0medium/-0soft")
+            setScore("Ошибки 0 | Время простоя 0 | Время выполнения 0")
+            setPdayData([])
+            setPdayDataNextDay([])
         }
+    }
+
+    function getNextDateStr(date){
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        return  nextDay.toISOString().split('T')[0];
     }
 
     async function loadPday() {
@@ -115,11 +126,10 @@ function SchedulerPage() {
         }, {});
 
         try {
-            const nextDay = new Date(selectDateTable);
-            nextDay.setDate(nextDay.getDate() + 1);
-            const selectEndDateTable = nextDay.toISOString().split('T')[0];
-
-            const response = await SchedulerService.loadPday(selectDateTable, selectEndDateTable, idealEndDateTime, maxEndDateTime, lineTimes);
+            const date = new Date(selectDateTable);
+            date.setDate(date.getDate() + 1);
+            const selectDatePlusDay = date.toISOString().split('T')[0];
+            const response = await SchedulerService.loadPday(selectDateTable, selectDatePlusDay, idealEndDateTime, maxEndDateTime, lineTimes);
             setPdayData(response.data)
         } catch (e) {
             console.error(e)
@@ -129,13 +139,44 @@ function SchedulerPage() {
         }
     }
 
-    useEffect(()=>{
-        if (startTimeLines) {
+    async function loadPdayNextDay() {
+        const lineTimes = startTimeLines.reduce((acc, line) => {
+            acc[line.lineId] = line.startDateTime;
+            return acc;
+        }, {});
 
-            loadPday();
-            setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
+        try {
+            const date = new Date(selectDateTable);
+            date.setDate(date.getDate() + 1);
+            const selectDatePlusDay = date.toISOString().split('T')[0];
+            date.setDate(date.getDate() + 2);
+            const selectDatePlus2Day = date.toISOString().split('T')[0];
+
+            const responseNextDay = await SchedulerService.loadPday(selectDatePlusDay, selectDatePlus2Day, idealEndDateTime, maxEndDateTime, lineTimes);
+            setPdayDataNextDay(responseNextDay.data)
+        } catch (e) {
+            console.error(e)
+            setMsg(e.response.data.error)
+            setIsModalNotify(true);
+            setPdayData([])
         }
-    }, [selectDateTable])
+    }
+
+    async function updatePday(body) {
+        try {
+            return await SchedulerService.updatePday(body)
+        } catch (e) {
+            console.error(e)
+            setMsg("Не удалось отметить задачу")
+            setIsModalNotify(true);
+            throw e;
+        }
+    }
+
+    useEffect(()=>{
+        loadPday()
+        setPdayDataNextDay([])
+    }, [selectDate, selectDateTable])
 
     async function savePlan() {
         try {
@@ -206,7 +247,7 @@ function SchedulerPage() {
             // setIsLoading(true);
             const response = await SchedulerService.getPlan()
             setDownloadedPlan(response.data)
-            setScore(response.data.score || "-0hard/-0medium/-0soft")
+            setScore(SchedulerService.parseScoreString(response.data.score) || "-0hard/-0medium/-0soft")
             setSolverStatus(response.data.solverStatus)
         } catch (e) {
             console.error(e)
@@ -323,9 +364,9 @@ function SchedulerPage() {
         }
 
         return () => {
-            if (intervalId) clearInterval(intervalId); // Очистка при размонтировании или изменении isSolve
+            if (intervalId) clearInterval(intervalId);
         };
-    }, [isSolve]); // Зависимость от isSolve
+    }, [isSolve]);
 
 
     async function stopSolving() {
@@ -342,14 +383,13 @@ function SchedulerPage() {
 
     useEffect(() => {
         fetchLines();
-        // assignSettings(selectDate);
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }, [])
 
     useEffect(() => {
         if (startTimeLines) {
             // console.log("true")
-            loadPday();
+            // loadPday();
             selectSettings()
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
         }
@@ -362,11 +402,6 @@ function SchedulerPage() {
         // await fetchPlan();
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }
-
-    useEffect(()=>{
-        console.log(selectDateTable)
-    }, [selectDateTable])
-
 
     const [selectedItem, setSelectedItem] = useState(null);
 
@@ -407,6 +442,7 @@ function SchedulerPage() {
     function onChangeSelectDate(e) {
         const selectedDate = new Date(e);
         setSelectDate(e);
+        setSelectDateTable(e)
 
         // Следующий день от выбранной даты
         const nextDay = new Date(selectedDate);
@@ -417,7 +453,7 @@ function SchedulerPage() {
         setSelectEndDate(dateString);
         setIdealEndDateTime(`${dateString}T02:00`);
         setMaxEndDateTime(`${dateString}T03:00`);
-        setSelectDateTable(dateString)
+        // setSelectDateTable(dateString)
     }
 
     function onChangeEndDate(e) {
@@ -444,7 +480,7 @@ function SchedulerPage() {
         }
     }
 
-// Обработчик правой кнопки мыши
+    // Обработчик правой кнопки мыши
     const handleItemRightClick = (itemId, e) => {
         e.preventDefault();
 
@@ -605,16 +641,13 @@ function SchedulerPage() {
         // Фильтруем элементы ТОЛЬКО из этой группы
         const groupItems = itemsArray.filter(item => item.group === groupId);
 
-        // Сортируем элементы группы по времени начала
         const sortedGroupItems = [...groupItems].sort((a, b) => a.start_time - b.start_time);
 
-        // Находим индексы последнего и текущего элементов В ГРУППЕ
         const lastIndex = sortedGroupItems.findIndex(item => item.id === lastItem.id);
         const currentIndex = sortedGroupItems.findIndex(item => item.id === currentItem.id);
 
         if (lastIndex === -1 || currentIndex === -1) return;
 
-        // Определяем начало и конец диапазона
         const startIndex = Math.min(lastIndex, currentIndex);
         const endIndex = Math.max(lastIndex, currentIndex);
 
@@ -722,16 +755,21 @@ function SchedulerPage() {
                     </div>
                     <div className="flex flex-col justify-start text-xs">
                         {item.info?.np &&
-                            <span className=" px-1 rounded">№ партии: <span
-                                className="text-blue-500">{item.info.np}</span></span>
+                            <span className=" px-1 rounded"><span
+                                className="text-blue-500">{item.info.np}</span> - № партии</span>
                         }
                         {item.info?.duration &&
-                            <span className=" px-1 rounded">Длительность: <span
-                                className="text-pink-500">{item.info.duration} мин.</span></span>
+                            <span className=" px-1 rounded"><span
+                                className="text-pink-500">{item.info.duration} мин. </span> <span
+                                className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
+                            - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span> - Время</span>
                         }
+                        {/*<span className=" px-1 rounded">*/}
+                        {/*    Время: <span className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>*/}
+                        {/*    - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span>*/}
+                        {/*</span>*/}
                         <span className=" px-1 rounded">
-                            Время: <span className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
-                            - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span>
+                          0 - Позиция на линии
                         </span>
 
                     </div>
@@ -741,6 +779,8 @@ function SchedulerPage() {
             </>
         );
     };
+
+
 
 
     return (
@@ -764,14 +804,44 @@ function SchedulerPage() {
                 <h1 className="font-bold text-center text-2xl mb-8 mt-6">Планировщик задач</h1>
 
                 <div className="flex flex-row justify-between my-4 px-4 ">
-                    <div className="">
-                        <button onClick={displayByParty}
-                                className={"border h-[30px] border-gray-300 border-r-0 rounded-l-md px-2 shadow-inner" + stylePartyBut}>По
-                            партиям
-                        </button>
-                        <button onClick={displayByHardware}
-                                className={"border h-[30px] border-gray-300 rounded-r-md px-2 shadow-inner" + styleHardwareBut}>По
-                            оборудованию
+                    {/*<div className="">*/}
+                    {/*    <button onClick={displayByParty}*/}
+                    {/*            className={"border h-[30px] border-gray-300 border-r-0 rounded-l-md px-2 shadow-inner" + stylePartyBut}>По*/}
+                    {/*        партиям*/}
+                    {/*    </button>*/}
+                    {/*    <button onClick={displayByHardware}*/}
+                    {/*            className={"border h-[30px] border-gray-300 rounded-r-md px-2 shadow-inner" + styleHardwareBut}>По*/}
+                    {/*        оборудованию*/}
+                    {/*    </button>*/}
+                    {/*</div>*/}
+
+                    <div className="flex px-2 h-[32px] items-center border rounded-md">
+                        <span className="py-1 font-medium">📅 Дата:</span>
+                        <input className={"px-2 font-medium w-32"} type="date"
+                               value={selectDate}
+                               onChange={(e) => onChangeSelectDate(e.target.value)}
+                        />
+                    </div>
+
+                    <button
+                        className="bg-blue-800 text-white px-1 h-[30px] w-32"
+                        // onClick={download}
+                        onClick={selectSettings}
+                        style={{
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Загрузить
+                    </button>
+
+                    <div className="flex flex-row">
+                        <button onClick={() => {
+                            setIsModalDateSettings(true)
+                        }}
+                                className={"border h-[32px] border-gray-300 rounded-md px-2 bg-blue-800 hover:bg-blue-700 text-white"}>Настройка
+                            линий
                         </button>
                     </div>
 
@@ -782,16 +852,16 @@ function SchedulerPage() {
                         {!isSolve &&
                             <div onClick={solve}>
                                 <button
-                                    className="border h-[30px] w-32 border-gray-300 rounded-md text-white px-1 bg-green-600 hover:bg-green-500">
+                                    className="border h-[30px] w-36 border-gray-300 rounded-md text-white px-1 bg-green-600 hover:bg-green-500">
                                     <i className="fa-solid fa-play"></i>
-                                    <span className="pl-1">Решать</span>
+                                    <span className="pl-1">Планировать</span>
                                 </button>
                             </div>
                         }
                         {isSolve &&
                             <div onClick={stopSolving}>
                                 <button
-                                    className="border h-[30px] w-32 border-gray-300 rounded-md text-white px-1 bg-red-600 hover:bg-red-500">
+                                    className="border h-[30px] w-36 border-gray-300 rounded-md text-white px-1 bg-red-600 hover:bg-red-500">
                                     <i className="fa-solid fa-stop"></i>
                                     <span className="pl-1">Остановить</span>
                                 </button>
@@ -813,22 +883,7 @@ function SchedulerPage() {
 
                     </div>
 
-                    <div className="flex flex-row">
-                        <button onClick={() => {
-                            setIsModalDateSettings(true)
-                        }}
-                                className={"border h-[30px] border-gray-300 rounded-md px-2 shadow-inner bg-blue-800 hover:bg-blue-700 text-white"}>Настроить
-                            дату
-                        </button>
 
-                        <button onClick={() => {
-                            setIsViewDataTable(prevState => !prevState)
-                        }}
-                                className={"border h-[30px] ml-2 border-gray-300 rounded-md px-2 shadow-inner bg-blue-800 hover:bg-blue-700 text-white"}>
-                            Показать/скрыть таблицу
-                        </button>
-
-                    </div>
                     <div>
                         <button onClick={savePlan}
                                 className="h-[30px] px-2 mx-2 rounded shadow-sm border border-slate-400 hover:bg-gray-200">
@@ -886,11 +941,11 @@ function SchedulerPage() {
                 {isModalDateSettings && <ModalDateSettings onClose={() => {
                     setIsModalDateSettings(false)
                 }}
-                                                           selectDate={selectDate} setDate={onChangeSelectDate}
+                    // selectDate={selectDate} setDate={onChangeSelectDate}
                                                            selectEndDate={selectEndDate}
                                                            setSelectEndDate={onChangeEndDate}
                                                            lines={startTimeLines} setLines={setStartTimeLines}
-                                                           apply={selectSettings}
+                    // apply={selectSettings}
                                                            idealEndDateTime={idealEndDateTime}
                                                            setIdealEndDateTime={setIdealEndDateTime}
                                                            maxEndDateTime={maxEndDateTime}
@@ -924,8 +979,30 @@ function SchedulerPage() {
                     />}
 
 
-                {isViewDataTable && <DataTable data={pdayData} selectDate={selectDateTable} setSelectDateTable={setSelectDateTable}/>}
+                <DataTable data={pdayData} setData={setPdayData} updatePday={updatePday} selectDate={selectDateTable} dateData={selectDate}/>
 
+                <div className="px-3 py-2 rounded flex flex-row justify-between align-middle text-black mb-2">
+                    <div style={{fontSize: '16px'}}>
+                        <button
+                            className="mr-6 bg-blue-800 text-white px-3 py-1 "
+                            onClick={loadPdayNextDay}
+                            style={{
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Подгрузить следующий день
+                        </button>
+
+
+                    </div>
+
+                </div>
+
+                {pdayDataNextDay.length !== 0 &&
+                    <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} updatePday={updatePday} selectDate={selectDate} dateData={getNextDateStr(selectDateTable)}/>
+                }
 
             </div>
         </>
