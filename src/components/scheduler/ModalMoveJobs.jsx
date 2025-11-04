@@ -17,15 +17,16 @@ export function ModalMoveJobs({
     const getLastItemIndexInGroup = (groupId) => {
         const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
 
-        // Фильтруем элементы по группе и сортируем по времени
+        // Фильтруем элементы по группе и ИСКЛЮЧАЕМ мойки
         const groupItems = itemsArray
-            .filter(item => item.group === groupId)
+            .filter(item => item.group === groupId && !item.id.includes('cleaning'))
             .sort((a, b) => a.start_time - b.start_time);
 
         if (groupItems.length === 0) {
-            return -1;
+            return -1; // Группа пустая
         }
 
+        // Возвращаем индекс последнего элемента (без учета моек)
         return groupItems.length - 1;
     };
 
