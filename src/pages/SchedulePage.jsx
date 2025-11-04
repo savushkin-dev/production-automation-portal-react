@@ -48,7 +48,11 @@ function SchedulerPage() {
     const [isModalMoveJobs, setIsModalMoveJobs] = useState(false);
 
     const [isSolve, setIsSolve] = useState(false);
-    const [score, setScore] = useState("-0hard/-0medium/-0soft");
+    const [score, setScore] = useState({
+        hard: 0,
+        medium: 0,
+        soft: 0
+    });
     const [solverStatus, setSolverStatus] = useState("");
 
     const [isModalDateSettings, setIsModalDateSettings] = useState(false);
@@ -113,10 +117,10 @@ function SchedulerPage() {
         }
     }
 
-    function getNextDateStr(date){
+    function getNextDateStr(date) {
         const nextDay = new Date(date);
         nextDay.setDate(nextDay.getDate() + 1);
-        return  nextDay.toISOString().split('T')[0];
+        return nextDay.toISOString().split('T')[0];
     }
 
     async function loadPday() {
@@ -173,7 +177,7 @@ function SchedulerPage() {
         }
     }
 
-    useEffect(()=>{
+    useEffect(() => {
         loadPday()
         setPdayDataNextDay([])
     }, [selectDate, selectDateTable])
@@ -488,6 +492,10 @@ function SchedulerPage() {
     const handleItemRightClick = (itemId, e) => {
         e.preventDefault();
 
+        if (itemId.includes('cleaning')) {
+            return;
+        }
+
         const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
         const clickedItem = itemsArray.find(item => item.id === itemId);
 
@@ -611,6 +619,9 @@ function SchedulerPage() {
     }
 
     function onItemSelect(itemId, e, time) {
+        if (itemId.includes('cleaning')) {
+            return;
+        }
         const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
         const clickedItem = itemsArray.find(item => item.id === itemId);
 
@@ -790,9 +801,29 @@ function SchedulerPage() {
         );
     };
 
+    const customGroupRenderer = ({group}) => {
 
+        return (
+            <div
+                className="custom-group-renderer"
+                style={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    padding: '4px 8px'
+                }}
+            >
+                <div className="group-title font-semibold text-sm mb-1">
+                    {group.title}
+                </div>
 
-
+                <div className="group-stats text-xs text-gray-500">
+                    Количество: {group.totalQuantity}
+                </div>
+            </div>
+        );
+    };
 
 
     return (
@@ -808,63 +839,69 @@ function SchedulerPage() {
                     <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>
                 }
 
-                <button onClick={() => {
-                    navigate(from, {replace: true})
-                }} className="absolute ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Вернуться назад
-                </button>
-
-                <h1 className="font-bold text-center text-2xl mb-8 mt-6">Планировщик задач</h1>
-
-                <div className="flex flex-row justify-between my-4 px-4 ">
-                    {/*<div className="">*/}
-                    {/*    <button onClick={displayByParty}*/}
-                    {/*            className={"border h-[30px] border-gray-300 border-r-0 rounded-l-md px-2 shadow-inner" + stylePartyBut}>По*/}
-                    {/*        партиям*/}
-                    {/*    </button>*/}
-                    {/*    <button onClick={displayByHardware}*/}
-                    {/*            className={"border h-[30px] border-gray-300 rounded-r-md px-2 shadow-inner" + styleHardwareBut}>По*/}
-                    {/*        оборудованию*/}
-                    {/*    </button>*/}
-                    {/*</div>*/}
-
-                    <div className="flex px-2 h-[32px] items-center border rounded-md">
-                        <span className="py-1 font-medium">📅 Дата:</span>
-                        <input className={"px-2 font-medium w-32"} type="date"
-                               value={selectDate}
-                               onChange={(e) => onChangeSelectDate(e.target.value)}
-                        />
-                    </div>
-
-                    <button
-                        className="bg-blue-800 text-white px-1 h-[30px] w-32"
-                        // onClick={download}
-                        onClick={selectSettings}
-                        style={{
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        Загрузить
-                    </button>
-
-                    <div className="flex flex-row">
+                <div className="flex flex-row">
+                    <div className="w-1/3 ">
                         <button onClick={() => {
-                            setIsModalDateSettings(true)
-                        }}
-                                className={"border h-[32px] border-gray-300 rounded-md px-2 bg-blue-800 hover:bg-blue-700 text-white"}>Настройка
-                            линий
+                            navigate(from, {replace: true})
+                        }} className=" ml-4 mt-6 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Вернуться назад
                         </button>
                     </div>
 
 
-                    <div className="w-auto flex flex-row" style={{position: "relative", zIndex: 20}}>
+                    <h1 className="w-1/3 font-bold text-center text-2xl mb-8 mt-6">Планировщик задач</h1>
+                    <div className="w-1/3 mt-6 py-1 flex justify-end pr-3">
+                        <button onClick={savePlan}
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
+                            Сохранить
+                            <i className="pl-2 fa-solid fa-floppy-disk"></i>
+                        </button>
+                        <button onClick={clickRemovePlan}
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
+                            Удалить
+                            <i className="pl-2 fa-solid fa-trash-can"></i>
+                        </button>
+                        <button onClick={exportExel}
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
+                            Excel экспорт
+                            <i className="pl-2 fa-solid fa-file-excel"></i>
+                        </button>
+                    </div>
+                </div>
+
+
+                <div className="flex flex-row justify-between my-4 px-4 ">
+
+
+                    <div>
+                        <div className="inline-flex px-2 h-[32px] items-center border rounded-md">
+                            <span className="py-1 font-medium text-nowrap">📅 Дата:</span>
+                            <input className={"px-2 font-medium w-32"} type="date"
+                                   value={selectDate}
+                                   onChange={(e) => onChangeSelectDate(e.target.value)}
+                            />
+                        </div>
+
+                        <button className="ml-3 rounded bg-blue-800 text-white px-1 h-[30px] w-24"
+                                onClick={selectSettings}>
+                            Загрузить
+                        </button>
+
+                        <button onClick={() => {
+                            setIsModalDateSettings(true)
+                        }}
+                                className={"ml-3 rounded bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px]"}>
+                            Настройка линий
+                        </button>
+                    </div>
+
+
+                    <div className="flex flex-row" style={{zIndex: 20}}>
 
 
                         {!isSolve &&
                             <div onClick={solve}>
                                 <button
-                                    className="border h-[30px] w-36 border-gray-300 rounded-md text-white px-1 bg-green-600 hover:bg-green-500">
+                                    className="rounded text-white px-1 bg-green-600 hover:bg-green-500 h-[30px] w-36">
                                     <i className="fa-solid fa-play"></i>
                                     <span className="pl-1">Планировать</span>
                                 </button>
@@ -873,51 +910,59 @@ function SchedulerPage() {
                         {isSolve &&
                             <div onClick={stopSolving}>
                                 <button
-                                    className="border h-[30px] w-36 border-gray-300 rounded-md text-white px-1 bg-red-600 hover:bg-red-500">
+                                    className="rounded text-white px-1 bg-red-600 hover:bg-red-500 h-[30px] w-36">
                                     <i className="fa-solid fa-stop"></i>
                                     <span className="pl-1">Остановить</span>
                                 </button>
                             </div>
                         }
 
-                        <div className="flex items-center border rounded-md mx-2">
-                        <span className="font-medium px-4">
-                            Расчеты: {score}
-                        </span>
+                        <div className="flex items-center border rounded-md ml-2 ">
+                            <div
+                                className="font-medium flex flex-row justify-between px-2 text-md text-gray-700 w-96 h-[30px]">
+                                <div className="flex flex-col text-center w-1/3">
+                                    <span className="px-1 mt-[-3px]">{score.hard}</span>
+                                    <span className="text-xs mt-[-6px]">Ошибки</span>
+                                </div>
+                                <span className="text-lg">|</span>
+                                <div className="flex flex-col text-center w-1/3">
+                                    <span className="px-1 mt-[-3px]">{score.medium}</span>
+                                    <span className="text-xs my-1 mt-[-6px]">Время простоя</span>
+                                </div>
+                                <span className="text-lg">|</span>
+                                <div className="flex flex-col text-center w-1/3">
+                                    <span className="px-1 mt-[-3px]">{score.soft}</span>
+                                    <span className="text-xs my-1 mt-[-6px]">Время выполнения</span>
+                                </div>
+                            </div>
                             <button onClick={() => {
                                 fetchAnalyze();
                                 setIsModalAnalyze(true);
                             }}
-                                    className={" h-full border-gray-300 rounded-r-md px-2 shadow-inner bg-blue-800 hover:bg-blue-700 text-white"}>
+                                    className={" h-full rounded-r px-2 bg-blue-800 hover:bg-blue-700 text-white"}>
                                 Подробнее
                             </button>
                         </div>
 
                     </div>
 
-
-                    <div>
-                        <button onClick={savePlan}
-                                className="h-[30px] px-2 mx-2 rounded shadow-sm border border-slate-400 hover:bg-gray-200">
-                            Сохранить
-                            <i className="pl-2 fa-solid fa-floppy-disk"></i>
+                    <div className="">
+                        <button onClick={displayByParty}
+                                className={"border h-[30px] border-r-0 rounded-l-md px-2 " + stylePartyBut}>По
+                            партиям
                         </button>
-                        <button onClick={clickRemovePlan}
-                                className="h-[30px] px-2 mx-2 rounded shadow-sm border border-slate-400 hover:bg-gray-200">
-                            Удалить
-                            <i className="pl-2 fa-solid fa-trash-can"></i>
-                        </button>
-                        <button onClick={exportExel}
-                                className="h-[30px] px-2 mx-2 rounded shadow-sm border border-slate-400 hover:bg-gray-200">
-                            Excel экспорт
-                            <i className="pl-2 fa-solid fa-file-excel"></i>
+                        <button onClick={displayByHardware}
+                                className={"border h-[30px] rounded-r-md px-2 " + styleHardwareBut}>По
+                            оборудованию
                         </button>
                     </div>
+
                 </div>
 
                 <div className="m-4 border-x-2">
                     <Timeline
                         itemRenderer={customItemRenderer} // кастомный item
+                        groupRenderer={customGroupRenderer}
                         key={timelineKey} //для корректной прокрутки в начале
                         groups={groups}
                         items={items}
@@ -991,7 +1036,8 @@ function SchedulerPage() {
                     />}
 
 
-                <DataTable data={pdayData} setData={setPdayData} updatePday={updatePday} selectDate={selectDateTable} dateData={selectDate}/>
+                <DataTable data={pdayData} setData={setPdayData} updatePday={updatePday} selectDate={selectDateTable}
+                           dateData={selectDate}/>
 
                 <div className="px-3 py-2 rounded flex flex-row justify-between align-middle text-black mb-2">
                     <div style={{fontSize: '16px'}}>
@@ -1013,7 +1059,8 @@ function SchedulerPage() {
                 </div>
 
                 {pdayDataNextDay.length !== 0 &&
-                    <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} updatePday={updatePday} selectDate={selectDate} dateData={getNextDateStr(selectDateTable)}/>
+                    <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} updatePday={updatePday}
+                               selectDate={selectDate} dateData={getNextDateStr(selectDateTable)}/>
                 }
 
             </div>

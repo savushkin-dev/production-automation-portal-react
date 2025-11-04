@@ -93,28 +93,55 @@ export default class ScheduleService {
     static async parseParty(json) {
         party = [];
         const seenNp = new Map();
+
+        // Считаем общее quantity для каждой партии
+        const groupQuantities = json.jobs.reduce((acc, item) => {
+            if (!acc[item.np]) {
+                acc[item.np] = 0;
+            }
+            acc[item.np] += item.quantity || 0;
+            return acc;
+        }, {});
+
         json.jobs.forEach(item => {
             if (!seenNp.has(item.np)) {
-                seenNp.set(item.np, item); // Сохраняем объект по ключу np
+                seenNp.set(item.np, item);
             }
         });
+
         party = Array.from(seenNp, ([np, originalItem], index) => ({
             ...exampleResourse,
             id: np,
             title: `Партия №${np}`,
-            index: index
+            index: index,
+            totalQuantity: groupQuantities[np] || 0 // Добавляем общее quantity
         }));
+
         return party;
     }
 
-
     static async parseHardware(json) {
         hardware = [];
+
+        // Считаем общее quantity для каждой линии
+        const groupQuantities = json.jobs.reduce((acc, item) => {
+            const lineId = item.line?.id;
+            if (lineId) {
+                if (!acc[lineId]) {
+                    acc[lineId] = 0;
+                }
+                acc[lineId] += item.quantity || 0;
+            }
+            return acc;
+        }, {});
+
         for (let i = 0; i < json.lines.length; i++) {
             hardware[i] = Object.assign({}, exampleResourse);
             hardware[i].id = json.lines[i].id;
             hardware[i].title = json.lines[i].name;
+            hardware[i].totalQuantity = groupQuantities[json.lines[i].id] || 0; // Добавляем общее quantity
         }
+
         return hardware;
     }
 
@@ -264,16 +291,26 @@ export default class ScheduleService {
             const medium = parseInt(parts[1].replace('medium', '')) || 0;
             const soft = parseInt(parts[2].replace('soft', '')) || 0;
 
-            // Вычисляем корень и округляем
-            const softSqrt = Math.round(Math.sqrt(Math.abs(soft)));
-
-            // Берем абсолютное значение для medium (убираем минус)
+            // Берем абсолютные значения для всех показателей
+            const hardAbs = Math.abs(hard);
             const mediumAbs = Math.abs(medium);
 
-            return `Ошибки ${hard} | Время простоя ${mediumAbs} | Время выполнения ${softSqrt}`;
+            // Вычисляем корень и округляем (тоже берем абсолютное значение)
+            const softSqrt = Math.round(Math.sqrt(Math.abs(soft)));
+
+            let result = {
+                hard: hardAbs || 0,
+                medium: mediumAbs,
+                soft: softSqrt
+            }
+            return result;
 
         } catch (error) {
-            return `Ошибки 0 | Время простоя 0 | Время выполнения 0`;
+            return {
+                hard: 0,
+                medium: 0,
+                soft: 0
+            };
         }
     }
 

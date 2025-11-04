@@ -242,11 +242,11 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
                                         <tr
                                             key={item.SNPZ || index}
                                             className={`
-                                                     ${checkDateValid(item.DTF) ? "" : "bg-gray-300"}
-                                                     ${index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                                                 `}
+                                            ${checkDateValid(item.DTF)
+                                                ? (index % 2 === 0 ? " bg-white " : " bg-gray-50 ")
+                                                : " bg-gray-300 "
+                                            }`}
                                             style={{
-
                                                 borderBottom: '1px solid #e9ecef'
                                             }}
                                         >
