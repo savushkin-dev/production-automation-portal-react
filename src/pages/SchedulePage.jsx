@@ -153,7 +153,7 @@ function SchedulerPage() {
             const date = new Date(selectDateTable);
             date.setDate(date.getDate() + 1);
             const selectDatePlusDay = date.toISOString().split('T')[0];
-            date.setDate(date.getDate() + 2);
+            date.setDate(date.getDate() + 1);
             const selectDatePlus2Day = date.toISOString().split('T')[0];
 
             const responseNextDay = await SchedulerService.loadPday(selectDatePlusDay, selectDatePlus2Day, idealEndDateTime, maxEndDateTime, lineTimes);

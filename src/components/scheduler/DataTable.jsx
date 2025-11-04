@@ -101,15 +101,13 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
 
 
     function checkDateValid(date) {
-        if (date === selectDate || date === "1899-12-30") {
+
+        if (date === selectDate || date === "1899-12-30" || "") {
+            console.log("true")
             return true;
         }
 
-        const nextDay = new Date(selectDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        const nextDayFormatted = nextDay.toISOString().split('T')[0];
-
-        return date === nextDayFormatted;
+        return false
     }
 
     function checkInput(date) {
