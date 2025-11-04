@@ -4,7 +4,15 @@ import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
 
 
-export function ModalMoveJobs({onClose, moveJobs, selectedItems, isDisplayByHardware, planByHardware, planByParty, lines}) {
+export function ModalMoveJobs({
+                                  onClose,
+                                  moveJobs,
+                                  selectedItems,
+                                  isDisplayByHardware,
+                                  planByHardware,
+                                  planByParty,
+                                  lines
+                              }) {
 
     const getLastItemIndexInGroup = (groupId) => {
         const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
@@ -22,8 +30,6 @@ export function ModalMoveJobs({onClose, moveJobs, selectedItems, isDisplayByHard
     };
 
     function move() {
-        // console.log('Выделенные элементы:', selectedItems);
-
         const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
 
         if (selectedItems.length === 0) {
@@ -31,8 +37,15 @@ export function ModalMoveJobs({onClose, moveJobs, selectedItems, isDisplayByHard
             return null;
         }
 
-        // Получаем массив выделенных объектов
-        const selectedItemsArray = itemsArray.filter(item => selectedItems.includes(item.id));
+        // Получаем массив выделенных объектов (исключаем cleaning)
+        const selectedItemsArray = itemsArray.filter(item =>
+            selectedItems.includes(item.id) && !item.id.includes('cleaning')
+        );
+
+        if (selectedItemsArray.length === 0) {
+            console.log('Нет выделенных элементов (только cleaning)');
+            return null;
+        }
 
         const groupId = selectedItemsArray[0].group;
 
@@ -42,9 +55,9 @@ export function ModalMoveJobs({onClose, moveJobs, selectedItems, isDisplayByHard
             return null;
         }
 
-        // Получаем все элементы группы и сортируем
+        // Получаем все элементы группы (исключаем cleaning) и сортируем
         const groupItems = itemsArray
-            .filter(item => item.group === groupId)
+            .filter(item => item.group === groupId && !item.id.includes('cleaning'))
             .sort((a, b) => a.start_time - b.start_time);
 
         const sortedSelected = selectedItemsArray
@@ -52,7 +65,8 @@ export function ModalMoveJobs({onClose, moveJobs, selectedItems, isDisplayByHard
 
         const firstItem = sortedSelected[0];
         const firstItemIndex = groupItems.findIndex(item => item.id === firstItem.id);
-        moveJobs(groupId, selectLine.value, firstItemIndex, selectedItemsArray.length, insertIndex-1)
+
+        moveJobs(groupId, selectLine.value, firstItemIndex, selectedItemsArray.length, insertIndex - 1);
     }
 
 
@@ -69,13 +83,13 @@ export function ModalMoveJobs({onClose, moveJobs, selectedItems, isDisplayByHard
     const handleChangeSelect = (event) => {
         if (event != null) {
             setSelectLine(event);
-            if(isLastPos){
-                setInsertIndex(getLastItemIndexInGroup(event.value)+2)
+            if (isLastPos) {
+                setInsertIndex(getLastItemIndexInGroup(event.value) + 2)
             }
         } else {
             setSelectLine(options[1]);
-            if(isLastPos){
-                setInsertIndex(getLastItemIndexInGroup(options[1].value)+2)
+            if (isLastPos) {
+                setInsertIndex(getLastItemIndexInGroup(options[1].value) + 2)
             }
         }
     };
@@ -86,8 +100,8 @@ export function ModalMoveJobs({onClose, moveJobs, selectedItems, isDisplayByHard
 
     const handleChangeIsLastPos = (event) => {
         setIsLastPos(event)
-        if(event === true){
-            setInsertIndex(getLastItemIndexInGroup(selectLine.value)+2)
+        if (event === true) {
+            setInsertIndex(getLastItemIndexInGroup(selectLine.value) + 2)
         }
     };
 

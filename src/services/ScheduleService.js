@@ -51,7 +51,7 @@ export default class ScheduleService {
                 end: filteredData[i].startProductionDateTime,
                 line: filteredData[i].line.name,
                 duration: Math.round(new Date(filteredData[i].startProductionDateTime) - new Date(filteredData[i].startCleaningDateTime))/ 60000,
-                pinned: json.jobs[i].pinned,
+                pinned: false,
                 lineInfo: json.jobs[i].line,
             }
         }
@@ -83,7 +83,7 @@ export default class ScheduleService {
                 end: filteredData[i].startProductionDateTime,
                 line: filteredData[i].line.name,
                 duration: Math.round(new Date(filteredData[i].startProductionDateTime) - new Date(filteredData[i].startCleaningDateTime))/ 60000,
-                pinned: json.jobs[i].pinned,
+                pinned: false,
                 lineInfo: json.jobs[i].line,
             }
         }
@@ -209,12 +209,18 @@ export default class ScheduleService {
 
     static defineAssignedJobs(result, json){
         for (let i = 0; i < result.length; i++) {
+            // Пропускаем cleaning элементы
+            if(result[i].id.includes('cleaning')) {
+                continue;
+            }
+
             if(result[i].group === ""){
-                // console.log("return")
                 return result
             }
+
             const index = json.lines.find(item => item.id === result[i].group).firstUnpinnedIndex
             const groupPos = ScheduleService.getGroupPosition(result[i].id, result).position
+
             if(groupPos <= index){
                 result[i].info.pinned = true;
             }
@@ -222,12 +228,16 @@ export default class ScheduleService {
         return result;
     }
 
-    // Позиция в своей группе
-    static getGroupPosition (itemId, allItems)  {
+    // Позиция в своей группе (без учета cleaning элементов)
+    static getGroupPosition = (itemId, allItems) => {
         const item = allItems.find(i => i.id === itemId)
         if (!item) return {position: -1, total: 0}
 
-        const groupItems = allItems.filter(i => i.group === item.group)
+        // Исключаем cleaning элементы из группы
+        const groupItems = allItems.filter(i =>
+            i.group === item.group && !i.id.includes('cleaning')
+        )
+
         const sorted = groupItems.sort((a, b) =>
             new Date(a.start_time) - new Date(b.start_time)
         )

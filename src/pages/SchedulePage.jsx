@@ -463,12 +463,16 @@ function SchedulerPage() {
     }
 
 
-    // Позиция в своей группе
+    // Позиция в своей группе (без учета cleaning элементов)
     const getGroupPosition = (itemId, allItems) => {
         const item = allItems.find(i => i.id === itemId)
         if (!item) return {position: -1, total: 0}
 
-        const groupItems = allItems.filter(i => i.group === item.group)
+        // Исключаем cleaning элементы из группы
+        const groupItems = allItems.filter(i =>
+            i.group === item.group && !i.id.includes('cleaning')
+        )
+
         const sorted = groupItems.sort((a, b) =>
             new Date(a.start_time) - new Date(b.start_time)
         )
@@ -480,7 +484,7 @@ function SchedulerPage() {
         }
     }
 
-    // Обработчик правой кнопки мыши
+    
     const handleItemRightClick = (itemId, e) => {
         e.preventDefault();
 
@@ -638,9 +642,12 @@ function SchedulerPage() {
 
         if (!lastItem || !currentItem) return;
 
-        // Фильтруем элементы ТОЛЬКО из этой группы
-        const groupItems = itemsArray.filter(item => item.group === groupId);
+        // Фильтруем элементы ТОЛЬКО из этой группы и исключаем cleaning
+        const groupItems = itemsArray.filter(item =>
+            item.group === groupId && !item.id.includes('cleaning')
+        );
 
+        // Остальной код без изменений...
         const sortedGroupItems = [...groupItems].sort((a, b) => a.start_time - b.start_time);
 
         const lastIndex = sortedGroupItems.findIndex(item => item.id === lastItem.id);
@@ -651,7 +658,6 @@ function SchedulerPage() {
         const startIndex = Math.min(lastIndex, currentIndex);
         const endIndex = Math.max(lastIndex, currentIndex);
 
-        // Получаем IDs всех элементов в диапазоне ТОЛЬКО из этой группы
         const rangeSelection = sortedGroupItems
             .slice(startIndex, endIndex + 1)
             .map(item => item.id);
