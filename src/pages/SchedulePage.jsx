@@ -484,7 +484,7 @@ function SchedulerPage() {
         }
     }
 
-    
+
     const handleItemRightClick = (itemId, e) => {
         e.preventDefault();
 
@@ -762,21 +762,25 @@ function SchedulerPage() {
                     <div className="flex flex-col justify-start text-xs">
                         {item.info?.np &&
                             <span className=" px-1 rounded"><span
-                                className="text-blue-500">{item.info.np}</span> - № партии</span>
+                                className="text-blue-500">{item.info.np}</span>  № партии</span>
                         }
                         {item.info?.duration &&
                             <span className=" px-1 rounded"><span
                                 className="text-pink-500">{item.info.duration} мин. </span> <span
                                 className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
-                            - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span> - Время</span>
+                            - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span>  Время</span>
                         }
                         {/*<span className=" px-1 rounded">*/}
                         {/*    Время: <span className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>*/}
                         {/*    - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span>*/}
                         {/*</span>*/}
-                        <span className=" px-1 rounded">
-                          0 - Позиция на линии
-                        </span>
+                        {item.info?.groupIndex &&
+                            <span className=" px-1 rounded">
+                                <span className="text-violet-600">
+                                    {item.info?.groupIndex}
+                                </span>  Позиция на линии
+                            </span>
+                        }
 
                     </div>
 
@@ -785,6 +789,8 @@ function SchedulerPage() {
             </>
         );
     };
+
+
 
 
 

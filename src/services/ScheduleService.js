@@ -224,6 +224,7 @@ export default class ScheduleService {
             if(groupPos <= index){
                 result[i].info.pinned = true;
             }
+            result[i].info.groupIndex = groupPos;
         }
         return result;
     }
