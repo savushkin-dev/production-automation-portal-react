@@ -1,8 +1,10 @@
 import "./../App.css";
 import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useNavigate} from "react-router-dom";
-import moment from 'moment'
-import {Timeline} from "react-calendar-timeline";
+import moment from 'moment';
+import 'moment/locale/ru';
+
+import {Timeline, TimelineHeaders, SidebarHeader, DateHeader, CustomHeader} from "react-calendar-timeline";
 import ScheduleService from "../services/ScheduleService";
 import SchedulerService from "../services/ScheduleService";
 import "./../components/scheduler/scheduler.css"
@@ -16,6 +18,14 @@ import {DropDownActionsItem} from "../components/scheduler/DropDownActionsItem";
 import {ModalMoveJobs} from "../components/scheduler/ModalMoveJobs";
 import {DataTable} from "../components/scheduler/DataTable";
 
+// Принудительно устанавливаем русскую локаль
+moment.updateLocale('ru', {
+    months: 'Январь_Февраль_Март_Апрель_Май_Июнь_Июль_Август_Сентябрь_Октябрь_Ноябрь_Декабрь'.split('_'),
+    monthsShort: 'Янв_Фев_Мар_Апр_Май_Июн_Июл_Авг_Сен_Окт_Ноя_Дек'.split('_'),
+    weekdays: 'Воскресенье_Понедельник_Вторник_Среда_Четверг_Пятница_Суббота'.split('_'),
+    weekdaysShort: 'вс_пн_вт_ср_чт_пт_сб'.split('_'),
+    weekdaysMin: 'вс_пн_вт_ср_чт_пт_сб'.split('_')
+});
 
 function SchedulerPage() {
 
@@ -51,7 +61,6 @@ function SchedulerPage() {
     const [isModalDateSettings, setIsModalDateSettings] = useState(false);
     const [isModalAnalyze, setIsModalAnalyze] = useState(false);
 
-
     const [downloadedPlan, setDownloadedPlan] = useState(null);
     const [analyzeObj, setAnalyzeObj] = useState(null);
 
@@ -63,7 +72,6 @@ function SchedulerPage() {
 
     const [selectDateTable, setSelectDateTable] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0])
 
-
     const [contextMenu, setContextMenu] = useState({
         visible: false,
         x: 0,
@@ -74,6 +82,9 @@ function SchedulerPage() {
     const [startTimeLines, setStartTimeLines] = useState(undefined);
     const [timelineKey, setTimelineKey] = useState(0);
 
+    // Добавленные состояния для динамического формата
+    const [currentZoom, setCurrentZoom] = useState('hour');
+    const [currentUnit, setCurrentUnit] = useState('hour');
 
     async function assignSettings() {
         const lineTimes = startTimeLines.reduce((acc, line) => {
@@ -305,7 +316,6 @@ function SchedulerPage() {
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }
 
-
     useEffect(() => {
 
         if (downloadedPlan) {
@@ -337,7 +347,6 @@ function SchedulerPage() {
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
         }
 
-
     }, [downloadedPlan]);
 
     async function solve() {
@@ -358,7 +367,6 @@ function SchedulerPage() {
             if (intervalId) clearInterval(intervalId);
         };
     }, [isSolve]);
-
 
     async function stopSolving() {
         setIsSolve(false)
@@ -386,6 +394,81 @@ function SchedulerPage() {
 
     const [selectedItem, setSelectedItem] = useState(null);
 
+    // Добавленные функции для динамического формата
+    const handleZoom = useCallback((timelineContext) => {
+        setCurrentZoom(timelineContext.timelineUnit);
+        setCurrentUnit(timelineContext.timelineUnit);
+    }, []);
+
+    const formatTimelineLabel = (date, unit, width, height) => {
+        if (Array.isArray(date) && date.length === 2 && date[0] === 'Y' && date[1] === 'Y') {
+            return '';
+        }
+        if (!date || isNaN(new Date(date[0].$d).getTime())) {
+            console.warn('Invalid date in timeline:', date);
+            return '--:--';
+        }
+
+        const momentDate = moment(date[0].$d);
+
+        if (!momentDate.isValid()) {
+            return '--:--';
+        }
+
+        if ( unit === 'minute' ) {
+            return momentDate.format('mm');
+        }
+
+        if (unit === 'hour') {
+            if (width < 40) return momentDate.format('HH');
+            return momentDate.format('HH:mm');
+        }
+
+        if (currentUnit === 'day') {
+            if (width < 30) return momentDate.format('DD');
+            if (width < 60) return momentDate.format('DD.MM');
+            if (width < 120) return momentDate.format('dd DD.MM');
+            return momentDate.format('dddd DD.MM');
+        }
+
+        if (currentUnit === 'month') {
+            if (width < 80) return momentDate.format('MM');
+            return momentDate.format('MMMM');
+        }
+
+        return momentDate.format('DD.MM HH:mm');
+    };
+
+    const formatTimelineLabelMain = (date, unit, width, height) => {
+        if (Array.isArray(date) && date.length === 2 && date[0] === 'Y' && date[1] === 'Y') {
+            return '';
+        }
+        if (!date || isNaN(new Date(date[0].$d).getTime())) {
+            console.warn('Invalid date in timeline:', date);
+            return '--:--';
+        }
+
+        const momentDate = moment(date[0].$d);
+
+        if (!momentDate.isValid()) {
+            return '--:--';
+        }
+
+        if (unit === 'hour') {
+            return momentDate.format('dddd, LL HH:00');
+        }
+
+        if (unit === 'day') {
+            return momentDate.format('dddd, LL');
+        }
+
+        if (unit === 'month') {
+            if (width < 80) return momentDate.format('MM');
+            return momentDate.format('MMMM');
+        }
+
+        return momentDate.format('YYYY');
+    };
 
     //Обертка для исключения в библиотеке о передаче пропсов
     const originalConsoleError = console.error;
@@ -442,7 +525,6 @@ function SchedulerPage() {
         setMaxEndDateTime(new Date(e).toISOString().replace(/T.*/, 'T03:00'));
     }
 
-
     // Позиция в своей группе (без учета cleaning элементов)
     const getGroupPosition = (itemId, allItems) => {
         const item = allItems.find(i => i.id === itemId)
@@ -463,7 +545,6 @@ function SchedulerPage() {
             total: sorted.length
         }
     }
-
 
     const handleItemRightClick = (itemId, e) => {
         e.preventDefault();
@@ -555,15 +636,20 @@ function SchedulerPage() {
     const [visibleTimeRange, setVisibleTimeRange] = useState(null);
     const timelineRef = useRef();
 
-    // Сохраняем текущий видимый диапазон
-    const handleTimeChange = useCallback((visibleTimeStart, visibleTimeEnd, updateScrollCanvas) => {
+    const [timelineContext, setTimelineContext] = useState(null);
+
+    const handleTimeChange = useCallback((visibleTimeStart, visibleTimeEnd, updateScrollCanvas, unit, timelineContext) => {
         setVisibleTimeRange({
             visibleTimeStart,
             visibleTimeEnd,
             updateScrollCanvas
         });
 
-        // Немедленно обновляем canvas
+        // Сохраняем контекст timeline, который содержит текущий unit
+        if (timelineContext) {
+            setTimelineContext(timelineContext);
+        }
+
         updateScrollCanvas(visibleTimeStart, visibleTimeEnd);
     }, []);
 
@@ -621,7 +707,6 @@ function SchedulerPage() {
         }
     }
 
-
     // Функция для выделения диапазона по Shift ТОЛЬКО в одной группе
     const handleShiftSelect = (itemId, itemsArray, groupId) => {
         const lastItem = lastSelectedItem;
@@ -664,10 +749,8 @@ function SchedulerPage() {
         }
     }, []);
 
-
     const [selectedItems, setSelectedItems] = useState([]);
     const [lastSelectedItem, setLastSelectedItem] = useState(null);
-
 
     async function moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex) {
         try {
@@ -679,7 +762,6 @@ function SchedulerPage() {
             setIsModalNotify(true);
         }
     }
-
 
     const customItemRenderer = ({item, itemContext, getItemProps}) => {
         const isSelected = selectedItems.includes(item.id);
@@ -781,7 +863,6 @@ function SchedulerPage() {
         );
     };
 
-
     return (
         <>
             <div className="w-full">
@@ -803,7 +884,6 @@ function SchedulerPage() {
                         </button>
                     </div>
 
-
                     <h1 className="w-1/3 font-bold text-center text-2xl mb-8 mt-6">Планировщик задач</h1>
                     <div className="w-1/3 mt-6 py-1 flex justify-end pr-3">
                         <button onClick={savePlan}
@@ -824,9 +904,7 @@ function SchedulerPage() {
                     </div>
                 </div>
 
-
                 <div className="flex flex-row justify-between my-4 px-4 ">
-
 
                     <div>
                         <div className="inline-flex px-2 h-[32px] items-center border rounded-md">
@@ -850,9 +928,7 @@ function SchedulerPage() {
                         </button>
                     </div>
 
-
                     <div className="flex flex-row" style={{zIndex: 20}}>
-
 
                         {!isSolve &&
                             <div onClick={solve}>
@@ -917,39 +993,68 @@ function SchedulerPage() {
 
                 <div className="m-4 border-x-2">
                     <Timeline
-                        itemRenderer={customItemRenderer} // кастомный item
+                        itemRenderer={customItemRenderer}
                         groupRenderer={customGroupRenderer}
-                        key={timelineKey} //для корректной прокрутки в начале
+                        key={timelineKey}
                         groups={groups}
                         items={items}
                         onItemDoubleClick={onItemDoubleClick}
-
                         onItemContextMenu={handleItemRightClick}
-
                         onItemSelect={onItemSelect}
-
                         ref={timelineRef}
                         onTimeChange={handleTimeChange}
+                        onZoom={handleZoom} // Добавлен обработчик зума
                         defaultTimeStart={visibleTimeRange?.visibleTimeStart || new Date().getTime() - (24 * 60 * 60 * 1000)}
                         defaultTimeEnd={visibleTimeRange?.visibleTimeEnd || new Date().getTime() + (24 * 60 * 60 * 1000)}
-
                         canMove={true}
-                        snap={1} // Привязка к 1 минуте (вместо 15 по умолчанию)
-                        snapGrid={1} // Сетка привязки тоже 1 минута
-                        // onItemMove={handleItemMove}
-
-                        // Используем умное размещение
-                        // onItemMove={handleItemMoveWithSmartPlacement}
-                        // onItemMoveEnd={handleItemMoveEnd}
-
-
+                        snap={1}
+                        snapGrid={1}
                         sidebarWidth={150}
-                        lineHeight={90}>
+                        lineHeight={90}
+                    >
+                        <TimelineHeaders className="sticky">
+                            <SidebarHeader>
+                                {({ getRootProps }) => (
+                                    <div {...getRootProps()} className="bg-blue-800">
+                                        {/* Заголовок сайдбара */}
+                                    </div>
+                                )}
+                            </SidebarHeader>
+
+                            {/* Основной заголовок с датой */}
+                            <DateHeader
+                                unit="primaryHeader"
+                                className="bg-blue-800 font-semibold text-sm "
+                                labelFormat={formatTimelineLabelMain}
+                            />
+
+                            {/* Динамический заголовок - меняет формат в зависимости от масштаба */}
+                            <DateHeader
+                                unit={currentUnit}
+                                className=" font-medium text-sm "
+                                labelFormat={formatTimelineLabel}
+                                style={{
+                                    backgroundColor: '#f0f0f0',
+                                    height: 30
+                                }}
+                            />
+                        </TimelineHeaders>
+                        {/*<TimelineHeaders>*/}
+                        {/*    <SidebarHeader>*/}
+                        {/*        {({ getRootProps }) => {*/}
+                        {/*            return <div {...getRootProps()}>Left</div>*/}
+                        {/*        }}*/}
+                        {/*    </SidebarHeader>*/}
+                        {/*    <SidebarHeader variant="right" headerData={{someData: 'extra'}}>*/}
+                        {/*        {({ getRootProps, data }) => {*/}
+                        {/*            return <div {...getRootProps()}>Right {data.someData}</div>*/}
+                        {/*        }}*/}
+                        {/*    </SidebarHeader>*/}
+                        {/*    <DateHeader unit="primaryHeader" />*/}
+                        {/*    <DateHeader />*/}
+                        {/*</TimelineHeaders>*/}
                     </Timeline>
-
-
                 </div>
-
 
                 {isModalDateSettings && <ModalDateSettings onClose={() => {
                     setIsModalDateSettings(false)
@@ -978,7 +1083,6 @@ function SchedulerPage() {
                                            removePlan();
                                        }} onDisagree={() => setIsModalRemove(false)}/>}
 
-
                 {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItems} unpin={unpinLine}
                                                              isDisplayByHardware={isDisplayByHardware}
                                                              openModalMoveJobs={() => setIsModalMoveJobs(true)}/>}
@@ -988,7 +1092,6 @@ function SchedulerPage() {
                                    moveJobs={moveJobs} onClose={() => setIsModalMoveJobs(false)}
                                    lines={startTimeLines} planByParty={planByParty} planByHardware={planByHardware}
                     />}
-
 
                 <DataTable data={pdayData} setData={setPdayData} updatePday={updatePday} selectDate={selectDateTable}
                            dateData={selectDate}/>
@@ -1006,10 +1109,7 @@ function SchedulerPage() {
                         >
                             Подгрузить следующий день
                         </button>
-
-
                     </div>
-
                 </div>
 
                 {pdayDataNextDay.length !== 0 &&
@@ -1020,8 +1120,6 @@ function SchedulerPage() {
             </div>
         </>
     )
-
 }
-
 
 export default observer(SchedulerPage)
