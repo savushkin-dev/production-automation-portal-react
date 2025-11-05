@@ -6,9 +6,6 @@ import {Timeline} from "react-calendar-timeline";
 import ScheduleService from "../services/ScheduleService";
 import SchedulerService from "../services/ScheduleService";
 import "./../components/scheduler/scheduler.css"
-
-import {useTable, useExpanded} from 'react-table';
-
 import {ModalInfoItem} from "../components/scheduler/ModalInfoItem";
 import {ModalDateSettings} from "../components/scheduler/ModalDateSettings";
 import {ModalAnalyze} from "../components/scheduler/ModalAnalyze";
@@ -48,11 +45,7 @@ function SchedulerPage() {
     const [isModalMoveJobs, setIsModalMoveJobs] = useState(false);
 
     const [isSolve, setIsSolve] = useState(false);
-    const [score, setScore] = useState({
-        hard: 0,
-        medium: 0,
-        soft: 0
-    });
+    const [score, setScore] = useState({hard: 0, medium: 0, soft: 0});
     const [solverStatus, setSolverStatus] = useState("");
 
     const [isModalDateSettings, setIsModalDateSettings] = useState(false);
@@ -79,20 +72,14 @@ function SchedulerPage() {
     })
 
     const [startTimeLines, setStartTimeLines] = useState(undefined);
-
-
     const [timelineKey, setTimelineKey] = useState(0);
 
 
     async function assignSettings() {
-
-        // await stopSolving();
-
         const lineTimes = startTimeLines.reduce((acc, line) => {
             acc[line.lineId] = line.startDateTime;
             return acc;
         }, {});
-
 
         try {
             setVisibleTimeRange(prevState => ({
@@ -102,16 +89,14 @@ function SchedulerPage() {
             }));
 
             await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, lineTimes);
-            await fetchPlan();
-            await loadPday();
+            await fetchPlan()
             setPdayDataNextDay([])
         } catch (e) {
             console.error(e)
             setMsg(e.response.data.error)
             setIsModalNotify(true);
-
             setItems([])
-            setScore("Ошибки 0 | Время простоя 0 | Время выполнения 0")
+            setScore({hard: 0, medium: 0, soft: 0})
             setPdayData([])
             setPdayDataNextDay([])
         }
@@ -178,7 +163,9 @@ function SchedulerPage() {
     }
 
     useEffect(() => {
-        loadPday()
+        if(startTimeLines){
+            loadPday()
+        }
         setPdayDataNextDay([])
     }, [selectDate, selectDateTable])
 
@@ -256,7 +243,7 @@ function SchedulerPage() {
         } catch (e) {
             console.error(e)
             setDownloadedPlan(null)
-            setScore("-0hard/-0medium/-0soft")
+            setScore({hard: 0, medium: 0, soft: 0})
         }
     }
 
@@ -379,12 +366,6 @@ function SchedulerPage() {
         await fetchPlan();
     }
 
-    // useEffect(() => {
-    //     fetchLines();
-    //     assignSettings(selectDate);
-    //     setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
-    // }, [selectDate])
-
     useEffect(() => {
         fetchLines();
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
@@ -392,18 +373,14 @@ function SchedulerPage() {
 
     useEffect(() => {
         if (startTimeLines) {
-            // console.log("true")
-            // loadPday();
             selectSettings()
+            loadPday();
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
         }
-
     }, [startTimeLines])
 
     async function selectSettings() {
-        // fetchLines();
         await assignSettings(selectDate);
-        // await fetchPlan();
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }
 
@@ -457,7 +434,6 @@ function SchedulerPage() {
         setSelectEndDate(dateString);
         setIdealEndDateTime(`${dateString}T02:00`);
         setMaxEndDateTime(`${dateString}T03:00`);
-        // setSelectDateTable(dateString)
     }
 
     function onChangeEndDate(e) {
@@ -689,7 +665,6 @@ function SchedulerPage() {
     }, []);
 
 
-    // Добавляем состояния
     const [selectedItems, setSelectedItems] = useState([]);
     const [lastSelectedItem, setLastSelectedItem] = useState(null);
 
@@ -706,53 +681,48 @@ function SchedulerPage() {
     }
 
 
-    const customItemRenderer = ({item, itemContext, getItemProps}) => {  //кастомный item
-
+    const customItemRenderer = ({item, itemContext, getItemProps}) => {
         const isSelected = selectedItems.includes(item.id);
         const isSingleSelected = selectedItem?.id === item.id;
+
+        const itemProps = getItemProps({
+            style: {
+                background: isSelected ?
+                    (isSingleSelected ? "#d0ff9a" : "#d0ff9a") :
+                    item.itemProps?.style?.background,
+                border: '1px solid #aeaeae',
+                textAlign: 'start',
+                color: item.itemProps.style.color || 'black',
+                margin: 0,
+                padding: '0',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: '100%',
+            },
+            onMouseDown: getItemProps().onMouseDown,
+            onTouchStart: getItemProps().onTouchStart
+        });
+
+        // Удаляем key из полученных пропсов
+        const { key, ...safeItemProps } = itemProps;
 
         return (
             <>
                 <div
-                    key={item.id} // Ключ передаётся напрямую
-                    {...getItemProps({
-                        style: {
-                            // background: itemContext.selected ? "#d0ff9a" : item.itemProps.style.background,
-                            background: isSelected ?
-                                (isSingleSelected ? "#d0ff9a" : "#d0ff9a") :
-                                item.itemProps?.style?.background,
-                            border: '1px solid #aeaeae',
-                            // border: isSelected ?
-                            //     (isSingleSelected ? "2px solid #4CAF50" : "2px solid #2196F3") :
-                            //     '1px solid #aeaeae',
-                            textAlign: 'start',
-                            color: item.itemProps.style.color || 'black',
-                            margin: 0,
-                            padding: '0',
-
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            maxWidth: '100%',
-
-                        },
-                        onMouseDown: getItemProps().onMouseDown,
-                        onTouchStart: getItemProps().onTouchStart
-                    })}
+                    key={item.id} // Явно передаем key
+                    {...safeItemProps} // Распространяем пропсы БЕЗ key
                     className="rct-item"
                 >
-
                     <div className="flex px-1 justify-between font-medium text-sm text-black">
                         {item.info?.pinned &&
                             <>
                                 {isSelected && selectedItems.length > 1 && (
-                                    <div
-                                        className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                                    <div className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
                                         {selectedItems.indexOf(item.id) + 1}
                                     </div>
                                 )}
-                                <div className="h-2 absolute p-0"><i
-                                    className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i></div>
+                                <div className="h-2 absolute p-0"><i className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i></div>
                                 <span className="ml-4">{item.title}</span>
                             </>
                         }
@@ -760,42 +730,28 @@ function SchedulerPage() {
                         {!item.info?.pinned &&
                             <>
                                 {isSelected && selectedItems.length > 1 && (
-                                    <div
-                                        className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                                    <div className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
                                         {selectedItems.indexOf(item.id) + 1}
                                     </div>
                                 )}
                                 <span className="">{item.title}</span>
                             </>
-
                         }
                     </div>
                     <div className="flex flex-col justify-start text-xs">
                         {item.info?.np &&
-                            <span className=" px-1 rounded"><span
-                                className="text-blue-500">{item.info.np}</span>  № партии</span>
+                            <span className=" px-1 rounded"><span className="text-blue-500">{item.info.np}</span>  № партии</span>
                         }
                         {item.info?.duration &&
-                            <span className=" px-1 rounded"><span
-                                className="text-pink-500">{item.info.duration} мин. </span> <span
-                                className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
-                            - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span>  Время</span>
+                            <span className=" px-1 rounded"><span className="text-pink-500">{item.info.duration} мин. </span> <span className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
+                        - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span>  Время</span>
                         }
-                        {/*<span className=" px-1 rounded">*/}
-                        {/*    Время: <span className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>*/}
-                        {/*    - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span>*/}
-                        {/*</span>*/}
                         {item.info?.groupIndex &&
                             <span className=" px-1 rounded">
-                                <span className="text-violet-600">
-                                    {item.info?.groupIndex}
-                                </span>  Позиция на линии
-                            </span>
+                            <span className="text-violet-600">{item.info?.groupIndex}</span>  Позиция на линии
+                        </span>
                         }
-
                     </div>
-
-
                 </div>
             </>
         );
@@ -998,11 +954,9 @@ function SchedulerPage() {
                 {isModalDateSettings && <ModalDateSettings onClose={() => {
                     setIsModalDateSettings(false)
                 }}
-                    // selectDate={selectDate} setDate={onChangeSelectDate}
                                                            selectEndDate={selectEndDate}
                                                            setSelectEndDate={onChangeEndDate}
                                                            lines={startTimeLines} setLines={setStartTimeLines}
-                    // apply={selectSettings}
                                                            idealEndDateTime={idealEndDateTime}
                                                            setIdealEndDateTime={setIdealEndDateTime}
                                                            maxEndDateTime={maxEndDateTime}
