@@ -17,6 +17,7 @@ import {ModalConfirmation} from "../components/modal/ModalConfirmation";
 import {DropDownActionsItem} from "../components/scheduler/DropDownActionsItem";
 import {ModalMoveJobs} from "../components/scheduler/ModalMoveJobs";
 import {DataTable} from "../components/scheduler/DataTable";
+import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
 
 // Принудительно устанавливаем русскую локаль
 moment.updateLocale('ru', {
@@ -53,6 +54,7 @@ function SchedulerPage() {
     const [isModalRemove, setIsModalRemove] = useState(false);
     const [isModalInfoItem, setIsModalInfoItem] = useState(false);
     const [isModalMoveJobs, setIsModalMoveJobs] = useState(false);
+    const [isModalAssignServiceWork, setIsModalAssignServiceWork] = useState(false);
 
     const [isSolve, setIsSolve] = useState(false);
     const [score, setScore] = useState({hard: 0, medium: 0, soft: 0});
@@ -76,7 +78,8 @@ function SchedulerPage() {
         visible: false,
         x: 0,
         y: 0,
-        item: null
+        item: null,
+        forCanvas: false,
     })
 
     const [startTimeLines, setStartTimeLines] = useState(undefined);
@@ -567,6 +570,7 @@ function SchedulerPage() {
                 x: e.clientX,
                 y: e.clientY,
                 item: clickedItem,
+                forCanvas: false,
                 forMultiple: true, // Флаг что меню для нескольких элементов
                 selectedItems: selectedItems // Передаем все выделенные ID
             });
@@ -581,10 +585,29 @@ function SchedulerPage() {
                 x: e.clientX,
                 y: e.clientY,
                 item: clickedItem,
+                forCanvas: false,
                 forMultiple: false,
                 selectedItems: [itemId]
             });
         }
+    };
+
+    const handleCanvasRightClick = (groupId, time, e) => {
+console.log("CanvasClick")
+console.log(e)
+        setSelectedItems([]);
+        setSelectedItem(null);
+
+        setLastSelectedItem(null);
+            setContextMenu({
+                visible: true,
+                x: e.clientX,
+                y: e.clientY,
+                item: null,
+                forCanvas: true,
+                selectedItems:  []
+            });
+
     };
 
     // Закрытие контекстного меню
@@ -593,7 +616,8 @@ function SchedulerPage() {
             visible: false,
             x: 0,
             y: 0,
-            item: null
+            item: null,
+            forCanvas: false
         })
     }, [])
 
@@ -759,6 +783,17 @@ function SchedulerPage() {
         } catch (e) {
             console.error(e)
             setMsg("Ошибка перемещения job-ов: " + e.message)
+            setIsModalNotify(true);
+        }
+    }
+
+    async function assignServiceWork(toLineId, insertIndex, duration) {
+        try {
+            await SchedulerService.assignServiceWork(toLineId, insertIndex, duration);
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка назначения сервисной операции: " + e.message)
             setIsModalNotify(true);
         }
     }
@@ -1001,9 +1036,12 @@ function SchedulerPage() {
                         onItemDoubleClick={onItemDoubleClick}
                         onItemContextMenu={handleItemRightClick}
                         onItemSelect={onItemSelect}
+
+                        onCanvasContextMenu={handleCanvasRightClick}
+
                         ref={timelineRef}
                         onTimeChange={handleTimeChange}
-                        onZoom={handleZoom} // Добавлен обработчик зума
+                        onZoom={handleZoom}
                         defaultTimeStart={visibleTimeRange?.visibleTimeStart || new Date().getTime() - (24 * 60 * 60 * 1000)}
                         defaultTimeEnd={visibleTimeRange?.visibleTimeEnd || new Date().getTime() + (24 * 60 * 60 * 1000)}
                         canMove={true}
@@ -1039,20 +1077,6 @@ function SchedulerPage() {
                                 }}
                             />
                         </TimelineHeaders>
-                        {/*<TimelineHeaders>*/}
-                        {/*    <SidebarHeader>*/}
-                        {/*        {({ getRootProps }) => {*/}
-                        {/*            return <div {...getRootProps()}>Left</div>*/}
-                        {/*        }}*/}
-                        {/*    </SidebarHeader>*/}
-                        {/*    <SidebarHeader variant="right" headerData={{someData: 'extra'}}>*/}
-                        {/*        {({ getRootProps, data }) => {*/}
-                        {/*            return <div {...getRootProps()}>Right {data.someData}</div>*/}
-                        {/*        }}*/}
-                        {/*    </SidebarHeader>*/}
-                        {/*    <DateHeader unit="primaryHeader" />*/}
-                        {/*    <DateHeader />*/}
-                        {/*</TimelineHeaders>*/}
                     </Timeline>
                 </div>
 
@@ -1085,11 +1109,18 @@ function SchedulerPage() {
 
                 {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItems} unpin={unpinLine}
                                                              isDisplayByHardware={isDisplayByHardware}
-                                                             openModalMoveJobs={() => setIsModalMoveJobs(true)}/>}
+                                                             openModalMoveJobs={() => setIsModalMoveJobs(true)}
+                                                             openModalAssignSettings={()=> setIsModalAssignServiceWork(true)}/>}
 
                 {isModalMoveJobs &&
                     <ModalMoveJobs selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}
                                    moveJobs={moveJobs} onClose={() => setIsModalMoveJobs(false)}
+                                   lines={startTimeLines} planByParty={planByParty} planByHardware={planByHardware}
+                    />}
+
+                {isModalAssignServiceWork &&
+                    <ModalAssignServiceWork selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}
+                                   assignServiceWork={assignServiceWork} onClose={() => setIsModalAssignServiceWork(false)}
                                    lines={startTimeLines} planByParty={planByParty} planByHardware={planByHardware}
                     />}
 

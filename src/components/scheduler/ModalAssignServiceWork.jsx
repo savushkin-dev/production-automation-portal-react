@@ -1,18 +1,28 @@
-import React, {useEffect, useState} from 'react'
-import {styleInput, styleInputWithoutRounded, styleLabelInput} from "../../data/styles";
+import React, {useState} from 'react'
+import {styleInputWithoutRounded} from "../../data/styles";
 import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
 
 
-export function ModalMoveJobs({
-                                  onClose,
-                                  moveJobs,
+export function ModalAssignServiceWork({
+                                  onClose, assignServiceWork,
                                   selectedItems,
                                   isDisplayByHardware,
                                   planByHardware,
                                   planByParty,
                                   lines
                               }) {
+
+    const options = lines.map(line => ({
+        value: line.lineId,
+        label: line.originalName
+    }));
+
+    const [selectLine, setSelectLine] = useState(options[0]);
+    const [insertIndex, setInsertIndex] = useState(1);
+    const [isLastPos, setIsLastPos] = useState(false);
+    const [duration, setDuration] = useState(10);
+    const [nameOperation, setNameOperation] = useState("");
 
     const getLastItemIndexInGroup = (groupId) => {
         const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
@@ -30,51 +40,9 @@ export function ModalMoveJobs({
         return groupItems.length - 1;
     };
 
-    function move() {
-        const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
-
-        if (selectedItems.length === 0) {
-            console.log('Нет выделенных элементов');
-            return null;
-        }
-
-        // Получаем массив выделенных объектов (исключаем cleaning)
-        const selectedItemsArray = itemsArray.filter(item =>
-            selectedItems.includes(item.id) && !item.id.includes('cleaning')
-        );
-
-        const groupId = selectedItemsArray[0].group;
-
-        const allSameGroup = selectedItemsArray.every(item => item.group === groupId);
-        if (!allSameGroup) {
-            console.warn('Элементы в разных группах! Это не должно происходить');
-            return null;
-        }
-
-        // Получаем все элементы группы (исключаем cleaning) и сортируем
-        const groupItems = itemsArray
-            .filter(item => item.group === groupId && !item.id.includes('cleaning'))
-            .sort((a, b) => a.start_time - b.start_time);
-
-        const sortedSelected = selectedItemsArray
-            .sort((a, b) => a.start_time - b.start_time);
-
-        const firstItem = sortedSelected[0];
-        const firstItemIndex = groupItems.findIndex(item => item.id === firstItem.id);
-
-        moveJobs(groupId, selectLine.value, firstItemIndex, selectedItemsArray.length, insertIndex - 1);
+    function assign() {
+        assignServiceWork(selectLine.value, insertIndex - 1, duration);
     }
-
-
-    const options = lines.map(line => ({
-        value: line.lineId,
-        label: line.originalName
-    }));
-
-    const [selectLine, setSelectLine] = useState(options[0]);
-    const [insertIndex, setInsertIndex] = useState(1);
-    const [isLastPos, setIsLastPos] = useState(false);
-
 
     const handleChangeSelect = (event) => {
         if (event != null) {
@@ -110,11 +78,11 @@ export function ModalMoveJobs({
             <div className="fixed inset-0 flex  items-center justify-center p-4 z-100 pointer-events-none"
                  style={{zIndex: 100}}>
                 <div className="w-auto min-w-[600px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
-                    <h1 className="text-xl font-medium text-start mb-2">Перемещение элементов</h1>
+                    <h1 className="text-xl font-medium text-start mb-2">Добавление сервисной операции</h1>
                     <hr/>
 
                     <div className="flex flex-row my-2">
-                        <span className="py-1 font-medium w-1/2">Выберите новую линию:</span>
+                        <span className="py-1 font-medium w-1/2">Выберите линию:</span>
                         <Select className=" ml-4 py-1 font-medium text-md w-1/2"
                                 value={selectLine}
                                 onChange={handleChangeSelect}
@@ -123,15 +91,11 @@ export function ModalMoveJobs({
                                 isClearable={false} isSearchable={false}/>
                     </div>
                     <div className="flex flex-row my-2">
-                        <span className="py-1 font-medium w-1/2">На какую позицию переместить:</span>
+                        <span className="py-1 font-medium w-1/2">На какую позицию добавить:</span>
                         <div className="w-1/2 flex flex-row">
-                            {/*<input className={styleInput + "px-2 ml-2 py-1 font-medium text-lg w-2/3"}*/}
-                            {/*       value={insertIndex}*/}
-                            {/*       onChange={(e) => setInsertIndex(e.target.value)}*/}
-                            {/*/>*/}
                             <div style={{display: 'flex', alignItems: 'center'}}
                                  className="font-medium w-[100%] ml-2">
-                                <input className={styleInputWithoutRounded + " w-[100%]"}
+                                <input className={styleInputWithoutRounded + "rounded w-[100%]"}
                                        type="number"
                                        min={0}
                                        value={insertIndex}
@@ -160,6 +124,22 @@ export function ModalMoveJobs({
                         </div>
 
                     </div>
+                    <div className="flex flex-row my-2 font-medium">
+                        <span className="py-1 font-medium w-1/2">Длительность операции (минут):</span>
+                        <input className={styleInputWithoutRounded + "rounded ml-4 w-1/2"}
+                               type="number"
+                               min={1}
+                               value={duration}
+                               onChange={(e) => setDuration(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex flex-row my-2 font-medium">
+                        <span className="py-1 font-medium w-1/2">Название операции:</span>
+                        <input className={styleInputWithoutRounded + "rounded ml-4 w-1/2"}
+                               value={nameOperation}
+                               onChange={(e) => setNameOperation(e.target.value)}
+                        />
+                    </div>
 
 
                     <div className="flex flex-row justify-end ">
@@ -169,7 +149,7 @@ export function ModalMoveJobs({
                                 Отмена
                             </button>
                             <button onClick={() => {
-                                move();
+                                assign();
                                 onClose()
                             }}
                                     className="min-w-[50px] text-xs h-7 font-medium px-2 py-1 rounded text-white bg-blue-800 hover:bg-blue-700">
