@@ -101,8 +101,9 @@ function SchedulerPage() {
             }));
 
             await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, lineTimes);
-            await fetchPlan()
             setPdayDataNextDay([])
+            await fetchPlan()
+            await loadPday()
         } catch (e) {
             console.error(e)
             setMsg(e.response.data.error)
@@ -175,9 +176,10 @@ function SchedulerPage() {
     }
 
     useEffect(() => {
-        if(startTimeLines){
-            loadPday()
-        }
+        // if(startTimeLines){
+        //     loadPday()
+        // }
+        setPdayData([])
         setPdayDataNextDay([])
     }, [selectDate, selectDateTable])
 
@@ -383,7 +385,6 @@ function SchedulerPage() {
     useEffect(() => {
         if (startTimeLines) {
             selectSettings()
-            loadPday();
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
         }
     }, [startTimeLines])
@@ -851,17 +852,23 @@ function SchedulerPage() {
                         }
                     </div>
                     <div className="flex flex-col justify-start text-xs">
-                        {item.info?.np &&
-                            <span className=" px-1 rounded"><span className="text-blue-500">{item.info.np}</span>  № партии</span>
+                        {item.info.name !== "Мойка" &&
+                            <span className=" px-1 rounded">
+                            {item.info?.np && <span className="text-blue-500">{item.info.np}</span>}
+                                <span className="pl-1">№ партии</span>
+                            </span>
                         }
                         {item.info?.duration &&
-                            <span className=" px-1 rounded"><span className="text-pink-500">{item.info.duration} мин. </span> <span className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
+                            <span className=" px-1 rounded"><span
+                                className="text-pink-500">{item.info.duration} мин. </span> <span
+                                className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
                         - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span>  Время</span>
                         }
                         {item.info?.groupIndex &&
                             <span className=" px-1 rounded">
-                            <span className="text-violet-600">{item.info?.groupIndex}</span>  Позиция на линии
-                        </span>
+                                <span className="text-violet-600">{item.info?.groupIndex}</span>
+                                <span className="pl-1">Позиция на линии</span>
+                            </span>
                         }
                     </div>
                 </div>
@@ -872,16 +879,7 @@ function SchedulerPage() {
     const customGroupRenderer = ({group}) => {
 
         return (
-            <div
-                className="custom-group-renderer"
-                style={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    padding: '4px 8px'
-                }}
-            >
+            <div className="custom-group-renderer flex flex-col justify-center h-full px-2">
                 <div className="group-title font-semibold text-sm mb-1">
                     {group.title}
                 </div>
@@ -938,7 +936,7 @@ function SchedulerPage() {
 
                     <div>
                         <div className="inline-flex px-2 h-[32px] items-center border rounded-md">
-                            <span className="py-1 font-medium text-nowrap">📅 Дата:</span>
+                            <span className="py-1 font-medium text-nowrap">Дата:</span>
                             <input className={"px-2 font-medium w-32"} type="date"
                                    value={selectDate}
                                    onChange={(e) => onChangeSelectDate(e.target.value)}
@@ -1125,14 +1123,7 @@ function SchedulerPage() {
                 <div className="px-3 py-2 rounded flex flex-row justify-between align-middle text-black mb-2">
                     <div style={{fontSize: '16px'}}>
                         <button
-                            className="mr-6 bg-blue-800 text-white px-3 py-1 "
-                            onClick={loadPdayNextDay}
-                            style={{
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer'
-                            }}
-                        >
+                            className="ml-4 bg-blue-800 text-white px-3 py-1 rounded" onClick={loadPdayNextDay}>
                             Подгрузить следующий день
                         </button>
                     </div>

@@ -5,10 +5,8 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
 
     const [expandedGroups, setExpandedGroups] = useState(new Set());
 
-    // Группируем данные по SNM (названию продукта)
     const groupedData = useMemo(() => {
         const productGroups = {};
-
         Object.values(data).forEach(item => {
             // Группируем по названию продукта (SNM)
             const productName = item.SNM || 'Без названия';
@@ -18,7 +16,6 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
                     items: []
                 };
             }
-
             productGroups[productName].items.push(item);
         });
 
@@ -47,42 +44,24 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
         return new Date(dateString).toLocaleDateString('ru-RU');
     };
 
-    const truncateName = (name, maxLength = 50) => {
-        if (!name) return '';
-        return name;
-    };
-
     const expandedGroupsCount = expandedGroups.size;
 
-    function selectAll() {
-        // Собираем все доступные для изменения записи
-        const availableItems = [];
-        groupedData.forEach(group => {
-            group.items.forEach(item => {
-                if (checkDateValid(item.DTF)) {
-                    availableItems.push(item);
-                }
-            });
-        });
+    function updateSelectedItems(items, shouldSelect) {
+        const availableItems = items.filter(item => checkDateValid(item.DTF));
 
         if (availableItems.length === 0) return;
 
-        // Определяем, нужно ли отметить все доступные или снять отметки
-        const allAvailableSelected = availableItems.every(item => checkInput(item.DTF));
-        const newDate = allAvailableSelected ? "1899-12-30" : selectDate;
-
-        // Собираем SNPZ только для доступных элементов
+        const newDate = shouldSelect ? selectDate : "1899-12-30";
         const requestData = {};
+
         availableItems.forEach(item => {
             requestData[item.SNPZ] = newDate;
         });
 
-        updatePday(requestData)
+        return updatePday(requestData)
             .then(() => {
-                // Обновляем состояние только для доступных элементов
                 setData(prevData => {
                     const updatedData = { ...prevData };
-
                     availableItems.forEach(item => {
                         if (updatedData[item.SNPZ]) {
                             updatedData[item.SNPZ] = {
@@ -91,65 +70,30 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
                             };
                         }
                     });
-
                     return updatedData;
                 });
             })
             .catch(error => {
-                console.error('Ошибка при массовом обновлении:', error);
+                console.error('Ошибка при обновлении:', error);
             });
     }
 
-    function selectAllInGroup(e, productGroup) {
-        // Получаем только доступные записи в группе
-        const availableItems = productGroup.items.filter(item => checkDateValid(item.DTF));
+    function selectAll() {
+        const allItems = groupedData.flatMap(group => group.items);
+        const shouldSelect = !allItems
+            .filter(item => checkDateValid(item.DTF))
+            .every(item => checkInput(item.DTF));
 
-        if (availableItems.length === 0) return;
-
-        const newDate = e.target.checked ? selectDate : "1899-12-30";
-
-        const requestData = {};
-        availableItems.forEach(item => {
-            requestData[item.SNPZ] = newDate;
-        });
-
-        updatePday(requestData)
-            .then(() => {
-                // Обновляем состояние только для доступных элементов группы
-                setData(prevData => {
-                    const updatedData = { ...prevData };
-
-                    availableItems.forEach(item => {
-                        if (updatedData[item.SNPZ]) {
-                            updatedData[item.SNPZ] = {
-                                ...updatedData[item.SNPZ],
-                                DTF: newDate
-                            };
-                        }
-                    });
-
-                    return updatedData;
-                });
-            })
+        updateSelectedItems(allItems, shouldSelect);
     }
 
+    function selectAllInGroup(e, productGroup) {
+        updateSelectedItems(productGroup.items, e.target.checked);
+    }
 
     async function select(e, item) {
-        const newDate = e.target.checked ? selectDate : "1899-12-30";
-
-        const requestData = { [item.SNPZ]: newDate };
-        updatePday(requestData)
-            .then(() => {
-                setData(prevData => ({
-                    ...prevData,
-                    [item.SNPZ]: {
-                        ...prevData[item.SNPZ],
-                        DTF: newDate
-                    }
-                }));
-            })
+        updateSelectedItems([item], e.target.checked);
     }
-
 
     function checkDateValid(date) {
         return date === selectDate || date === "1899-12-30" || date === "";
@@ -179,27 +123,16 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
             <div className="px-3 py-2 rounded flex flex-row justify-between align-middle text-black mb-2">
                 <div style={{fontSize: '16px'}}>
 
-
                     <button
-                        className=" bg-blue-800 text-white px-3 py-1 w-36"
+                        className=" bg-blue-800 text-white px-3 py-1 w-36 rounded"
                         onClick={toggleAllGroups}
-                        style={{
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                        }}
                     >
                         {expandedGroupsCount === groupedData.length ? 'Свернуть все' : 'Развернуть все'}
                     </button>
 
                     <button
-                        className="ml-4 bg-blue-800 text-white px-3 py-1 w-36"
+                        className="ml-4 bg-blue-800 text-white px-3 py-1 w-36 rounded"
                         onClick={selectAll}
-                        style={{
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                        }}
                     >
                         {(() => {
                             // Считаем только доступные записи
@@ -266,7 +199,7 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
                                 </div>
 
                                 <span className="text-md">
-                                    {truncateName(productGroup.productName)}
+                                    {productGroup.productName}
                                 </span>
                                 <div className="ml-auto inline-flex" style={{fontSize: '12px', opacity: 0.9}}>
                                     <div className="w-20">Записей: {productGroup.items.length}</div>
@@ -283,7 +216,6 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
                                     <thead>
                                     <tr style={{backgroundColor: '#34495e', color: 'white'}}>
                                         <th className="w-[5%]" style={{padding: '8px', textAlign: 'center'}}>
-                                            {/*<input type={"checkbox"}/>*/}
                                         </th>
                                         <th className="w-[10%]" style={{padding: '6px', textAlign: 'center'}}>Товар</th>
                                         <th className="w-[25%]"
@@ -327,7 +259,7 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
                                             </td>
                                             <td className="w-[25%]"
                                                 style={{textAlign: 'center', padding: '12px', color: '#666'}}>
-                                                {truncateName(item.SNM, 60)}
+                                                {item.SNM}
                                             </td>
                                             <td className="w-[10%]"
                                                 style={{textAlign: 'center', padding: '12px', color: '#666'}}>

@@ -29,19 +29,6 @@ export function ModalDateSettings({lines, setLines, selectDate, setDate, selectE
                     <h1 className="text-xl font-medium text-start mb-2">Настройки даты и времени планировщика</h1>
                     <hr/>
 
-                    {/*<div className="flex flex-row my-2">*/}
-                    {/*    <span className="py-1 font-medium">Дата начала плана:</span>*/}
-                    {/*    <input className={"px-2 ml-4 py-1 font-medium"} type="date"*/}
-                    {/*           value={selectDate}*/}
-                    {/*           onChange={(e) => setDate(e.target.value)}*/}
-                    {/*    />*/}
-                    {/*    <span className="py-1 font-medium">Дата конца плана:</span>*/}
-                    {/*    <input className={"px-2 ml-4 py-1 font-medium"} type="date"*/}
-                    {/*           value={selectEndDate}*/}
-                    {/*           onChange={(e) => setSelectEndDate(e.target.value)}*/}
-                    {/*    />*/}
-                    {/*</div>*/}
-
                     <div className="grid my-3 grid-cols-2 gap-x-8 gap-y-2">
                         {lines.map((line, index) => (
                             <div key={index} className="flex flex-row">
@@ -58,19 +45,18 @@ export function ModalDateSettings({lines, setLines, selectDate, setDate, selectE
                     <div className="flex flex-row my-2 hidden">
                         <span className={styleLable}>Идеальное время выполнения расчета:</span>
                         <input className={styleInfo} type={"datetime-local"}
-                            value={idealEndDateTime}
-                            onChange={(e) => setIdealEndDateTime(e.target.value)}
+                               value={idealEndDateTime}
+                               onChange={(e) => setIdealEndDateTime(e.target.value)}
                         />
                     </div>
 
                     <div className="flex flex-row mb-2">
                         <span className={styleLable}>Максимальное время выполнения расчета:</span>
                         <input className={styleInfo} type={"datetime-local"}
-                            value={maxEndDateTime}
-                            onChange={(e) => {
-                                console.log(e.target.value)
-                                setMaxEndDateTime(e.target.value)
-                            }}
+                               value={maxEndDateTime}
+                               onChange={(e) => {
+                                   setMaxEndDateTime(e.target.value)
+                               }}
                         />
                     </div>
 
@@ -81,10 +67,6 @@ export function ModalDateSettings({lines, setLines, selectDate, setDate, selectE
                                     className="min-w-[50px] px-2 mx-2 h-7 rounded text-xs font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
                                 Отмена
                             </button>
-                            {/*<button onClick={() => {apply(); onClose()}}*/}
-                            {/*        className="min-w-[50px] text-xs h-7 font-medium px-2 py-1 rounded text-white bg-blue-800 hover:bg-blue-700">*/}
-                            {/*    Применить*/}
-                            {/*</button>*/}
                         </div>
                     </div>
 
