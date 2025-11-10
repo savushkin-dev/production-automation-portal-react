@@ -85,8 +85,6 @@ function SchedulerPage() {
     const [startTimeLines, setStartTimeLines] = useState(undefined);
     const [timelineKey, setTimelineKey] = useState(0);
 
-    // Добавленные состояния для динамического формата
-    const [currentZoom, setCurrentZoom] = useState('hour');
     const [currentUnit, setCurrentUnit] = useState('hour');
 
     async function assignSettings() {
@@ -399,7 +397,6 @@ function SchedulerPage() {
 
     // Добавленные функции для динамического формата
     const handleZoom = useCallback((timelineContext) => {
-        setCurrentZoom(timelineContext.timelineUnit);
         setCurrentUnit(timelineContext.timelineUnit);
     }, []);
 
@@ -593,8 +590,7 @@ function SchedulerPage() {
     };
 
     const handleCanvasRightClick = (groupId, time, e) => {
-console.log("CanvasClick")
-console.log(e)
+
         setSelectedItems([]);
         setSelectedItem(null);
 
@@ -607,7 +603,6 @@ console.log(e)
                 forCanvas: true,
                 selectedItems:  []
             });
-
     };
 
     // Закрытие контекстного меню

@@ -54,21 +54,72 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
 
     const expandedGroupsCount = expandedGroups.size;
 
-    function selectAllInGroup(e, productGroup) {
-        const newDate = e.target.checked ? selectDate : "1899-12-30";
+    function selectAll() {
+        // Собираем все доступные для изменения записи
+        const availableItems = [];
+        groupedData.forEach(group => {
+            group.items.forEach(item => {
+                if (checkDateValid(item.DTF)) {
+                    availableItems.push(item);
+                }
+            });
+        });
 
+        if (availableItems.length === 0) return;
+
+        // Определяем, нужно ли отметить все доступные или снять отметки
+        const allAvailableSelected = availableItems.every(item => checkInput(item.DTF));
+        const newDate = allAvailableSelected ? "1899-12-30" : selectDate;
+
+        // Собираем SNPZ только для доступных элементов
         const requestData = {};
-        productGroup.items.forEach(item => {
+        availableItems.forEach(item => {
             requestData[item.SNPZ] = newDate;
         });
 
         updatePday(requestData)
             .then(() => {
-                // Обновляем состояние для всех элементов группы
+                // Обновляем состояние только для доступных элементов
                 setData(prevData => {
                     const updatedData = { ...prevData };
 
-                    productGroup.items.forEach(item => {
+                    availableItems.forEach(item => {
+                        if (updatedData[item.SNPZ]) {
+                            updatedData[item.SNPZ] = {
+                                ...updatedData[item.SNPZ],
+                                DTF: newDate
+                            };
+                        }
+                    });
+
+                    return updatedData;
+                });
+            })
+            .catch(error => {
+                console.error('Ошибка при массовом обновлении:', error);
+            });
+    }
+
+    function selectAllInGroup(e, productGroup) {
+        // Получаем только доступные записи в группе
+        const availableItems = productGroup.items.filter(item => checkDateValid(item.DTF));
+
+        if (availableItems.length === 0) return;
+
+        const newDate = e.target.checked ? selectDate : "1899-12-30";
+
+        const requestData = {};
+        availableItems.forEach(item => {
+            requestData[item.SNPZ] = newDate;
+        });
+
+        updatePday(requestData)
+            .then(() => {
+                // Обновляем состояние только для доступных элементов группы
+                setData(prevData => {
+                    const updatedData = { ...prevData };
+
+                    availableItems.forEach(item => {
                         if (updatedData[item.SNPZ]) {
                             updatedData[item.SNPZ] = {
                                 ...updatedData[item.SNPZ],
@@ -101,32 +152,25 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
 
 
     function checkDateValid(date) {
-
-        if (date === selectDate || date === "1899-12-30" || "") {
-            return true;
-        }
-
-        return false
+        return date === selectDate || date === "1899-12-30" || date === "";
     }
 
     function checkInput(date) {
-        if (date === selectDate ) {
-            return true;
-        }
-
-        return false;
+        return date === selectDate;
     }
 
     function checkGroupInput(group) {
         if (!group.items || group.items.length === 0) {
             return false;
         }
+        // Получаем только доступные записи в группе
+        const availableItems = group.items.filter(item => checkDateValid(item.DTF));
 
-        const allItemsValid = group.items.every(item => {
-            return checkInput(item.DTF);
-        });
-
-        return allItemsValid;
+        if (availableItems.length === 0) {
+            return false;
+        }
+        // Проверяем, что все доступные записи отмечены
+        return availableItems.every(item => checkInput(item.DTF));
     }
 
 
@@ -146,6 +190,28 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
                         }}
                     >
                         {expandedGroupsCount === groupedData.length ? 'Свернуть все' : 'Развернуть все'}
+                    </button>
+
+                    <button
+                        className="ml-4 bg-blue-800 text-white px-3 py-1 w-36"
+                        onClick={selectAll}
+                        style={{
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        {(() => {
+                            // Считаем только доступные записи
+                            const availableItems = groupedData.flatMap(group =>
+                                group.items.filter(item => checkDateValid(item.DTF))
+                            );
+
+                            if (availableItems.length === 0) return 'Нет доступных';
+
+                            const allAvailableSelected = availableItems.every(item => checkInput(item.DTF));
+                            return allAvailableSelected ? 'Снять все' : 'Отметить все';
+                        })()}
                     </button>
                 </div>
                 <div>
@@ -167,13 +233,14 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
             }}>
                 {groupedData.map(productGroup => {
                     const isExpanded = expandedGroups.has(productGroup.productName);
-                    const bgGroupName = isExpanded ? "bg-blue-800 border-gray-400 text-white" : "border-gray-400"
+                    let bgGroupName = productGroup.items.every(item => !checkDateValid(item.DTF))? "bg-gray-300" : ""
+                    bgGroupName = isExpanded ? "bg-blue-800  text-white" : bgGroupName
 
                     return (
                         <div key={productGroup.productName}>
                             {/* Заголовок группы - только название продукта */}
                             <div
-                                className={bgGroupName + " border"}
+                                className={bgGroupName + " border border-gray-400"}
                                 style={{
                                     padding: '0px 16px',
                                     cursor: 'pointer',
@@ -190,7 +257,9 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
                                 </span>
 
                                 <div className="w-[5%]" style={{textAlign: 'center', padding: '12px', color: '#666'}}>
-                                    <input type={"checkbox"} checked={checkGroupInput(productGroup)} onChange={(e) => selectAllInGroup(e, productGroup)}
+                                    <input type={"checkbox"} checked={checkGroupInput(productGroup)}
+                                           disabled={productGroup.items.every(item => !checkDateValid(item.DTF))}
+                                           onChange={(e) => selectAllInGroup(e, productGroup)}
                                            onClick={(e) => {
                                                e.stopPropagation();
                                            }}/>
@@ -199,9 +268,13 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
                                 <span className="text-md">
                                     {truncateName(productGroup.productName)}
                                 </span>
-                                <span style={{marginLeft: 'auto', fontSize: '12px', opacity: 0.9}}>
-                                    Записей: {productGroup.items.length}
-                                </span>
+                                <div className="ml-auto inline-flex" style={{fontSize: '12px', opacity: 0.9}}>
+                                    <div className="w-20">Записей: {productGroup.items.length}</div>
+                                    <div className="w-20">Отмечено: {productGroup.items.filter(item => checkInput(item.DTF)).filter(item => checkDateValid(item.DTF)).length}</div>
+                                    <div className="w-16">Занято: {productGroup.items.filter(item => !checkDateValid(item.DTF)).length}</div>
+                                    <div className="w-20">Свободно: {productGroup.items.filter(item => !checkInput(item.DTF)).filter(item => checkDateValid(item.DTF)).length}</div>
+                                </div>
+
                             </div>
 
                             {/* Детальная таблица при разворачивании */}
