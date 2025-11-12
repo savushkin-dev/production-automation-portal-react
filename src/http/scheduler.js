@@ -1,4 +1,6 @@
 import axios from "axios";
+import {useContext} from "react";
+import {Context} from "../index";
 
 // export const API_URL_SCHEDULER = 'http://localhost:8081'
 // export const API_URL_SCHEDULER = 'http://10.30.0.5:8080'
@@ -11,8 +13,7 @@ const $apiSchedule = axios.create({
 })
 
 $apiSchedule.interceptors.request.use((config) => {
-    // if(sessionStorage.getItem('tokenAutomationProduction')!==null)
-    //     config.headers.Authorization = `Bearer ${sessionStorage.getItem('tokenAutomationProduction')}`
+    config.headers['X-Session-Id'] = sessionStorage.getItem('solverSessionId');
     return config;
 })
 

@@ -1,5 +1,5 @@
 import "./../App.css";
-import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import moment from 'moment';
 import 'moment/locale/ru';
@@ -83,6 +83,7 @@ function SchedulerPage() {
     })
 
     const [startTimeLines, setStartTimeLines] = useState(undefined);
+    const [lineTimes, setLineTimes] = useState(undefined);
     const [timelineKey, setTimelineKey] = useState(0);
 
     const [currentUnit, setCurrentUnit] = useState('hour');
@@ -92,6 +93,7 @@ function SchedulerPage() {
             acc[line.lineId] = line.startDateTime;
             return acc;
         }, {});
+
 
         try {
             setVisibleTimeRange(prevState => ({
@@ -103,7 +105,7 @@ function SchedulerPage() {
             await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, lineTimes);
             setPdayDataNextDay([])
             await fetchPlan()
-            await loadPday()
+
         } catch (e) {
             console.error(e)
             setMsg(e.response.data.error)
@@ -176,11 +178,14 @@ function SchedulerPage() {
     }
 
     useEffect(() => {
-        // if(startTimeLines){
-        //     loadPday()
-        // }
-        setPdayData([])
-        setPdayDataNextDay([])
+        setPlanByHardware([])
+        setPlanByParty([])
+        if(startTimeLines){
+            loadPday()
+            loadPdayNextDay()
+        }
+        // setPdayData([])
+        // setPdayDataNextDay([])
     }, [selectDate, selectDateTable])
 
     async function savePlan() {
@@ -216,14 +221,24 @@ function SchedulerPage() {
         try {
             const response = await SchedulerService.getLines();
 
-            setStartTimeLines(Object.entries(response.data)
+
+            let res = Object.entries(response.data)
                 .map(([lineId, lineName], index) => ({
                     id: String(index + 1),
                     name: lineName.trim(),
                     lineId: lineId,
                     originalName: lineName.trim(),
                     startDateTime: "08:00"
-                })))
+                }))
+            setStartTimeLines(res)
+
+            setLineTimes(res.reduce((acc, line) => {
+                acc[line.lineId] = line.startDateTime;
+                return acc;
+            }, {}))
+
+
+
         } catch (e) {
             console.error(e)
             setMsg("Ошибка загрузки линий отчета: " + e.message)
@@ -384,10 +399,13 @@ function SchedulerPage() {
 
     useEffect(() => {
         if (startTimeLines) {
-            selectSettings()
+            // selectSettings()
+            // fetchPlan()
+            loadPday()
+            loadPdayNextDay()
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
         }
-    }, [startTimeLines])
+    }, [lineTimes])
 
     async function selectSettings() {
         await assignSettings(selectDate);
@@ -526,27 +544,6 @@ function SchedulerPage() {
         setMaxEndDateTime(new Date(e).toISOString().replace(/T.*/, 'T03:00'));
     }
 
-    // Позиция в своей группе (без учета cleaning элементов)
-    const getGroupPosition = (itemId, allItems) => {
-        const item = allItems.find(i => i.id === itemId)
-        if (!item) return {position: -1, total: 0}
-
-        // Исключаем cleaning элементы из группы
-        const groupItems = allItems.filter(i =>
-            i.group === item.group && !i.id.includes('cleaning')
-        )
-
-        const sorted = groupItems.sort((a, b) =>
-            new Date(a.start_time) - new Date(b.start_time)
-        )
-
-        const position = sorted.findIndex(i => i.id === itemId) + 1
-        return {
-            position,
-            total: sorted.length
-        }
-    }
-
     const handleItemRightClick = (itemId, e) => {
         e.preventDefault();
 
@@ -632,7 +629,7 @@ function SchedulerPage() {
 
     async function pinItems() {
         try {
-            const groupPos = getGroupPosition(selectedItem?.id, items).position
+            const groupPos = SchedulerService.getGroupPosition(selectedItem?.id, items).position
             await SchedulerService.pinItem(selectedItem.group, groupPos);
             await fetchPlan();
         } catch (e) {
@@ -758,16 +755,6 @@ function SchedulerPage() {
         setSelectedItem(currentItem);
         setLastSelectedItem(currentItem);
     };
-
-    // Функция для сброса выделения при клике на пустую область
-    const handleCanvasClick = useCallback((e) => {
-        // Проверяем, что клик не на элементе timeline
-        if (!e.target.closest('.rct-item') && !e.target.closest('.rct-group')) {
-            setSelectedItems([]);
-            setSelectedItem(null);
-            setLastSelectedItem(null);
-        }
-    }, []);
 
     const [selectedItems, setSelectedItems] = useState([]);
     const [lastSelectedItem, setLastSelectedItem] = useState(null);
@@ -943,16 +930,16 @@ function SchedulerPage() {
                             />
                         </div>
 
-                        <button className="ml-3 rounded bg-blue-800 text-white px-1 h-[30px] w-24"
-                                onClick={selectSettings}>
-                            Загрузить
-                        </button>
-
                         <button onClick={() => {
                             setIsModalDateSettings(true)
                         }}
                                 className={"ml-3 rounded bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px]"}>
                             Настройка линий
+                        </button>
+
+                        <button className="ml-3 rounded bg-blue-800 text-white px-1 h-[30px] w-24"
+                                onClick={selectSettings}>
+                            Загрузить
                         </button>
                     </div>
 
@@ -1048,6 +1035,10 @@ function SchedulerPage() {
                                 {({ getRootProps }) => (
                                     <div {...getRootProps()} className="bg-blue-800">
                                         {/* Заголовок сайдбара */}
+                                        <div
+                                            className="text-white font-medium text-3xl text-center h-full align-middle content-center">
+                                            {/*<i className="fa-regular fa-calendar-check"></i>*/}
+                                        </div>
                                     </div>
                                 )}
                             </SidebarHeader>

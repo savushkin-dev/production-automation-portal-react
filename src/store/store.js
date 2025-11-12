@@ -10,8 +10,35 @@ export default class Store {
     isAuth = false;
     isAuthInProgress = false;
 
+    solverSessionId = null;
+
     constructor() {
         makeAutoObservable(this)
+        this.restoreSession();
+    }
+
+    // Восстановление сессии
+    restoreSession() {
+        const saved = sessionStorage.getItem('solverSessionId');
+        if (saved) {
+            this.solverSessionId = saved;
+        } else {
+            this.createSession();
+        }
+    }
+
+    // Создание новой сессии
+    createSession() {
+        const sessionId = `session_${Date.now()}`;
+        this.solverSessionId = sessionId;
+        sessionStorage.setItem('solverSessionId', sessionId);
+        return sessionId;
+    }
+
+    // Очистка сессии
+    clearSession() {
+        this.solverSessionId = null;
+        sessionStorage.removeItem('solverSessionId');
     }
 
     setAuth(bool){

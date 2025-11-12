@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/*.ant-row {*/
-/*    display: flex !important;*/
-/*}*/
-
 
 .window-height{
     height: calc(100vh - 50px);
