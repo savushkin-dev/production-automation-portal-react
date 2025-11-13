@@ -37,20 +37,20 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                                     openModalMoveJobs()
                                 }} className="hover:bg-gray-100 w-full text-start px-2 rounded">Переместить
                                 </button>
-                                <button onClick={() => {
-                                    openModalAssignSettings()
-                                }} className="hover:bg-gray-100 w-full text-start px-2 rounded">
-                                    Добавить сервисную операцию
-                                </button>
+                                {/*<button onClick={() => {*/}
+                                {/*    openModalAssignSettings()*/}
+                                {/*}} className="hover:bg-gray-100 w-full text-start px-2 rounded">*/}
+                                {/*    Добавить сервисную операцию*/}
+                                {/*</button>*/}
                             </>
                         }
-                        {contextMenu.forCanvas &&
-                            <button onClick={() => {
-                                openModalAssignSettings()
-                            }} className="hover:bg-gray-100 w-full text-start px-2 rounded">
-                                Добавить сервисную операцию
-                            </button>
-                        }
+                        {/*{contextMenu.forCanvas &&*/}
+                        {/*    <button onClick={() => {*/}
+                        {/*        openModalAssignSettings()*/}
+                        {/*    }} className="hover:bg-gray-100 w-full text-start px-2 rounded">*/}
+                        {/*        Добавить сервисную операцию*/}
+                        {/*    </button>*/}
+                        {/*}*/}
                     </div>
 
                 </div>}
