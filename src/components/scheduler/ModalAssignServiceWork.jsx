@@ -41,7 +41,7 @@ export function ModalAssignServiceWork({
     };
 
     function assign() {
-        assignServiceWork(selectLine.value, insertIndex - 1, duration);
+        assignServiceWork(selectLine.value, insertIndex - 1, duration, nameOperation);
     }
 
     const handleChangeSelect = (event) => {

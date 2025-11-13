@@ -373,8 +373,8 @@ export default class ScheduleService {
         })
     }
 
-    static async assignServiceWork(lineId, insertIndex, durationMinutes) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, insertIndex, durationMinutes})
+    static async assignServiceWork(lineId, insertIndex, durationMinutes, name) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, insertIndex, durationMinutes, name})
     }
 
 }

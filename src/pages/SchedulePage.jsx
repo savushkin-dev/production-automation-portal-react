@@ -103,7 +103,7 @@ function SchedulerPage() {
             }));
 
             await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, lineTimes, findSolvedInDb);
-            setPdayDataNextDay([])
+            // setPdayDataNextDay([])
             await fetchPlan()
 
         } catch (e) {
@@ -162,7 +162,7 @@ function SchedulerPage() {
             console.error(e)
             setMsg(e.response.data.error)
             setIsModalNotify(true);
-            setPdayData([])
+            setPdayDataNextDay([])
         }
     }
 
@@ -768,18 +768,18 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка перемещения job-ов: " + e.message)
+            setMsg("Ошибка перемещения job-ов: " + e.response.data.error)
             setIsModalNotify(true);
         }
     }
 
-    async function assignServiceWork(toLineId, insertIndex, duration) {
+    async function assignServiceWork(lineId, insertIndex, duration, name) {
         try {
-            await SchedulerService.assignServiceWork(toLineId, insertIndex, duration);
+            await SchedulerService.assignServiceWork(lineId, insertIndex, duration, name);
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка назначения сервисной операции: " + e.message)
+            setMsg("Ошибка назначения сервисной операции: " + e.response.data.error)
             setIsModalNotify(true);
         }
     }
@@ -945,9 +945,9 @@ function SchedulerPage() {
                             Настройка линий
                         </button>
 
-                        <button className="ml-3 rounded bg-blue-800 text-white px-1 h-[30px] w-24"
+                        <button className="ml-3 rounded bg-blue-800 text-white px-1 h-[30px] w-44"
                                 onClick={selectSettings}>
-                            Загрузить
+                            Загрузить задание
                         </button>
                     </div>
 
@@ -1119,19 +1119,19 @@ function SchedulerPage() {
                 <DataTable data={pdayData} setData={setPdayData} updatePday={updatePday} selectDate={selectDateTable}
                            dateData={selectDate}/>
 
-                <div className="px-3 py-2 rounded flex flex-row justify-between align-middle text-black mb-2">
-                    <div style={{fontSize: '16px'}}>
-                        <button
-                            className="ml-4 bg-blue-800 text-white px-3 py-1 rounded" onClick={loadPdayNextDay}>
-                            Подгрузить следующий день
-                        </button>
-                    </div>
-                </div>
+                {/*<div className="px-3 py-2 rounded flex flex-row justify-between align-middle text-black mb-2">*/}
+                {/*    <div style={{fontSize: '16px'}}>*/}
+                {/*        <button*/}
+                {/*            className="ml-4 bg-blue-800 text-white px-3 py-1 rounded" onClick={loadPdayNextDay}>*/}
+                {/*            Подгрузить следующий день*/}
+                {/*        </button>*/}
+                {/*    </div>*/}
+                {/*</div>*/}
 
-                {pdayDataNextDay.length !== 0 &&
+                {/*{pdayDataNextDay.length !== 0 &&}*/}
                     <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} updatePday={updatePday}
                                selectDate={selectDate} dateData={getNextDateStr(selectDateTable)}/>
-                }
+
 
             </div>
         </>
