@@ -3,6 +3,7 @@ import {useContext} from "react";
 import {Context} from "../index";
 
 // export const API_URL_SCHEDULER = 'http://localhost:8081'
+// export const API_URL_SCHEDULER = 'http://10.1.232.30:8081'
 // export const API_URL_SCHEDULER = 'http://10.30.0.5:8080'
 
 export const API_URL_SCHEDULER = `${process.env.REACT_APP_API_SCHEDULER_URL}`

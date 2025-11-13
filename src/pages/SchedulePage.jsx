@@ -108,7 +108,7 @@ function SchedulerPage() {
 
         } catch (e) {
             console.error(e)
-            setMsg(e.response.data.error)
+            setMsg("Ошибка загрузки: " + e.response.data.error)
             setIsModalNotify(true);
             setItems([])
             setScore({hard: 0, medium: 0, soft: 0})
@@ -195,7 +195,7 @@ function SchedulerPage() {
             setIsModalNotify(true);
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка сохранения отчета: " + e.message)
+            setMsg("Ошибка сохранения отчета: " + e.response.data.error)
             setIsModalNotify(true);
         }
     }
@@ -207,7 +207,7 @@ function SchedulerPage() {
             setIsModalNotify(true);
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка удаления отчета: " + e.message)
+            setMsg("Ошибка удаления отчета: " + e.response.data.error)
             setIsModalNotify(true);
         }
     }
@@ -241,7 +241,7 @@ function SchedulerPage() {
 
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка загрузки линий отчета: " + e.message)
+            setMsg("Ошибка загрузки линий отчета: " + e.response.data.error)
             setIsModalNotify(true);
         }
     }
@@ -249,7 +249,10 @@ function SchedulerPage() {
     async function fetchSolve() {
         try {
             await SchedulerService.solve();
+            setIsSolve(true);
         } catch (e) {
+            setMsg("Ошибка начала планирования: " + e.response.data.error)
+            setIsModalNotify(true);
             console.error(e)
         }
     }
@@ -317,6 +320,7 @@ function SchedulerPage() {
     useEffect(() => {
         if (solverStatus === "NOT_SOLVING") {
             setIsSolve(false)
+            // stopSolving()
         }
     }, [solverStatus])
 
@@ -369,7 +373,6 @@ function SchedulerPage() {
 
     async function solve() {
         await fetchSolve();
-        setIsSolve(true);
     }
 
     useEffect(() => {
