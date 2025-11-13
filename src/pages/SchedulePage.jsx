@@ -88,7 +88,7 @@ function SchedulerPage() {
 
     const [currentUnit, setCurrentUnit] = useState('hour');
 
-    async function assignSettings() {
+    async function assignSettings(findSolvedInDb) {
         const lineTimes = startTimeLines.reduce((acc, line) => {
             acc[line.lineId] = line.startDateTime;
             return acc;
@@ -102,7 +102,7 @@ function SchedulerPage() {
                 visibleTimeEnd: moment(selectDate).startOf('day').add(30, 'hour')
             }));
 
-            await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, lineTimes);
+            await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, lineTimes, findSolvedInDb);
             setPdayDataNextDay([])
             await fetchPlan()
 
@@ -411,7 +411,7 @@ function SchedulerPage() {
     }, [lineTimes])
 
     async function selectSettings() {
-        await assignSettings(selectDate);
+        await assignSettings(false);
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }
 
@@ -904,6 +904,11 @@ function SchedulerPage() {
 
                     <h1 className="w-1/3 font-bold text-center text-2xl mb-8 mt-6">Планировщик задач</h1>
                     <div className="w-1/3 mt-6 py-1 flex justify-end pr-3">
+                        <button onClick={()=>{assignSettings(true)}}
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
+                            Загрузить план с БД
+                            <i className="pl-2 fa-solid fa-floppy-disk"></i>
+                        </button>
                         <button onClick={savePlan}
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
                             Сохранить
