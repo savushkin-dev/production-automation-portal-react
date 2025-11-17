@@ -14,9 +14,9 @@ export function LeftNavigation() {
             {/*<StringLeftNavigation disabled={false} title="Диспетчеризация" navigationPath={"/"}/>*/}
             {/*<StringLeftNavigation disabled={false} title="Показатели KPI" navigationPath={"/"}/>*/}
 
-            {/*<RoleGuard requiredRoles={['ROLE_ADMIN']}>*/}
-            {/*    <StringLeftNavigation disabled={false} title="Планы производства" navigationPath={"/scheduler"}/>*/}
-            {/*</RoleGuard>*/}
+            <RoleGuard requiredRoles={['ROLE_SCHEDULER']}>
+                <StringLeftNavigation disabled={false} title="Планы производства" navigationPath={"/scheduler"}/>
+            </RoleGuard>
 
             <RoleGuard requiredRoles={['ROLE_ADMIN','ROLE_EDITOR']}>
                 <StringLeftNavigation disabled={false} title="Конструктор отчетов" navigationPath={"/designer"}/>
