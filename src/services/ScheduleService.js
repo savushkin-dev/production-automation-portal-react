@@ -95,11 +95,11 @@ export default class ScheduleService {
         const seenNp = new Map();
 
         // Считаем общее quantity для каждой партии
-        const groupQuantities = json.jobs.reduce((acc, item) => {
+        const groupMass = json.jobs.reduce((acc, item) => {
             if (!acc[item.np]) {
                 acc[item.np] = 0;
             }
-            acc[item.np] += item.quantity || 0;
+            acc[item.np] += item.mass || 0;
             return acc;
         }, {});
 
@@ -114,7 +114,7 @@ export default class ScheduleService {
             id: np,
             title: `Партия №${np}`,
             index: index,
-            totalQuantity: groupQuantities[np] || 0 // Добавляем общее quantity
+            totalMass: groupMass[np] || 0 // Добавляем общее mass
         }));
 
         return party;
@@ -123,14 +123,14 @@ export default class ScheduleService {
     static async parseHardware(json) {
         hardware = [];
 
-        // Считаем общее quantity для каждой линии
-        const groupQuantities = json.jobs.reduce((acc, item) => {
+        // Считаем общее mass для каждой линии
+        const groupMass = json.jobs.reduce((acc, item) => {
             const lineId = item.line?.id;
             if (lineId) {
                 if (!acc[lineId]) {
                     acc[lineId] = 0;
                 }
-                acc[lineId] += item.quantity || 0;
+                acc[lineId] += item.mass || 0;
             }
             return acc;
         }, {});
@@ -139,7 +139,7 @@ export default class ScheduleService {
             hardware[i] = Object.assign({}, exampleResourse);
             hardware[i].id = json.lines[i].id;
             hardware[i].title = json.lines[i].name;
-            hardware[i].totalQuantity = groupQuantities[json.lines[i].id] || 0; // Добавляем общее quantity
+            hardware[i].totalMass = groupMass[json.lines[i].id] || 0; // Добавляем общее mass
         }
 
         return hardware;
@@ -169,6 +169,7 @@ export default class ScheduleService {
                 end: json.jobs[i].endDateTime,
                 line: json.jobs[i].line?.name || "",
                 quantity: json.jobs[i].quantity,
+                mass: json.jobs[i].mass,
                 np: json.jobs[i].np,
                 duration: Math.round(new Date(json.jobs[i].endDateTime) - new Date(json.jobs[i].startProductionDateTime))/ 60000,
 
@@ -212,6 +213,7 @@ export default class ScheduleService {
                 end: json.jobs[i].endDateTime,
                 line: json.jobs[i].line?.name,
                 quantity: json.jobs[i].quantity,
+                mass: json.jobs[i].mass,
                 np: json.jobs[i].np,
                 duration: Math.round(new Date(json.jobs[i].endDateTime) - new Date(json.jobs[i].startProductionDateTime))/ 60000,
 

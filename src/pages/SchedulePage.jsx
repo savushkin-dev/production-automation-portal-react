@@ -875,7 +875,7 @@ function SchedulerPage() {
                 </div>
 
                 <div className="group-stats text-xs text-gray-500">
-                    Количество: {group.totalQuantity}
+                    Выработка: {group.totalMass} кг.
                 </div>
             </div>
         );
@@ -1119,17 +1119,8 @@ function SchedulerPage() {
                 <DataTable data={pdayData} setData={setPdayData} updatePday={updatePday} selectDate={selectDateTable}
                            dateData={selectDate}/>
 
-                {/*<div className="px-3 py-2 rounded flex flex-row justify-between align-middle text-black mb-2">*/}
-                {/*    <div style={{fontSize: '16px'}}>*/}
-                {/*        <button*/}
-                {/*            className="ml-4 bg-blue-800 text-white px-3 py-1 rounded" onClick={loadPdayNextDay}>*/}
-                {/*            Подгрузить следующий день*/}
-                {/*        </button>*/}
-                {/*    </div>*/}
-                {/*</div>*/}
 
-                {/*{pdayDataNextDay.length !== 0 &&}*/}
-                    <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} updatePday={updatePday}
+                <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} updatePday={updatePday}
                                selectDate={selectDate} dateData={getNextDateStr(selectDateTable)}/>
 
 

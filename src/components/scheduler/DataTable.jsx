@@ -198,10 +198,12 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
                                            }}/>
                                 </div>
 
-                                <span className="text-md">
+                                <span className="text-md w-1/3">
                                     {productGroup.productName}
                                 </span>
+
                                 <div className="ml-auto inline-flex" style={{fontSize: '12px', opacity: 0.9}}>
+                                    <div className="w-28">Масса: {productGroup.items.reduce((sum, item) => sum + (parseFloat(item.MASSA) || 0), 0).toFixed(0)} кг</div>
                                     <div className="w-20">Записей: {productGroup.items.length}</div>
                                     <div className="w-20">Отмечено: {productGroup.items.filter(item => checkInput(item.DTF)).filter(item => checkDateValid(item.DTF)).length}</div>
                                     <div className="w-16">Занято: {productGroup.items.filter(item => !checkDateValid(item.DTF)).length}</div>

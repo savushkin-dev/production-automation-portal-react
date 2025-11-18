@@ -34,7 +34,12 @@ export function ModalInfoItem({info, onClose}) {
 
                     <div className="flex flex-row">
                         <span className={styleLable}>Количество:</span>
-                        <span className={styleInfo}>{info.quantity || "-"}</span>
+                        <span className={styleInfo}>{info.quantity || "-"} шт.</span>
+                    </div>
+
+                    <div className="flex flex-row">
+                        <span className={styleLable}>Масса:</span>
+                        <span className={styleInfo}>{info.mass || "-"} кг.</span>
                     </div>
 
                     <div className="flex flex-row">
