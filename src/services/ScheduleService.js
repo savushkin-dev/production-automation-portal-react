@@ -178,7 +178,8 @@ export default class ScheduleService {
                 glaze: json.jobs[i].product.glaze,
                 filling: json.jobs[i].product.filling,
                 _allergen: json.jobs[i].product._allergen,
-                pinned: json.jobs[i].pinned,
+                lineInfo: json.jobs[i].line,
+                maintenance: json.jobs[i].maintenance
             }
         }
 
@@ -202,9 +203,9 @@ export default class ScheduleService {
 
             planByHardware[i].itemProps = {
                 style: {
-                    background: '#fffcd2',
+                    background: this.getBgColorItem(json.jobs[i]).bg,
                     border: '1px solid #dcdcdc',
-                    color: "#a16207",
+                    color: this.getBgColorItem(json.jobs[i]).color,
                 }
             };
             planByHardware[i].info = { //Доп информация
@@ -222,8 +223,8 @@ export default class ScheduleService {
                 glaze: json.jobs[i].product.glaze,
                 filling: json.jobs[i].product.filling,
                 _allergen: json.jobs[i].product._allergen,
-                pinned: json.jobs[i].pinned,
                 lineInfo: json.jobs[i].line,
+                maintenance: json.jobs[i].maintenance
             }
             // planByHardware[i].canMove = true
         }
@@ -234,6 +235,13 @@ export default class ScheduleService {
 
         result = ScheduleService.defineAssignedJobs(result, json)
         return result;
+    }
+
+    static getBgColorItem(item){
+        if(item.maintenance === true){
+            return {bg:"#ffe9f4", color: "#a81a65"}
+        }
+        return {bg:"#fffcd2", color: "#a16207"}
     }
 
     static defineAssignedJobs(result, json){
@@ -377,6 +385,14 @@ export default class ScheduleService {
 
     static async assignServiceWork(lineId, insertIndex, durationMinutes, name) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, insertIndex, durationMinutes, name})
+    }
+
+    static async updateServiceWork(lineId, index, durationMinutes) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/update-duration`, {lineId, index, durationMinutes})
+    }
+
+    static async removeServiceWork(lineId, removeIndex) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/removeJob`, {lineId, removeIndex})
     }
 
 }

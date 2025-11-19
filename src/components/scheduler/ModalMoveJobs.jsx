@@ -31,38 +31,12 @@ export function ModalMoveJobs({
     };
 
     function move() {
-        const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
-
-        if (selectedItems.length === 0) {
-            console.log('Нет выделенных элементов');
-            return null;
-        }
-
-        // Получаем массив выделенных объектов (исключаем cleaning)
-        const selectedItemsArray = itemsArray.filter(item =>
-            selectedItems.includes(item.id) && !item.id.includes('cleaning')
-        );
-
-        const groupId = selectedItemsArray[0].group;
-
-        const allSameGroup = selectedItemsArray.every(item => item.group === groupId);
-        if (!allSameGroup) {
-            console.warn('Элементы в разных группах! Это не должно происходить');
-            return null;
-        }
-
-        // Получаем все элементы группы (исключаем cleaning) и сортируем
-        const groupItems = itemsArray
-            .filter(item => item.group === groupId && !item.id.includes('cleaning'))
+        const groupId = selectedItems[0].group;
+        const sortedSelected = selectedItems
             .sort((a, b) => a.start_time - b.start_time);
-
-        const sortedSelected = selectedItemsArray
-            .sort((a, b) => a.start_time - b.start_time);
-
         const firstItem = sortedSelected[0];
-        const firstItemIndex = groupItems.findIndex(item => item.id === firstItem.id);
-
-        moveJobs(groupId, selectLine.value, firstItemIndex, selectedItemsArray.length, insertIndex - 1);
+        const firstItemIndex = firstItem.info.groupIndex-1;
+        moveJobs(groupId, selectLine.value, firstItemIndex, selectedItems.length, insertIndex - 1);
     }
 
 
@@ -125,10 +99,6 @@ export function ModalMoveJobs({
                     <div className="flex flex-row my-2">
                         <span className="py-1 font-medium w-1/2">На какую позицию переместить:</span>
                         <div className="w-1/2 flex flex-row">
-                            {/*<input className={styleInput + "px-2 ml-2 py-1 font-medium text-lg w-2/3"}*/}
-                            {/*       value={insertIndex}*/}
-                            {/*       onChange={(e) => setInsertIndex(e.target.value)}*/}
-                            {/*/>*/}
                             <div style={{display: 'flex', alignItems: 'center'}}
                                  className="font-medium w-[100%] ml-2">
                                 <input className={styleInputWithoutRounded + " w-[100%]"}

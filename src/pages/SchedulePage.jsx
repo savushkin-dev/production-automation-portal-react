@@ -18,6 +18,7 @@ import {DropDownActionsItem} from "../components/scheduler/DropDownActionsItem";
 import {ModalMoveJobs} from "../components/scheduler/ModalMoveJobs";
 import {DataTable} from "../components/scheduler/DataTable";
 import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
+import {ModalUpdateServiceWork} from "../components/scheduler/ModalUpdateServiceWork";
 
 // Принудительно устанавливаем русскую локаль
 moment.updateLocale('ru', {
@@ -55,6 +56,7 @@ function SchedulerPage() {
     const [isModalInfoItem, setIsModalInfoItem] = useState(false);
     const [isModalMoveJobs, setIsModalMoveJobs] = useState(false);
     const [isModalAssignServiceWork, setIsModalAssignServiceWork] = useState(false);
+    const [isModalUpdateServiceWork, setIsModalUpdateServiceWork] = useState(false);
 
     const [isSolve, setIsSolve] = useState(false);
     const [score, setScore] = useState({hard: 0, medium: 0, soft: 0});
@@ -558,7 +560,7 @@ function SchedulerPage() {
         const clickedItem = itemsArray.find(item => item.id === itemId);
 
         // Проверяем, кликнули на уже выделенный элемент
-        const isClickingSelected = selectedItems.includes(itemId);
+        const isClickingSelected = selectedItems.includes(clickedItem);
 
         if (isClickingSelected && selectedItems.length > 1) {
             // Клик правой кнопкой на уже выделенный элемент при множественном выделении
@@ -574,7 +576,7 @@ function SchedulerPage() {
             });
         } else {
             // Клик на невыделенный элемент или одиночное выделение
-            setSelectedItems([itemId]);
+            setSelectedItems([clickedItem]);
             setSelectedItem(clickedItem);
             setLastSelectedItem(clickedItem);
 
@@ -585,7 +587,7 @@ function SchedulerPage() {
                 item: clickedItem,
                 forCanvas: false,
                 forMultiple: false,
-                selectedItems: [itemId]
+                selectedItems: [clickedItem]
             });
         }
     };
@@ -712,7 +714,7 @@ function SchedulerPage() {
             handleShiftSelect(itemId, itemsArray, clickedItem.group);
         } else {
             // Проверяем, кликаем на уже выделенный элемент
-            const isClickingSelected = selectedItems.includes(itemId);
+            const isClickingSelected = selectedItems.includes(clickedItem);
 
             if (isClickingSelected && selectedItems.length > 1) {
                 // Клик на уже выделенный элемент при множественном выделении
@@ -721,7 +723,7 @@ function SchedulerPage() {
             } else {
                 // Клик на невыделенный элемент или одиночное выделение
                 setSelectedItem(clickedItem);
-                setSelectedItems([itemId]);
+                setSelectedItems([clickedItem]);
                 setLastSelectedItem(clickedItem);
             }
         }
@@ -752,7 +754,7 @@ function SchedulerPage() {
 
         const rangeSelection = sortedGroupItems
             .slice(startIndex, endIndex + 1)
-            .map(item => item.id);
+            // .map(item => item.id);
 
         setSelectedItems(rangeSelection);
         setSelectedItem(currentItem);
@@ -784,8 +786,32 @@ function SchedulerPage() {
         }
     }
 
+
+    async function updateServiceWork(lineId, index, duration) {
+        try {
+            await SchedulerService.updateServiceWork(lineId, index, duration);
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка обновления сервисной операции: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
+    async function removeServiceWork(lineId, index) {
+        try {
+            await SchedulerService.removeServiceWork(lineId, index);
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка удаления сервисной операции: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
+
     const customItemRenderer = ({item, itemContext, getItemProps}) => {
-        const isSelected = selectedItems.includes(item.id);
+        const isSelected = selectedItems.includes(item);
         const isSingleSelected = selectedItem?.id === item.id;
 
         const itemProps = getItemProps({
@@ -822,7 +848,7 @@ function SchedulerPage() {
                             <>
                                 {isSelected && selectedItems.length > 1 && (
                                     <div className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                                        {selectedItems.indexOf(item.id) + 1}
+                                        {selectedItems.findIndex(el => el.id === item.id) + 1}
                                     </div>
                                 )}
                                 <div className="h-2 absolute p-0"><i className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i></div>
@@ -834,7 +860,7 @@ function SchedulerPage() {
                             <>
                                 {isSelected && selectedItems.length > 1 && (
                                     <div className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                                        {selectedItems.indexOf(item.id) + 1}
+                                        {selectedItems.findIndex(el => el.id === item.id) + 1}
                                     </div>
                                 )}
                                 <span className="">{item.title}</span>
@@ -842,7 +868,7 @@ function SchedulerPage() {
                         }
                     </div>
                     <div className="flex flex-col justify-start text-xs">
-                        {item.info.name !== "Мойка" &&
+                        {item.info.name !== "Мойка" && !item.info.maintenance &&
                             <span className=" px-1 rounded">
                             {item.info?.np && <span className="text-blue-500">{item.info.np}</span>}
                                 <span className="pl-1">№ партии</span>
@@ -1102,7 +1128,9 @@ function SchedulerPage() {
                 {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItems} unpin={unpinLine}
                                                              isDisplayByHardware={isDisplayByHardware}
                                                              openModalMoveJobs={() => setIsModalMoveJobs(true)}
-                                                             openModalAssignSettings={()=> setIsModalAssignServiceWork(true)}/>}
+                                                             openModalAssignSettings={()=> setIsModalAssignServiceWork(true)}
+                                                             selectedItems={selectedItems} updateServiceWork={() => setIsModalUpdateServiceWork(true)}
+                                                             removeServiceWork={removeServiceWork}/>}
 
                 {isModalMoveJobs &&
                     <ModalMoveJobs selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}
@@ -1115,6 +1143,13 @@ function SchedulerPage() {
                                    assignServiceWork={assignServiceWork} onClose={() => setIsModalAssignServiceWork(false)}
                                    lines={startTimeLines} planByParty={planByParty} planByHardware={planByHardware}
                     />}
+
+                {isModalUpdateServiceWork &&
+                    <ModalUpdateServiceWork selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}
+                                            onClose={() => setIsModalUpdateServiceWork(false)}
+                                            lines={startTimeLines} planByParty={planByParty} planByHardware={planByHardware}
+                                            updateServiceWork={updateServiceWork}/>
+                }
 
                 <DataTable data={pdayData} setData={setPdayData} updatePday={updatePday} selectDate={selectDateTable}
                            dateData={selectDate}/>
