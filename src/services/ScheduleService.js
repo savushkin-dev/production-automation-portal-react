@@ -239,7 +239,7 @@ export default class ScheduleService {
 
     static getBgColorItem(item){
         if(item.maintenance === true){
-            return {bg:"#ffe7e7", color: "#a81a65"}
+            return {bg:"#ffeaea", color: "#a81a65"}
         }
         return {bg:"#fffcd2", color: "#a16207"}
     }
@@ -393,6 +393,10 @@ export default class ScheduleService {
 
     static async removeServiceWork(lineId, removeIndex) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/removeJob`, {lineId, removeIndex})
+    }
+
+    static async sortSchedule() {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/sortByNp`, {})
     }
 
 }

@@ -806,6 +806,17 @@ function SchedulerPage() {
         }
     }
 
+    async function sortSchedule() {
+        try {
+            await SchedulerService.sortSchedule();
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка сортировки: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
 
     const customItemRenderer = ({item, itemContext, getItemProps}) => {
         const isSelected = selectedItems.includes(item);
@@ -1022,9 +1033,16 @@ function SchedulerPage() {
                             </button>
                         </div>
 
+
                     </div>
 
+
                     <div className="">
+                        <button className="mr-4 rounded bg-blue-800 text-white px-3 h-[30px] "
+                                onClick={sortSchedule}>
+                            Отсортировать
+                        </button>
+
                         <button onClick={displayByParty}
                                 className={"border h-[30px] border-r-0 rounded-l-md px-2 " + stylePartyBut}>По
                             партиям
@@ -1067,7 +1085,7 @@ function SchedulerPage() {
                                     <div {...getRootProps()} className="bg-blue-800">
                                         {/* Заголовок сайдбара */}
                                         <div
-                                            className="text-white font-medium text-3xl text-center h-full align-middle content-center">
+                                            className="text-white font-medium text-3xl text-center h-full content-center">
                                             {/*<i className="fa-regular fa-calendar-check"></i>*/}
                                         </div>
                                     </div>
