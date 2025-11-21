@@ -96,7 +96,6 @@ function SchedulerPage() {
             return acc;
         }, {});
 
-
         try {
             setVisibleTimeRange(prevState => ({
                 ...prevState,
@@ -105,7 +104,6 @@ function SchedulerPage() {
             }));
 
             await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, lineTimes, findSolvedInDb);
-            // setPdayDataNextDay([])
             await fetchPlan()
 
         } catch (e) {
@@ -186,8 +184,6 @@ function SchedulerPage() {
             loadPday()
             loadPdayNextDay()
         }
-        // setPdayData([])
-        // setPdayDataNextDay([])
     }, [selectDate, selectDateTable])
 
     async function savePlan() {
@@ -223,7 +219,6 @@ function SchedulerPage() {
         try {
             const response = await SchedulerService.getLines();
 
-
             let res = Object.entries(response.data)
                 .map(([lineId, lineName], index) => ({
                     id: String(index + 1),
@@ -232,6 +227,8 @@ function SchedulerPage() {
                     originalName: lineName.trim(),
                     startDateTime: "08:00"
                 }))
+                .sort((a, b) => a.name.localeCompare(b.name, 'ru')); // сортировка по названию
+
             setStartTimeLines(res)
 
             setLineTimes(res.reduce((acc, line) => {
