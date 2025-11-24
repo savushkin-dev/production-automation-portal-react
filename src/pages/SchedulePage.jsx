@@ -166,12 +166,25 @@ function SchedulerPage() {
         }
     }
 
-    async function updatePday(body) {
+    async function updatePday(mapsnpz) {
         try {
-            return await SchedulerService.updatePday(body)
+
+            const date = new Date(selectDateTable);
+            date.setDate(date.getDate() + 1);
+            const selectDatePlusDay = date.toISOString().split('T')[0];
+
+            const body = {
+                loadDTO: {
+                    startDate: selectDateTable,
+                    endDate: selectDatePlusDay
+                },
+                mapsnpz
+            };
+
+            return await SchedulerService.updatePday(body);
         } catch (e) {
-            console.error(e)
-            setMsg("Не удалось отметить задачу")
+            console.error(e);
+            setMsg("Не удалось отметить задачу");
             setIsModalNotify(true);
             throw e;
         }
