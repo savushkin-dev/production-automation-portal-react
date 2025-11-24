@@ -376,15 +376,11 @@ export default class ScheduleService {
     }
 
     static async updatePday(body) {
-        return $apiSchedule.post(
-            `${API_URL_SCHEDULER}/schedule/updatepday`,
-            body,
-            {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/updatepday`, body, {
+            headers: {
+                'Content-Type': 'application/json'
             }
-        );
+        })
     }
 
     static async assignServiceWork(lineId, insertIndex, durationMinutes, name) {
