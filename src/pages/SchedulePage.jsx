@@ -171,7 +171,7 @@ function SchedulerPage() {
             return await SchedulerService.updatePday(body)
         } catch (e) {
             console.error(e)
-            setMsg("Не удалось отметить задачу")
+            setMsg("Не удалось отметить задачу: " + e.response.data.error)
             setIsModalNotify(true);
             throw e;
         }
@@ -250,9 +250,9 @@ function SchedulerPage() {
             await SchedulerService.solve();
             setIsSolve(true);
         } catch (e) {
+            console.error(e)
             setMsg("Ошибка начала планирования: " + e.response.data.error)
             setIsModalNotify(true);
-            console.error(e)
         }
     }
 
@@ -261,12 +261,13 @@ function SchedulerPage() {
             await SchedulerService.stopSolving();
         } catch (e) {
             console.error(e)
+            setMsg("Ошибка остановки планирования: " + e.response.data.error)
+            setIsModalNotify(true);
         }
     }
 
     async function fetchPlan() {
         try {
-            // setIsLoading(true);
             const response = await SchedulerService.getPlan()
             setDownloadedPlan(response.data)
             setScore(SchedulerService.parseScoreString(response.data.score) || "-0hard/-0medium/-0soft")
@@ -275,6 +276,9 @@ function SchedulerPage() {
             console.error(e)
             setDownloadedPlan(null)
             setScore({hard: 0, medium: 0, soft: 0})
+            setIsSolve(false)
+            setMsg("Ошибка получения плана: " + e.response.data.error)
+            setIsModalNotify(true);
         }
     }
 
@@ -284,6 +288,8 @@ function SchedulerPage() {
             setAnalyzeObj(response.data)
         } catch (e) {
             console.error(e)
+            setMsg("Ошибка получения подробного анализа: " + e.response.data.error)
+            setIsModalNotify(true);
         }
     }
 
@@ -313,13 +319,14 @@ function SchedulerPage() {
             window.URL.revokeObjectURL(url);
         } catch (e) {
             console.error(e)
+            setMsg("Ошибка экспорта Exel: " + e.response.data.error)
+            setIsModalNotify(true);
         }
     }
 
     useEffect(() => {
         if (solverStatus === "NOT_SOLVING") {
             setIsSolve(false)
-            // stopSolving()
         }
     }, [solverStatus])
 
@@ -491,39 +498,6 @@ function SchedulerPage() {
         return momentDate.format('YYYY');
     };
 
-    //Обертка для исключения в библиотеке о передаче пропсов
-    const originalConsoleError = console.error;
-    useEffect(() => {
-        // const originalError = console.error;
-        //
-        // console.error = (...args) => {
-        //     const errorMessage = args[0];
-        //
-        //     // Все варианты ошибок про невалидные объекты
-        //     const invalidObjectErrors = [
-        //         'Objects are not valid as a React child',
-        //         'found: object with keys',
-        //         'If you meant to render a collection of children, use an array instead'
-        //     ];
-        //
-        //     // Проверяем, нужно ли скрыть эту ошибку
-        //     const shouldSuppress = invalidObjectErrors.some(errorText =>
-        //         typeof errorMessage === 'string' && errorMessage.includes(errorText)
-        //     );
-        //
-        //     if (shouldSuppress) {
-        //         return; // Скрываем только эти ошибки
-        //     }
-        //
-        //     // Все остальные ошибки (сети, JavaScript, etc.) показываем
-        //     originalError.apply(console, args);
-        // };
-        //
-        // return () => {
-        //     console.error = originalError;
-        // };
-    }, []);
-
     function onChangeSelectDate(e) {
         const selectedDate = new Date(e);
         setSelectDate(e);
@@ -590,10 +564,8 @@ function SchedulerPage() {
     };
 
     const handleCanvasRightClick = (groupId, time, e) => {
-
         setSelectedItems([]);
         setSelectedItem(null);
-
         setLastSelectedItem(null);
             setContextMenu({
                 visible: true,
@@ -636,7 +608,7 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка прикрепления: " + e.message)
+            setMsg("Ошибка прикрепления: " + e.response.data.error)
             setIsModalNotify(true);
         }
     }
@@ -647,7 +619,7 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка открепления: " + e.message)
+            setMsg("Ошибка открепления: " + e.response.data.error)
             setIsModalNotify(true);
         }
     }
