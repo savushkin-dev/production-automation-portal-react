@@ -28,11 +28,17 @@ export default class Store {
     }
 
     // Создание новой сессии
-    createSession() {
-        const sessionId = `session_${Date.now()}`;
-        this.solverSessionId = sessionId;
-        sessionStorage.setItem('solverSessionId', sessionId);
-        return sessionId;
+    async createSession() {
+        try {
+            const response = await fetch("https://api.ipify.org?format=json");
+            const data = await response.json();
+            this.solverSessionId = data.ip; // сохраняем IP вместо sessionId
+            sessionStorage.setItem("solverSessionId", data.ip);
+            return data.ip;
+        } catch (error) {
+            console.error("Ошибка получения IP:", error);
+            return null;
+        }
     }
 
     // Очистка сессии
