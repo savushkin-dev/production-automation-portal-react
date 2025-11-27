@@ -399,4 +399,8 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/sortByNp`, {})
     }
 
+    static async sendToWork() {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/work`, {})
+    }
+
 }

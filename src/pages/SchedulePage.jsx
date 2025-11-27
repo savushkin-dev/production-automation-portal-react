@@ -4,7 +4,14 @@ import {useNavigate} from "react-router-dom";
 import moment from 'moment';
 import 'moment/locale/ru';
 
-import {Timeline, TimelineHeaders, SidebarHeader, DateHeader, CustomHeader} from "react-calendar-timeline";
+import {
+    Timeline,
+    TimelineHeaders,
+    SidebarHeader,
+    DateHeader,
+    CustomHeader,
+    TimelineMarkers, TodayMarker, CustomMarker
+} from "react-calendar-timeline";
 import ScheduleService from "../services/ScheduleService";
 import SchedulerService from "../services/ScheduleService";
 import "./../components/scheduler/scheduler.css"
@@ -185,6 +192,18 @@ function SchedulerPage() {
             loadPdayNextDay()
         }
     }, [selectDate, selectDateTable])
+
+    async function sendToWork() {
+        try {
+            await SchedulerService.sendToWork();
+            setMsg("План успешно отправлен в работу.")
+            setIsModalNotify(true);
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка отправки плана в работу: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
 
     async function savePlan() {
         try {
@@ -910,7 +929,16 @@ function SchedulerPage() {
 
                     <h1 className="w-1/3 font-bold text-center text-2xl mb-8 mt-6">Планировщик задач</h1>
                     <div className="w-1/3 mt-6 py-1 flex justify-end pr-3">
-                        <button onClick={()=>{assignSettings(true)}}
+                        <button onClick={() => {
+                            sendToWork()
+                        }}
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
+                            Отправить в работу
+                            <i className="pl-2 fa-solid fa-floppy-disk"></i>
+                        </button>
+                        <button onClick={() => {
+                            assignSettings(true)
+                        }}
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
                             Загрузить план с БД
                             <i className="pl-2 fa-solid fa-floppy-disk"></i>
@@ -1081,6 +1109,53 @@ function SchedulerPage() {
                                     height: 30
                                 }}
                             />
+
+                            {/*<TimelineMarkers>*/}
+                            {/*    <TodayMarker interval={5000}>*/}
+                            {/*        {({ styles, date }) => (*/}
+                            {/*            <div*/}
+                            {/*                style={{*/}
+                            {/*                    ...styles,*/}
+                            {/*                    width: '2px',*/}
+                            {/*                    backgroundColor: '#ff3b30',*/}
+                            {/*                    zIndex: 9999*/}
+                            {/*                }}*/}
+                            {/*            />*/}
+                            {/*        )}*/}
+                            {/*    </TodayMarker>*/}
+                            {/*</TimelineMarkers>*/}
+
+                            {/*<TimelineMarkers>*/}
+                            {/*    <CustomMarker date={Date.now()}>*/}
+                            {/*        {({ styles }) => (*/}
+                            {/*            <>*/}
+                            {/*                /!* фон слева от линии *!/*/}
+                            {/*                <div*/}
+                            {/*                    style={{*/}
+                            {/*                        position: "absolute",*/}
+                            {/*                        top: 0,*/}
+                            {/*                        left: 0,*/}
+                            {/*                        bottom: 0,*/}
+                            {/*                        right: `calc(100% - ${styles.left})`, // всё левее линии*/}
+                            {/*                        backgroundColor: "red",   // тёмно-прозрачный*/}
+                            {/*                        pointerEvents: "none",                 // не блокирует клики*/}
+                            {/*                        zIndex: 99999*/}
+                            {/*                    }}*/}
+                            {/*                />*/}
+                            {/*                /!* сама линия *!/*/}
+                            {/*                <div*/}
+                            {/*                    style={{*/}
+                            {/*                        ...styles,*/}
+                            {/*                        width: "2px",*/}
+                            {/*                        backgroundColor: "red",*/}
+                            {/*                        zIndex: 10*/}
+                            {/*                    }}*/}
+                            {/*                />*/}
+                            {/*            </>*/}
+                            {/*        )}*/}
+                            {/*    </CustomMarker>*/}
+                            {/*</TimelineMarkers>*/}
+
                         </TimelineHeaders>
                     </Timeline>
                 </div>
