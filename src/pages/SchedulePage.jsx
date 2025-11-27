@@ -64,6 +64,7 @@ function SchedulerPage() {
     const [isModalMoveJobs, setIsModalMoveJobs] = useState(false);
     const [isModalAssignServiceWork, setIsModalAssignServiceWork] = useState(false);
     const [isModalUpdateServiceWork, setIsModalUpdateServiceWork] = useState(false);
+    const [isModalSendToWork, setIsModalSendToWrk] = useState(false);
 
     const [isSolve, setIsSolve] = useState(false);
     const [score, setScore] = useState({hard: 0, medium: 0, soft: 0});
@@ -232,6 +233,11 @@ function SchedulerPage() {
     function clickRemovePlan() {
         setMsg("Вы уверены что хотите удалить план?")
         setIsModalRemove(true);
+    }
+
+    function clickSendToWork() {
+        setMsg("Вы уверены что хотите отправить план в работу?")
+        setIsModalSendToWrk(true);
     }
 
     async function fetchLines() {
@@ -919,42 +925,46 @@ function SchedulerPage() {
                     <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>
                 }
 
+                <div>
+                    <h1 className=" font-bold text-center text-2xl mb-4 mt-4">Планировщик задач</h1>
+                </div>
+
                 <div className="flex flex-row">
-                    <div className="w-1/3 ">
+                    <div className="w-1/2 ">
                         <button onClick={() => {
                             navigate(from, {replace: true})
-                        }} className=" ml-4 mt-6 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Вернуться назад
+                        }} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Вернуться назад
                         </button>
                     </div>
 
-                    <h1 className="w-1/3 font-bold text-center text-2xl mb-8 mt-6">Планировщик задач</h1>
-                    <div className="w-1/3 mt-6 py-1 flex justify-end pr-3">
+
+                    <div className="w-1/2 py-1 flex justify-end pr-3">
                         <button onClick={() => {
-                            sendToWork()
+                            clickSendToWork()
                         }}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-green-500 bg-green-600 text-white font-medium text-[0.950rem]">
                             Отправить в работу
-                            <i className="pl-2 fa-solid fa-floppy-disk"></i>
+                            <i className="pl-2 fa-solid fa-paper-plane"></i>
                         </button>
                         <button onClick={() => {
                             assignSettings(true)
                         }}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                             Загрузить план с БД
                             <i className="pl-2 fa-solid fa-floppy-disk"></i>
                         </button>
                         <button onClick={savePlan}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                             Сохранить
                             <i className="pl-2 fa-solid fa-floppy-disk"></i>
                         </button>
                         <button onClick={clickRemovePlan}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                             Удалить
                             <i className="pl-2 fa-solid fa-trash-can"></i>
                         </button>
                         <button onClick={exportExel}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                             Excel экспорт
                             <i className="pl-2 fa-solid fa-file-excel"></i>
                         </button>
@@ -965,7 +975,7 @@ function SchedulerPage() {
 
                     <div>
                         <div className="inline-flex px-2 h-[32px] items-center border rounded-md">
-                            <span className="py-1 font-medium text-nowrap">Дата:</span>
+                            <span className="py-1 font-medium text-nowrap ">Дата:</span>
                             <input className={"px-2 font-medium w-32"} type="date"
                                    value={selectDate}
                                    onChange={(e) => onChangeSelectDate(e.target.value)}
@@ -975,11 +985,11 @@ function SchedulerPage() {
                         <button onClick={() => {
                             setIsModalDateSettings(true)
                         }}
-                                className={"ml-3 rounded bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px]"}>
+                                className={"ml-3 rounded bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px] font-medium text-[0.950rem]"}>
                             Настройка линий
                         </button>
 
-                        <button className="ml-3 rounded bg-blue-800 text-white px-1 h-[30px] w-44"
+                        <button className="ml-3 rounded bg-blue-800 text-white px-1 h-[30px] w-44 font-medium text-[0.950rem]"
                                 onClick={selectSettings}>
                             Загрузить задание
                         </button>
@@ -990,7 +1000,7 @@ function SchedulerPage() {
                         {!isSolve &&
                             <div onClick={solve}>
                                 <button
-                                    className="rounded text-white px-1 bg-green-600 hover:bg-green-500 h-[30px] w-36">
+                                    className="rounded text-white px-1 bg-green-600 hover:bg-green-500 h-[30px] w-36 font-medium text-[0.950rem]">
                                     <i className="fa-solid fa-play"></i>
                                     <span className="pl-1">Планировать</span>
                                 </button>
@@ -999,7 +1009,7 @@ function SchedulerPage() {
                         {isSolve &&
                             <div onClick={stopSolving}>
                                 <button
-                                    className="rounded text-white px-1 bg-red-600 hover:bg-red-500 h-[30px] w-36">
+                                    className="rounded text-white px-1 bg-red-600 hover:bg-red-500 h-[30px] w-36 font-medium text-[0.950rem]">
                                     <i className="fa-solid fa-stop"></i>
                                     <span className="pl-1">Остановить</span>
                                 </button>
@@ -1028,7 +1038,7 @@ function SchedulerPage() {
                                 fetchAnalyze();
                                 setIsModalAnalyze(true);
                             }}
-                                    className={" h-full rounded-r px-2 bg-blue-800 hover:bg-blue-700 text-white"}>
+                                    className={" h-full rounded-r px-2 bg-blue-800 hover:bg-blue-700 text-white font-medium text-[0.950rem]"}>
                                 Подробнее
                             </button>
                         </div>
@@ -1038,17 +1048,17 @@ function SchedulerPage() {
 
 
                     <div className="">
-                        <button className="mr-4 rounded bg-blue-800 text-white px-3 h-[30px] "
+                        <button className="mr-4 rounded bg-blue-800 text-white px-3 h-[30px] font-medium text-[0.950rem]"
                                 onClick={sortSchedule}>
                             Отсортировать
                         </button>
 
                         <button onClick={displayByParty}
-                                className={"border h-[30px] border-r-0 rounded-l-md px-2 " + stylePartyBut}>По
+                                className={"border h-[30px] border-r-0 rounded-l-md px-2 font-medium text-[0.950rem] " + stylePartyBut}>По
                             партиям
                         </button>
                         <button onClick={displayByHardware}
-                                className={"border h-[30px] rounded-r-md px-2 " + styleHardwareBut}>По
+                                className={"border h-[30px] rounded-r-md px-2 font-medium text-[0.950rem] " + styleHardwareBut}>По
                             оборудованию
                         </button>
                     </div>
@@ -1186,6 +1196,14 @@ function SchedulerPage() {
                                            setIsModalRemove(false);
                                            removePlan();
                                        }} onDisagree={() => setIsModalRemove(false)}/>}
+
+                {isModalSendToWork &&
+                    <ModalConfirmation title={"Подтверждение действия"} message={msg}
+                                       onClose={() => setIsModalSendToWrk(false)}
+                                       onAgree={() => {
+                                           setIsModalSendToWrk(false);
+                                           sendToWork();
+                                       }} onDisagree={() => setIsModalSendToWrk(false)}/>}
 
                 {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItems} unpin={unpinLine}
                                                              isDisplayByHardware={isDisplayByHardware}
