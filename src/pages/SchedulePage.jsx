@@ -1136,7 +1136,7 @@ function SchedulerPage() {
                             {/*</TimelineMarkers>*/}
 
                             {/*<TimelineMarkers>*/}
-                            {/*    <CustomMarker date={Date.now()}>*/}
+                            {/*    <CustomMarker date={new Date(Date.now()).setMonth(new Date(Date.now()).getMonth()-2)}>*/}
                             {/*        {({ styles }) => (*/}
                             {/*            <>*/}
                             {/*                /!* фон слева от линии *!/*/}
@@ -1146,10 +1146,11 @@ function SchedulerPage() {
                             {/*                        top: 0,*/}
                             {/*                        left: 0,*/}
                             {/*                        bottom: 0,*/}
-                            {/*                        right: `calc(100% - ${styles.left})`, // всё левее линии*/}
-                            {/*                        backgroundColor: "red",   // тёмно-прозрачный*/}
-                            {/*                        pointerEvents: "none",                 // не блокирует клики*/}
-                            {/*                        zIndex: 99999*/}
+                            {/*                        width: styles.left,              // ширина = позиция линии*/}
+                            {/*                        // backgroundColor: "rgba(0,0,0,0.1)", // полупрозрачный фон*/}
+                            {/*                        backgroundColor: "rgba(0,0,0,0.08)", // полупрозрачный фон*/}
+                            {/*                        pointerEvents: "none",*/}
+                            {/*                        zIndex: 9999*/}
                             {/*                    }}*/}
                             {/*                />*/}
                             {/*                /!* сама линия *!/*/}
@@ -1158,7 +1159,7 @@ function SchedulerPage() {
                             {/*                        ...styles,*/}
                             {/*                        width: "2px",*/}
                             {/*                        backgroundColor: "red",*/}
-                            {/*                        zIndex: 10*/}
+                            {/*                        zIndex: 999999*/}
                             {/*                    }}*/}
                             {/*                />*/}
                             {/*            </>*/}
