@@ -1,6 +1,6 @@
 import "./../App.css";
 import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
-import {useNavigate} from "react-router-dom";
+import {useLocation, useNavigate} from "react-router-dom";
 import moment from 'moment';
 import 'moment/locale/ru';
 
@@ -98,6 +98,20 @@ function SchedulerPage() {
     const [timelineKey, setTimelineKey] = useState(0);
 
     const [currentUnit, setCurrentUnit] = useState('hour');
+
+    const location = useLocation();
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const dateParam = params.get("date");
+
+        if (dateParam && new Date(dateParam).toTimeString() !== "Invalid Date") {
+            setSelectDate(dateParam);
+            setSelectEndDate(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate() + 1)).toISOString().split('T')[0]);
+            setIdealEndDateTime(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate() + 1)).toISOString().replace(/T.*/, 'T02:00'));
+            setMaxEndDateTime(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate() + 1)).toISOString().replace(/T.*/, 'T03:00'));
+            setSelectDateTable(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate())).toISOString().split('T')[0]);
+        }
+    }, [location.search]);
 
     async function assignSettings(findSolvedInDb) {
         const lineTimes = startTimeLines.reduce((acc, line) => {
