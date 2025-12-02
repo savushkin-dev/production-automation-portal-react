@@ -830,6 +830,18 @@ function SchedulerPage() {
         }
     }
 
+    async function reloadPlan() {
+        try {
+            await SchedulerService.reloadPlan();
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка дозагрузки: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
+
 
     const customItemRenderer = ({item, itemContext, getItemProps}) => {
         const isSelected = selectedItems.includes(item);
@@ -967,6 +979,13 @@ function SchedulerPage() {
                         }}
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-blue-700 bg-blue-800 text-white font-medium text-[0.950rem]">
                             Фактический план
+                        </button>
+                        <button onClick={() => {
+                            reloadPlan();
+                        }}
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
+                            Догрузить план
+                            <i className="pl-2 fa-solid fa-arrows-rotate"></i>
                         </button>
                         <button onClick={() => {
                             assignSettings(true)
