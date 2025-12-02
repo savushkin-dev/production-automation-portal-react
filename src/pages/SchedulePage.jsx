@@ -26,6 +26,7 @@ import {ModalMoveJobs} from "../components/scheduler/ModalMoveJobs";
 import {DataTable} from "../components/scheduler/DataTable";
 import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
 import {ModalUpdateServiceWork} from "../components/scheduler/ModalUpdateServiceWork";
+import {MyTimeline} from "../components/scheduler/MyTimeline";
 
 // Принудительно устанавливаем русскую локаль
 moment.updateLocale('ru', {
@@ -311,6 +312,7 @@ function SchedulerPage() {
         try {
             const response = await SchedulerService.analyze()
             setAnalyzeObj(response.data)
+            setIsModalAnalyze(true);
         } catch (e) {
             console.error(e)
             setMsg("Ошибка получения подробного анализа: " + e.response.data.error)
@@ -930,21 +932,27 @@ function SchedulerPage() {
                 </div>
 
                 <div className="flex flex-row">
-                    <div className="w-1/2 ">
+                    <div className="w-1/6 ">
                         <button onClick={() => {
                             navigate(from, {replace: true})
                         }} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Вернуться назад
                         </button>
                     </div>
 
-
-                    <div className="w-1/2 py-1 flex justify-end pr-3">
+                    <div className="w-5/6 py-1 flex justify-end pr-3">
                         <button onClick={() => {
                             clickSendToWork()
                         }}
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-green-500 bg-green-600 text-white font-medium text-[0.950rem]">
                             Отправить в работу
                             <i className="pl-2 fa-solid fa-paper-plane"></i>
+                        </button>
+
+                        <button onClick={() => {
+
+                        }}
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-blue-700 bg-blue-800 text-white font-medium text-[0.950rem]">
+                            Фактический план
                         </button>
                         <button onClick={() => {
                             assignSettings(true)
@@ -989,7 +997,7 @@ function SchedulerPage() {
                             Настройка линий
                         </button>
 
-                        <button className="ml-3 rounded bg-blue-800 text-white px-1 h-[30px] w-44 font-medium text-[0.950rem]"
+                        <button className="ml-3 rounded bg-blue-800 hover:bg-blue-700 text-white px-1 h-[30px] w-44 font-medium text-[0.950rem]"
                                 onClick={selectSettings}>
                             Загрузить задание
                         </button>
@@ -1036,7 +1044,6 @@ function SchedulerPage() {
                             </div>
                             <button onClick={() => {
                                 fetchAnalyze();
-                                setIsModalAnalyze(true);
                             }}
                                     className={" h-full rounded-r px-2 bg-blue-800 hover:bg-blue-700 text-white font-medium text-[0.950rem]"}>
                                 Подробнее
@@ -1048,7 +1055,7 @@ function SchedulerPage() {
 
 
                     <div className="">
-                        <button className="mr-4 rounded bg-blue-800 text-white px-3 h-[30px] font-medium text-[0.950rem]"
+                        <button className="mr-4 rounded bg-blue-800 hover:bg-blue-700 text-white px-3 h-[30px] font-medium text-[0.950rem]"
                                 onClick={sortSchedule}>
                             Отсортировать
                         </button>
@@ -1120,53 +1127,10 @@ function SchedulerPage() {
                                 }}
                             />
 
-                            {/*<TimelineMarkers>*/}
-                            {/*    <TodayMarker interval={5000}>*/}
-                            {/*        {({ styles, date }) => (*/}
-                            {/*            <div*/}
-                            {/*                style={{*/}
-                            {/*                    ...styles,*/}
-                            {/*                    width: '2px',*/}
-                            {/*                    backgroundColor: '#ff3b30',*/}
-                            {/*                    zIndex: 9999*/}
-                            {/*                }}*/}
-                            {/*            />*/}
-                            {/*        )}*/}
-                            {/*    </TodayMarker>*/}
-                            {/*</TimelineMarkers>*/}
 
-                            {/*<TimelineMarkers>*/}
-                            {/*    <CustomMarker date={new Date(Date.now()).setMonth(new Date(Date.now()).getMonth()-2)}>*/}
-                            {/*        {({ styles }) => (*/}
-                            {/*            <>*/}
-                            {/*                /!* фон слева от линии *!/*/}
-                            {/*                <div*/}
-                            {/*                    style={{*/}
-                            {/*                        position: "absolute",*/}
-                            {/*                        top: 0,*/}
-                            {/*                        left: 0,*/}
-                            {/*                        bottom: 0,*/}
-                            {/*                        width: styles.left,              // ширина = позиция линии*/}
-                            {/*                        // backgroundColor: "rgba(0,0,0,0.1)", // полупрозрачный фон*/}
-                            {/*                        backgroundColor: "rgba(0,0,0,0.08)", // полупрозрачный фон*/}
-                            {/*                        pointerEvents: "none",*/}
-                            {/*                        zIndex: 9999*/}
-                            {/*                    }}*/}
-                            {/*                />*/}
-                            {/*                /!* сама линия *!/*/}
-                            {/*                <div*/}
-                            {/*                    style={{*/}
-                            {/*                        ...styles,*/}
-                            {/*                        width: "2px",*/}
-                            {/*                        backgroundColor: "red",*/}
-                            {/*                        zIndex: 999999*/}
-                            {/*                    }}*/}
-                            {/*                />*/}
-                            {/*            </>*/}
-                            {/*        )}*/}
-                            {/*    </CustomMarker>*/}
-                            {/*</TimelineMarkers>*/}
-
+                            {false &&
+                                <MyTimeline/>
+                            }
                         </TimelineHeaders>
                     </Timeline>
                 </div>

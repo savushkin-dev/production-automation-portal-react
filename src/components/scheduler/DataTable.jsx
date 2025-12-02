@@ -124,14 +124,14 @@ export function DataTable({data, setData, updatePday, selectDate, dateData}) {
                 <div style={{fontSize: '16px'}}>
 
                     <button
-                        className=" bg-blue-800 text-white px-3 py-1 w-36 rounded font-medium text-[0.950rem]"
+                        className=" bg-blue-800 hover:bg-blue-700 text-white px-3 py-1 w-36 rounded font-medium text-[0.950rem]"
                         onClick={toggleAllGroups}
                     >
                         {expandedGroupsCount === groupedData.length ? 'Свернуть все' : 'Развернуть все'}
                     </button>
 
                     <button
-                        className="ml-4 bg-blue-800 text-white px-3 py-1 w-36 rounded font-medium text-[0.950rem]"
+                        className="ml-4 bg-blue-800 hover:bg-blue-700 text-white px-3 py-1 w-36 rounded font-medium text-[0.950rem]"
                         onClick={selectAll}
                     >
                         {(() => {
