@@ -974,12 +974,12 @@ function SchedulerPage() {
                             <i className="pl-2 fa-solid fa-paper-plane"></i>
                         </button>
 
-                        <button onClick={() => {
+                        {/*<button onClick={() => {*/}
 
-                        }}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-blue-700 bg-blue-800 text-white font-medium text-[0.950rem]">
-                            Фактический план
-                        </button>
+                        {/*}}*/}
+                        {/*        className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-blue-700 bg-blue-800 text-white font-medium text-[0.950rem]">*/}
+                        {/*    Фактический план*/}
+                        {/*</button>*/}
                         <button onClick={() => {
                             reloadPlan();
                         }}
