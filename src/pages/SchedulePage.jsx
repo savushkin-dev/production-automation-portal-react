@@ -44,11 +44,6 @@ function SchedulerPage() {
 
     const [isDisplayByHardware, setIsDisplayByHardware] = useState(true);
 
-    const stylePartyBut = isDisplayByHardware ? " hover:bg-gray-100" : " bg-blue-800 hover:bg-blue-700 text-white";
-    const styleHardwareBut = isDisplayByHardware ? " bg-blue-800 hover:bg-blue-700 text-white" : " hover:bg-gray-100";
-
-    const [party, setParty] = useState([]);
-    const [planByParty, setPlanByParty] = useState([]);
     const [hardware, setHardware] = useState([]);
     const [planByHardware, setPlanByHardware] = useState([]);
 
@@ -58,6 +53,7 @@ function SchedulerPage() {
     const [pdayDataNextDay, setPdayDataNextDay] = useState([]);
 
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingSolve, setIsLoadingSolve] = useState(false);
     const [msg, setMsg] = useState("");
     const [isModalNotify, setIsModalNotify] = useState(false);
     const [isModalRemove, setIsModalRemove] = useState(false);
@@ -202,8 +198,7 @@ function SchedulerPage() {
 
     useEffect(() => {
         setPlanByHardware([])
-        setPlanByParty([])
-        if(startTimeLines){
+        if (startTimeLines) {
             loadPday()
             loadPdayNextDay()
         }
@@ -276,8 +271,6 @@ function SchedulerPage() {
                 return acc;
             }, {}))
 
-
-
         } catch (e) {
             console.error(e)
             setMsg("Ошибка загрузки линий отчета: " + e.response.data.error)
@@ -287,12 +280,15 @@ function SchedulerPage() {
 
     async function fetchSolve() {
         try {
+            setIsLoadingSolve(true)
             await SchedulerService.solve();
             setIsSolve(true);
         } catch (e) {
             console.error(e)
             setMsg("Ошибка начала планирования: " + e.response.data.error)
             setIsModalNotify(true);
+        } finally {
+            setIsLoadingSolve(false)
         }
     }
 
@@ -368,6 +364,8 @@ function SchedulerPage() {
     useEffect(() => {
         if (solverStatus === "NOT_SOLVING") {
             setIsSolve(false)
+        } else if (solverStatus === "SOLVING_ACTIVE") {
+            setIsSolve(true)
         }
     }, [solverStatus])
 
@@ -378,44 +376,20 @@ function SchedulerPage() {
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }
 
-    function displayByParty() {
-        setIsDisplayByHardware(false);
-        setGroups(party);
-        setItems(planByParty);
-        setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
-    }
-
     useEffect(() => {
-
         if (downloadedPlan) {
-
             ScheduleService.parseHardware(downloadedPlan).then((e) => {
                 setHardware(e);
                 if (isDisplayByHardware)
                     setGroups(e);
             });
-
             ScheduleService.parsePlanByHardware(downloadedPlan).then((e) => {
                 setPlanByHardware(e);
                 if (isDisplayByHardware)
                     setItems(e);
             });
-
-            ScheduleService.parseParty(downloadedPlan).then((e) => {
-                setParty(e);
-                if (!isDisplayByHardware) {
-                    setGroups(e);
-                }
-            });
-
-            ScheduleService.parsePlanByParty(downloadedPlan).then((e) => {
-                setPlanByParty(e);
-                if (!isDisplayByHardware)
-                    setItems(e);
-            });
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
         }
-
     }, [downloadedPlan]);
 
     async function solve() {
@@ -443,14 +417,13 @@ function SchedulerPage() {
     }
 
     useEffect(() => {
+        fetchStopSolving();
         fetchLines();
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }, [])
 
     useEffect(() => {
         if (startTimeLines) {
-            // selectSettings()
-            // fetchPlan()
             loadPday()
             loadPdayNextDay()
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
@@ -484,7 +457,7 @@ function SchedulerPage() {
             return '--:--';
         }
 
-        if ( unit === 'minute' ) {
+        if (unit === 'minute') {
             return momentDate.format('mm');
         }
 
@@ -568,7 +541,7 @@ function SchedulerPage() {
             return;
         }
 
-        const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
+        const itemsArray = planByHardware;
         const clickedItem = itemsArray.find(item => item.id === itemId);
 
         // Проверяем, кликнули на уже выделенный элемент
@@ -608,14 +581,14 @@ function SchedulerPage() {
         setSelectedItems([]);
         setSelectedItem(null);
         setLastSelectedItem(null);
-            setContextMenu({
-                visible: true,
-                x: e.clientX,
-                y: e.clientY,
-                item: null,
-                forCanvas: true,
-                selectedItems:  []
-            });
+        setContextMenu({
+            visible: true,
+            x: e.clientX,
+            y: e.clientY,
+            item: null,
+            forCanvas: true,
+            selectedItems: []
+        });
     };
 
     // Закрытие контекстного меню
@@ -668,7 +641,6 @@ function SchedulerPage() {
     const [visibleTimeRange, setVisibleTimeRange] = useState(null);
     const timelineRef = useRef();
 
-    const [timelineContext, setTimelineContext] = useState(null);
 
     const handleTimeChange = useCallback((visibleTimeStart, visibleTimeEnd, updateScrollCanvas, unit, timelineContext) => {
         setVisibleTimeRange({
@@ -676,12 +648,6 @@ function SchedulerPage() {
             visibleTimeEnd,
             updateScrollCanvas
         });
-
-        // Сохраняем контекст timeline, который содержит текущий unit
-        if (timelineContext) {
-            setTimelineContext(timelineContext);
-        }
-
         updateScrollCanvas(visibleTimeStart, visibleTimeEnd);
     }, []);
 
@@ -703,20 +669,15 @@ function SchedulerPage() {
     }, [planByHardware])
 
     function onItemDoubleClick(itemId, e, time) {
-        if (isDisplayByHardware) {
-            setSelectedItem(planByHardware.find(item => item.id === itemId))
-            setIsModalInfoItem(true)
-        } else {
-            setSelectedItem(planByParty.find(item => item.id === itemId))
-            setIsModalInfoItem(true)
-        }
+        setSelectedItem(planByHardware.find(item => item.id === itemId))
+        setIsModalInfoItem(true)
     }
 
     function onItemSelect(itemId, e, time) {
         if (itemId.includes('cleaning')) {
             return;
         }
-        const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
+        const itemsArray = planByHardware;
         const clickedItem = itemsArray.find(item => item.id === itemId);
 
         if (e.shiftKey && lastSelectedItem) {
@@ -764,7 +725,6 @@ function SchedulerPage() {
 
         const rangeSelection = sortedGroupItems
             .slice(startIndex, endIndex + 1)
-            // .map(item => item.id);
 
         setSelectedItems(rangeSelection);
         setSelectedItem(currentItem);
@@ -795,7 +755,6 @@ function SchedulerPage() {
             setIsModalNotify(true);
         }
     }
-
 
     async function updateServiceWork(lineId, index, duration) {
         try {
@@ -834,13 +793,14 @@ function SchedulerPage() {
         try {
             await SchedulerService.reloadPlan();
             await fetchPlan();
+            setMsg("Дозагрузка прошла успешно, можете продолжить планирование.")
+            setIsModalNotify(true);
         } catch (e) {
             console.error(e)
             setMsg("Ошибка дозагрузки: " + e.response.data.error)
             setIsModalNotify(true);
         }
     }
-
 
 
     const customItemRenderer = ({item, itemContext, getItemProps}) => {
@@ -867,7 +827,7 @@ function SchedulerPage() {
         });
 
         // Удаляем key из полученных пропсов
-        const { key, ...safeItemProps } = itemProps;
+        const {key, ...safeItemProps} = itemProps;
 
         return (
             <>
@@ -880,11 +840,13 @@ function SchedulerPage() {
                         {item.info?.pinned &&
                             <>
                                 {isSelected && selectedItems.length > 1 && (
-                                    <div className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                                    <div
+                                        className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
                                         {selectedItems.findIndex(el => el.id === item.id) + 1}
                                     </div>
                                 )}
-                                <div className="h-2 absolute p-0"><i className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i></div>
+                                <div className="h-2 absolute p-0"><i
+                                    className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i></div>
                                 <span className="ml-4">{item.title}</span>
                             </>
                         }
@@ -892,7 +854,8 @@ function SchedulerPage() {
                         {!item.info?.pinned &&
                             <>
                                 {isSelected && selectedItems.length > 1 && (
-                                    <div className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                                    <div
+                                        className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
                                         {selectedItems.findIndex(el => el.id === item.id) + 1}
                                     </div>
                                 )}
@@ -926,7 +889,6 @@ function SchedulerPage() {
     };
 
     const customGroupRenderer = ({group}) => {
-
         return (
             <div className="custom-group-renderer flex flex-col justify-center h-full px-2">
                 <div className="group-title font-semibold text-sm mb-1">
@@ -1014,8 +976,8 @@ function SchedulerPage() {
 
                 <div className="flex flex-row justify-between my-4 px-4 ">
 
-                    <div>
-                        <div className="inline-flex px-2 h-[32px] items-center border rounded-md">
+                    <div className="w-1/3">
+                        <div className="inline-flex px-2 h-[30px] items-center border rounded-md">
                             <span className="py-1 font-medium text-nowrap ">Дата:</span>
                             <input className={"px-2 font-medium w-32"} type="date"
                                    value={selectDate}
@@ -1030,18 +992,19 @@ function SchedulerPage() {
                             Настройка линий
                         </button>
 
-                        <button className="ml-3 rounded bg-blue-800 hover:bg-blue-700 text-white px-1 h-[30px] w-44 font-medium text-[0.950rem]"
-                                onClick={selectSettings}>
+                        <button
+                            className="ml-3 rounded bg-blue-800 hover:bg-blue-700 text-white px-1 h-[30px] w-44 font-medium text-[0.950rem]"
+                            onClick={selectSettings}>
                             Загрузить задание
                         </button>
                     </div>
 
-                    <div className="flex flex-row" style={{zIndex: 20}}>
+                    <div className="flex flex-row w-1/3" style={{zIndex: 20}}>
 
                         {!isSolve &&
                             <div onClick={solve}>
-                                <button
-                                    className="rounded text-white px-1 bg-green-600 hover:bg-green-500 h-[30px] w-36 font-medium text-[0.950rem]">
+                                <button disabled={isLoadingSolve}
+                                        className="rounded text-white px-1 bg-green-600 hover:bg-green-500 h-[30px] w-36 font-medium text-[0.950rem]">
                                     <i className="fa-solid fa-play"></i>
                                     <span className="pl-1">Планировать</span>
                                 </button>
@@ -1087,19 +1050,11 @@ function SchedulerPage() {
                     </div>
 
 
-                    <div className="">
-                        <button className="mr-4 rounded bg-blue-800 hover:bg-blue-700 text-white px-3 h-[30px] font-medium text-[0.950rem]"
-                                onClick={sortSchedule}>
+                    <div className="w-1/3 ml-8 flex flex-row justify-end">
+                        <button
+                            className="mr-1 rounded bg-blue-800 hover:bg-blue-700 text-white px-3 h-[30px] font-medium text-[0.950rem]"
+                            onClick={sortSchedule}>
                             Отсортировать
-                        </button>
-
-                        <button onClick={displayByParty}
-                                className={"border h-[30px] border-r-0 rounded-l-md px-2 font-medium text-[0.950rem] " + stylePartyBut}>По
-                            партиям
-                        </button>
-                        <button onClick={displayByHardware}
-                                className={"border h-[30px] rounded-r-md px-2 font-medium text-[0.950rem] " + styleHardwareBut}>По
-                            оборудованию
                         </button>
                     </div>
 
@@ -1131,7 +1086,7 @@ function SchedulerPage() {
                     >
                         <TimelineHeaders className="sticky">
                             <SidebarHeader>
-                                {({ getRootProps }) => (
+                                {({getRootProps}) => (
                                     <div {...getRootProps()} className="bg-blue-800">
                                         {/* Заголовок сайдбара */}
                                         <div
@@ -1206,26 +1161,30 @@ function SchedulerPage() {
                 {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItems} unpin={unpinLine}
                                                              isDisplayByHardware={isDisplayByHardware}
                                                              openModalMoveJobs={() => setIsModalMoveJobs(true)}
-                                                             openModalAssignSettings={()=> setIsModalAssignServiceWork(true)}
-                                                             selectedItems={selectedItems} updateServiceWork={() => setIsModalUpdateServiceWork(true)}
+                                                             openModalAssignSettings={() => setIsModalAssignServiceWork(true)}
+                                                             selectedItems={selectedItems}
+                                                             updateServiceWork={() => setIsModalUpdateServiceWork(true)}
                                                              removeServiceWork={removeServiceWork}/>}
 
                 {isModalMoveJobs &&
                     <ModalMoveJobs selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}
                                    moveJobs={moveJobs} onClose={() => setIsModalMoveJobs(false)}
-                                   lines={startTimeLines} planByParty={planByParty} planByHardware={planByHardware}
+                                   lines={startTimeLines} planByHardware={planByHardware}
                     />}
 
                 {isModalAssignServiceWork &&
                     <ModalAssignServiceWork selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}
-                                   assignServiceWork={assignServiceWork} onClose={() => setIsModalAssignServiceWork(false)}
-                                   lines={startTimeLines} planByParty={planByParty} planByHardware={planByHardware}
+                                            assignServiceWork={assignServiceWork}
+                                            onClose={() => setIsModalAssignServiceWork(false)}
+                                            lines={startTimeLines}
+                                            planByHardware={planByHardware}
                     />}
 
                 {isModalUpdateServiceWork &&
                     <ModalUpdateServiceWork selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}
                                             onClose={() => setIsModalUpdateServiceWork(false)}
-                                            lines={startTimeLines} planByParty={planByParty} planByHardware={planByHardware}
+                                            lines={startTimeLines}
+                                            planByHardware={planByHardware}
                                             updateServiceWork={updateServiceWork}/>
                 }
 
@@ -1234,7 +1193,7 @@ function SchedulerPage() {
 
 
                 <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} updatePday={updatePday}
-                               selectDate={selectDate} dateData={getNextDateStr(selectDateTable)}/>
+                           selectDate={selectDate} dateData={getNextDateStr(selectDateTable)}/>
 
 
             </div>

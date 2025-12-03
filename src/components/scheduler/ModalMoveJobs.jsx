@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react'
-import {styleInput, styleInputWithoutRounded, styleLabelInput} from "../../data/styles";
+import React, {useState} from 'react'
+import {styleInputWithoutRounded} from "../../data/styles";
 import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
 
@@ -8,17 +8,13 @@ export function ModalMoveJobs({
                                   onClose,
                                   moveJobs,
                                   selectedItems,
-                                  isDisplayByHardware,
                                   planByHardware,
-                                  planByParty,
                                   lines
                               }) {
 
     const getLastItemIndexInGroup = (groupId) => {
-        const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
-
         // Фильтруем элементы по группе и ИСКЛЮЧАЕМ мойки
-        const groupItems = itemsArray
+        const groupItems = planByHardware
             .filter(item => item.group === groupId && !item.id.includes('cleaning'))
             .sort((a, b) => a.start_time - b.start_time);
 

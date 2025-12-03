@@ -1,13 +1,11 @@
 import React from "react";
 
 
-export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs, openModalAssignSettings,
-                                        isDisplayByHardware, selectedItems,
+export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs, openModalAssignSettings, selectedItems,
                                     updateServiceWork, removeServiceWork}) {
 
     return (
         <>
-            {isDisplayByHardware &&
                 <div
                     className="bg-white border rounded-md shadow"
                     style={{
@@ -68,7 +66,7 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                         }
                     </div>
 
-                </div>}
+                </div>
         </>
     )
 }
