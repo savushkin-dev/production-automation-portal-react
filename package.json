@@ -19,6 +19,7 @@
     "axios": "^1.7.9",
     "crypto-js": "^4.2.0",
     "devextreme": "^24.2.3",
+    "env-cmd": "^11.0.0",
     "grapesjs": "^0.22.12",
     "grapesjs-blocks-basic": "^1.0.2",
     "grapesjs-preset-webpage": "^1.0.3",
