@@ -928,13 +928,7 @@ function SchedulerPage() {
                     </div>
 
                     <div className="w-5/6 py-1 flex justify-end pr-3">
-                        <button onClick={() => {
-                            clickSendToWork()
-                        }}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-green-500 bg-green-600 text-white font-medium text-[0.950rem]">
-                            Отправить в работу
-                            <i className="pl-2 fa-solid fa-paper-plane"></i>
-                        </button>
+
 
                         {/*<button onClick={() => {*/}
 
@@ -942,19 +936,13 @@ function SchedulerPage() {
                         {/*        className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-blue-700 bg-blue-800 text-white font-medium text-[0.950rem]">*/}
                         {/*    Фактический план*/}
                         {/*</button>*/}
-                        <button onClick={() => {
-                            reloadPlan();
-                        }}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
-                            Догрузить план
-                            <i className="pl-2 fa-solid fa-arrows-rotate"></i>
-                        </button>
+
                         <button onClick={() => {
                             assignSettings(true)
                         }}
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                             Загрузить план с БД
-                            <i className="pl-2 fa-solid fa-floppy-disk"></i>
+                            <i className="pl-2 fa-solid fa-download"></i>
                         </button>
                         <button onClick={savePlan}
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
@@ -985,40 +973,66 @@ function SchedulerPage() {
                             />
                         </div>
 
-                        <button onClick={() => {
-                            setIsModalDateSettings(true)
-                        }}
-                                className={"ml-3 rounded bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px] font-medium text-[0.950rem]"}>
-                            Настройка линий
-                        </button>
-
                         <button
                             className="ml-3 rounded bg-blue-800 hover:bg-blue-700 text-white px-1 h-[30px] w-44 font-medium text-[0.950rem]"
                             onClick={selectSettings}>
                             Загрузить задание
                         </button>
+
+                        <button onClick={() => {
+                            setIsModalDateSettings(true)
+                        }}
+                                className={"ml-3 rounded border border-slate-300 hover:bg-gray-100 px-2 h-[30px] font-medium text-[0.950rem]"}>
+                            Настройка линий
+                        </button>
+
                     </div>
 
-                    <div className="flex flex-row w-1/3" style={{zIndex: 20}}>
+                    <div className="flex flex-row w-2/3 justify-between" style={{zIndex: 20}}>
 
-                        {!isSolve &&
-                            <div onClick={solve}>
-                                <button disabled={isLoadingSolve}
-                                        className="rounded text-white px-1 bg-green-600 hover:bg-green-500 h-[30px] w-36 font-medium text-[0.950rem]">
-                                    <i className="fa-solid fa-play"></i>
-                                    <span className="pl-1">Планировать</span>
-                                </button>
-                            </div>
-                        }
-                        {isSolve &&
-                            <div onClick={stopSolving}>
-                                <button
-                                    className="rounded text-white px-1 bg-red-600 hover:bg-red-500 h-[30px] w-36 font-medium text-[0.950rem]">
-                                    <i className="fa-solid fa-stop"></i>
-                                    <span className="pl-1">Остановить</span>
-                                </button>
-                            </div>
-                        }
+                        <div className="inline-flex">
+                            {!isSolve &&
+                                <div onClick={solve}>
+                                    <button disabled={isLoadingSolve}
+                                            className="rounded text-white px-1 bg-green-600 hover:bg-green-500 h-[30px] w-36 font-medium text-[0.950rem]">
+                                        <i className="fa-solid fa-play"></i>
+                                        <span className="pl-1">Планировать</span>
+                                    </button>
+                                </div>
+                            }
+                            {isSolve &&
+                                <div onClick={stopSolving}>
+                                    <button
+                                        className="rounded text-white px-1 bg-red-600 hover:bg-red-500 h-[30px] w-36 font-medium text-[0.950rem]">
+                                        <i className="fa-solid fa-stop"></i>
+                                        <span className="pl-1">Остановить</span>
+                                    </button>
+                                </div>
+                            }
+
+                            <button onClick={() => {
+                                reloadPlan();
+                            }}
+                                    className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
+                                Догрузить план
+                                <i className="pl-2 fa-solid fa-arrows-rotate"></i>
+                            </button>
+
+                            <button
+                                className="mr-1 rounded border border-slate-300 hover:bg-gray-100  px-3 h-[30px] font-medium text-[0.950rem]"
+                                onClick={sortSchedule}>
+                                Отсортировать
+                            </button>
+
+                            <button onClick={() => {
+                                clickSendToWork()
+                            }}
+                                    className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-cyan-500 bg-cyan-600 text-white font-medium text-[0.950rem]">
+                                Отправить в работу
+                                <i className="pl-2 fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+
 
                         <div className="flex items-center border rounded-md ml-2 ">
                             <div
@@ -1050,13 +1064,9 @@ function SchedulerPage() {
                     </div>
 
 
-                    <div className="w-1/3 ml-8 flex flex-row justify-end">
-                        <button
-                            className="mr-1 rounded bg-blue-800 hover:bg-blue-700 text-white px-3 h-[30px] font-medium text-[0.950rem]"
-                            onClick={sortSchedule}>
-                            Отсортировать
-                        </button>
-                    </div>
+                    {/*<div className="w-1/3 ml-8 flex flex-row justify-end">*/}
+
+                    {/*</div>*/}
 
                 </div>
 
