@@ -806,6 +806,28 @@ function SchedulerPage() {
         }
     }
 
+    async function assignLineStart(lineId, startLineDateTime) {
+        try {
+            await SchedulerService.updateLineStart(lineId, startLineDateTime);
+            await fetchPlan()
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка назначения времени: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
+    async function assignMaxEndDateTime(maxEndDateTime) {
+        try {
+            await SchedulerService.updateMaxEndDateTime(maxEndDateTime);
+            await fetchPlan()
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка назначения времени: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
 
     const customItemRenderer = ({item, itemContext, getItemProps}) => {
         const isSelected = selectedItems.includes(item);
@@ -1147,6 +1169,8 @@ function SchedulerPage() {
                                                            setIdealEndDateTime={setIdealEndDateTime}
                                                            maxEndDateTime={maxEndDateTime}
                                                            setMaxEndDateTime={setMaxEndDateTime}
+                                                           selectDate={selectDate}
+                                                           changeTime={assignLineStart} changeMaxEndTime={assignMaxEndDateTime}
                 />}
 
                 {isModalAnalyze && <ModalAnalyze onClose={() => setIsModalAnalyze(false)}

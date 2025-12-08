@@ -2,7 +2,8 @@ import React from 'react'
 
 
 export function ModalDateSettings({lines, setLines, selectDate, setDate, selectEndDate, setSelectEndDate,
-                                      onClose, apply, idealEndDateTime, setIdealEndDateTime, maxEndDateTime, setMaxEndDateTime}) {
+                                      onClose, apply, idealEndDateTime, setIdealEndDateTime, maxEndDateTime, setMaxEndDateTime,
+                                  changeTime, changeMaxEndTime}) {
 
     const styleLable = "py-1 font-medium w-2/3 ";
     const styleInfo = "py-1 font-medium w-1/3 ";
@@ -15,7 +16,15 @@ export function ModalDateSettings({lines, setLines, selectDate, setDate, selectE
                     : line
             )
         );
+
+        const line = lines.find(item => item.id === lineId)?.lineId;
+        changeTime(line, selectDate+"T"+newTime);
     };
+
+    const handleMaxEndDateTimeChange = (e) => {
+        setMaxEndDateTime(e);
+        changeMaxEndTime(e);
+    }
 
     return (
         <>
@@ -55,7 +64,7 @@ export function ModalDateSettings({lines, setLines, selectDate, setDate, selectE
                         <input className={styleInfo} type={"datetime-local"}
                                value={maxEndDateTime}
                                onChange={(e) => {
-                                   setMaxEndDateTime(e.target.value)
+                                   handleMaxEndDateTimeChange(e.target.value)
                                }}
                         />
                     </div>
