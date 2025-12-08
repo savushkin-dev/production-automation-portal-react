@@ -278,12 +278,16 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, insertIndex, durationMinutes, name})
     }
 
-    static async updateServiceWork(lineId, index, durationMinutes) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/update-duration`, {lineId, index, durationMinutes})
+    static async assignServiceWorkEmptyLine(lineId, startProductionDateTime, durationMinutes, name) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, startProductionDateTime, durationMinutes, name})
+    }
+
+    static async updateServiceWork(lineId, updateIndex, durationMinutes) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, updateIndex, durationMinutes})
     }
 
     static async removeServiceWork(lineId, removeIndex) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/removeJob`, {lineId, removeIndex})
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, removeIndex})
     }
 
     static async sortSchedule() {
@@ -296,6 +300,14 @@ export default class ScheduleService {
 
     static async reloadPlan() {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/updateOrderList`, {})
+    }
+
+    static async updateMaxEndDateTime(maxEndDateTime) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/planEndTime`, {maxEndDateTime})
+    }
+
+    static async updateLineStart(lineId, startLineDateTime) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/lineStart`, {lineId, startLineDateTime})
     }
 
 }

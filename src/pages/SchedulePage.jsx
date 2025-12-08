@@ -745,9 +745,13 @@ function SchedulerPage() {
         }
     }
 
-    async function assignServiceWork(lineId, insertIndex, duration, name) {
+    async function assignServiceWork(lineId, insertIndex, time, duration, name, isEmptyLine) {
         try {
-            await SchedulerService.assignServiceWork(lineId, insertIndex, duration, name);
+            if(isEmptyLine){
+                await SchedulerService.assignServiceWorkEmptyLine(lineId, time, duration, name);
+            } else {
+                await SchedulerService.assignServiceWork(lineId, insertIndex, duration, name);
+            }
             await fetchPlan();
         } catch (e) {
             console.error(e)
@@ -1187,7 +1191,7 @@ function SchedulerPage() {
                                             assignServiceWork={assignServiceWork}
                                             onClose={() => setIsModalAssignServiceWork(false)}
                                             lines={startTimeLines}
-                                            planByHardware={planByHardware}
+                                            planByHardware={planByHardware} selectDate={selectDate}
                     />}
 
                 {isModalUpdateServiceWork &&

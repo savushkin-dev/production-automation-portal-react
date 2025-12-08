@@ -83,7 +83,7 @@ export default class Store {
     async checkAuth(){
         this.isAuthInProgress = true;
         try {
-            const response = await AuthService.getAuthorizedUserData();
+            // const response = await AuthService.getAuthorizedUserData();
             // console.log(response)
             this.setAuth(true);
             const token = AuthService.decodeToken(localStorage.getItem("tokenAutomationProduction"));

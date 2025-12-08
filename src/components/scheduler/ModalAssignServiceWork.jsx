@@ -1,4 +1,4 @@
-import React, {useState} from 'react'
+import React, {useEffect, useState} from 'react'
 import {styleInputWithoutRounded} from "../../data/styles";
 import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
@@ -8,7 +8,7 @@ export function ModalAssignServiceWork({
                                   onClose, assignServiceWork,
                                   selectedItems,
                                   planByHardware,
-                                  lines
+                                  lines, selectDate
                               }) {
 
     const options = lines.map(line => ({
@@ -20,7 +20,10 @@ export function ModalAssignServiceWork({
     const [insertIndex, setInsertIndex] = useState(1);
     const [isLastPos, setIsLastPos] = useState(false);
     const [duration, setDuration] = useState(10);
+    const [time, setTime] = useState(new Date(selectDate).toISOString().replace(/T.*/, 'T08:00'));
     const [nameOperation, setNameOperation] = useState("");
+
+    const [isAddingEmptyLine, setIsAddingEmptyLine] = useState(false);
 
     const getLastItemIndexInGroup = (groupId) => {
         // Фильтруем элементы по группе и ИСКЛЮЧАЕМ мойки
@@ -37,7 +40,7 @@ export function ModalAssignServiceWork({
     };
 
     function assign() {
-        assignServiceWork(selectLine.value, insertIndex - 1, duration, nameOperation);
+        assignServiceWork(selectLine.value, insertIndex - 1, time, duration, nameOperation, isAddingEmptyLine);
     }
 
     const handleChangeSelect = (event) => {
@@ -53,6 +56,15 @@ export function ModalAssignServiceWork({
             }
         }
     };
+
+    useEffect(()=>{
+        const hasJobsOnLine = planByHardware.some(job => job.group === selectLine.value);
+        if (hasJobsOnLine) {
+            setIsAddingEmptyLine(false)
+        } else {
+            setIsAddingEmptyLine(true)
+        }
+    }, [selectLine])
 
     const handleChangeInsertIndex = (event) => {
         setInsertIndex(event)
@@ -86,40 +98,58 @@ export function ModalAssignServiceWork({
                                 options={options}
                                 isClearable={false} isSearchable={false}/>
                     </div>
-                    <div className="flex flex-row my-2">
-                        <span className="py-1 font-medium w-1/2">На какую позицию добавить:</span>
-                        <div className="w-1/2 flex flex-row">
-                            <div style={{display: 'flex', alignItems: 'center'}}
-                                 className="font-medium w-[100%] ml-2">
-                                <input className={styleInputWithoutRounded + "rounded w-[100%]"}
-                                       type="number"
-                                       min={0}
-                                       value={insertIndex}
-                                       onChange={(e) => handleChangeInsertIndex(e.target.value)}
-                                       style={{
-                                           paddingRight: '50%',
-                                       }}
-                                />
-                                <span className="text-sm" style={{
-                                    marginLeft: '-80px',
-                                    cursor: 'pointer',
-                                }}>
+                    {!isAddingEmptyLine &&
+                        <div className="flex flex-row my-2">
+                            <span className="py-1 font-medium w-1/2">На какую позицию добавить:</span>
+                            <div className="w-1/2 flex flex-row">
+                                <div style={{display: 'flex', alignItems: 'center'}}
+                                     className="font-medium w-[100%] ml-2">
+                                    <input className={styleInputWithoutRounded + "rounded w-[100%]"}
+                                           type="number"
+                                           min={0}
+                                           value={insertIndex}
+                                           onChange={(e) => handleChangeInsertIndex(e.target.value)}
+                                           style={{
+                                               paddingRight: '50%',
+                                           }}
+                                    />
+                                    <span className="text-sm" style={{
+                                        marginLeft: '-80px',
+                                        cursor: 'pointer',
+                                    }}>
                                         В конец
                                     </span>
-                                <input className={styleInputWithoutRounded}
-                                       type="checkbox"
-                                       checked={isLastPos}
-                                       onChange={(e) => handleChangeIsLastPos(e.target.checked || "")}
-                                       style={{
-                                           marginLeft: '5px',
-                                           cursor: 'pointer',
-                                       }}
-                                />
+                                    <input className={styleInputWithoutRounded}
+                                           type="checkbox"
+                                           checked={isLastPos}
+                                           onChange={(e) => handleChangeIsLastPos(e.target.checked || "")}
+                                           style={{
+                                               marginLeft: '5px',
+                                               cursor: 'pointer',
+                                           }}
+                                    />
 
+                                </div>
                             </div>
                         </div>
+                    }
+                    {isAddingEmptyLine &&
+                        <div className="flex flex-row my-2">
+                            <span className="py-1 font-medium w-1/2">Начало сервисной операции:</span>
+                            <div className="w-1/2 flex flex-row">
+                                <div style={{display: 'flex', alignItems: 'center'}}
+                                     className="font-medium w-[100%] ml-2">
+                                    <input className={styleInputWithoutRounded + "rounded w-[100%]"}
+                                           type="datetime-local"
+                                           min={0}
+                                           value={time}
+                                           onChange={(e) => setTime(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    }
 
-                    </div>
                     <div className="flex flex-row my-2 font-medium">
                         <span className="py-1 font-medium w-1/2">Длительность операции (минут):</span>
                         <input className={styleInputWithoutRounded + "rounded ml-4 w-1/2"}
