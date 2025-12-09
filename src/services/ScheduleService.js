@@ -310,4 +310,8 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/lineStart`, {lineId, startLineDateTime})
     }
 
+    static async reloadDirectory() {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/reloadDirectory`, {})
+    }
+
 }

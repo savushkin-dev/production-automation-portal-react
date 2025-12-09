@@ -361,6 +361,16 @@ function SchedulerPage() {
         }
     }
 
+    async function reloadDirectory() {
+        try {
+            await SchedulerService.reloadDirectory()
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка обновления справочника: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
     useEffect(() => {
         if (solverStatus === "NOT_SOLVING") {
             setIsSolve(false)
@@ -984,6 +994,11 @@ function SchedulerPage() {
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                             Excel экспорт
                             <i className="pl-2 fa-solid fa-file-excel"></i>
+                        </button>
+                        <button onClick={reloadDirectory}
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
+                            Обновить справочник
+                            <i className="pl-2 fa-solid fa-repeat"></i>
                         </button>
                     </div>
                 </div>
