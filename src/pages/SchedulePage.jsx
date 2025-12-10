@@ -51,6 +51,7 @@ function SchedulerPage() {
     const [items, setItems] = useState([]);
     const [pdayData, setPdayData] = useState([]);
     const [pdayDataNextDay, setPdayDataNextDay] = useState([]);
+    const [pdayDataNext2Day, setPdayDataNext2Day] = useState([]);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingSolve, setIsLoadingSolve] = useState(false);
@@ -133,6 +134,7 @@ function SchedulerPage() {
             setScore({hard: 0, medium: 0, soft: 0})
             setPdayData([])
             setPdayDataNextDay([])
+            setPdayDataNext2Day([])
         }
     }
 
@@ -174,14 +176,19 @@ function SchedulerPage() {
             const selectDatePlusDay = date.toISOString().split('T')[0];
             date.setDate(date.getDate() + 1);
             const selectDatePlus2Day = date.toISOString().split('T')[0];
+            date.setDate(date.getDate() + 1);
+            const selectDatePlus3Day = date.toISOString().split('T')[0];
 
             const responseNextDay = await SchedulerService.loadPday(selectDatePlusDay, selectDatePlus2Day, idealEndDateTime, maxEndDateTime, lineTimes);
             setPdayDataNextDay(responseNextDay.data)
+            const responseNext2Day = await SchedulerService.loadPday(selectDatePlus2Day, selectDatePlus3Day, idealEndDateTime, maxEndDateTime, lineTimes);
+            setPdayDataNext2Day(responseNext2Day.data)
         } catch (e) {
             console.error(e)
             setMsg(e.response.data.error)
             setIsModalNotify(true);
             setPdayDataNextDay([])
+            setPdayDataNext2Day([])
         }
     }
 
@@ -1247,6 +1254,9 @@ function SchedulerPage() {
 
                 <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} updatePday={updatePday}
                            selectDate={selectDate} dateData={getNextDateStr(selectDateTable)}/>
+
+                <DataTable data={pdayDataNext2Day} setData={setPdayDataNext2Day} updatePday={updatePday}
+                           selectDate={selectDate} dateData={getNextDateStr(getNextDateStr(selectDateTable))}/>
 
 
             </div>
