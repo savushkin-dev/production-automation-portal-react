@@ -301,11 +301,14 @@ function SchedulerPage() {
 
     async function fetchStopSolving() {
         try {
+            setIsLoadingSolve(true)
             await SchedulerService.stopSolving();
         } catch (e) {
             console.error(e)
             setMsg("Ошибка остановки планирования: " + e.response.data.error)
             setIsModalNotify(true);
+        } finally {
+            setIsLoadingSolve(false)
         }
     }
 
@@ -1050,7 +1053,7 @@ function SchedulerPage() {
                             }
                             {isSolve &&
                                 <div onClick={stopSolving}>
-                                    <button
+                                    <button disabled={isLoadingSolve}
                                         className="rounded text-white px-1 bg-red-600 hover:bg-red-500 h-[30px] w-36 font-medium text-[0.950rem]">
                                         <i className="fa-solid fa-stop"></i>
                                         <span className="pl-1">Остановить</span>
