@@ -123,8 +123,54 @@ function SchedulerPage() {
                 visibleTimeEnd: moment(selectDate).startOf('day').add(30, 'hour')
             }));
 
+            // console.log(startTimeLines)
+            // console.log(lineTimes)
+
             await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, lineTimes, findSolvedInDb);
             await fetchPlan()
+
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка загрузки: " + e.response.data.error)
+            setIsModalNotify(true);
+            setItems([])
+            setScore({hard: 0, medium: 0, soft: 0})
+            setPdayData([])
+            setPdayDataNextDay([])
+            setPdayDataNext2Day([])
+        }
+    }
+
+    async function loadFromDb() {
+        const lineTimes = startTimeLines.reduce((acc, line) => {
+            acc[line.lineId] = line.startDateTime;
+            return acc;
+        }, {});
+
+        try {
+            setVisibleTimeRange(prevState => ({
+                ...prevState,
+                visibleTimeStart: moment(selectDate).startOf('day').add(-2, 'hour'),
+                visibleTimeEnd: moment(selectDate).startOf('day').add(30, 'hour')
+            }));
+
+            console.log(startTimeLines)
+
+
+
+            await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, lineTimes, true);
+            await fetchPlan()
+
+            // // Сопоставляем по lineId
+            // const updatedJobs = jobs.map(job => {
+            //     const line = lines.find(l => l.id === job.lineId);
+            //     return {
+            //         ...job,
+            //         startDateTime: line ? line.startDateTime : job.startDateTime
+            //     };
+            // });
+            //
+            // console.log(updatedJobs);
 
         } catch (e) {
             console.error(e)
@@ -984,7 +1030,7 @@ function SchedulerPage() {
                         {/*</button>*/}
 
                         <button onClick={() => {
-                            assignSettings(true)
+                            loadFromDb()
                         }}
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                             Загрузить план с БД
