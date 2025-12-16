@@ -110,6 +110,31 @@ function SchedulerPage() {
         }
     }, [location.search]);
 
+    async function init() {
+        try {
+            setVisibleTimeRange(prevState => ({
+                ...prevState,
+                visibleTimeStart: moment(selectDate).startOf('day').add(-2, 'hour'),
+                visibleTimeEnd: moment(selectDate).startOf('day').add(30, 'hour')
+            }));
+
+
+            const response = await SchedulerService.init(selectDate);
+            console.log(response.data)
+            await fetchPlan()
+
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка инициализации: " + e.response.data.error)
+            setIsModalNotify(true);
+            setItems([])
+            setScore({hard: 0, medium: 0, soft: 0})
+            setPdayData([])
+            setPdayDataNextDay([])
+            setPdayDataNext2Day([])
+        }
+    }
+
     async function assignSettings(findSolvedInDb) {
         const lineTimes = startTimeLines.reduce((acc, line) => {
             acc[line.lineId] = line.startDateTime;
@@ -313,10 +338,14 @@ function SchedulerPage() {
                     name: lineName.trim(),
                     lineId: lineId,
                     originalName: lineName.trim(),
-                    startDateTime: "08:00"
+                    // startDateTime: selectDate+"T08:00",
+                    // maxEndDateTime: selectDate+"T08:00",
+                    startDateTime: "08:00",
+                    maxEndDateTime: "08:00",
                 }))
                 .sort((a, b) => a.name.localeCompare(b.name, 'ru')); // сортировка по названию
 
+            console.log(res)
             setStartTimeLines(res)
 
             setLineTimes(res.reduce((acc, line) => {

@@ -215,6 +215,9 @@ export default class ScheduleService {
         }
     }
 
+    static async init(startDate) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/init`, {startDate})
+    }
 
     static async assignSettings(startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes, findSolvedInDb) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/load`, {findSolvedInDb, startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes: JSON.stringify(lineStartTimes)})
@@ -233,7 +236,7 @@ export default class ScheduleService {
     }
 
     static async savePlan() {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/saveToDb`, {})
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/save`, {})
     }
 
     static async removePlan() {
@@ -302,8 +305,8 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/updateOrderList`, {})
     }
 
-    static async updateMaxEndDateTime(maxEndDateTime) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/planEndTime`, {maxEndDateTime})
+    static async updateMaxEndDateTime(lineId, maxEndDateTime) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/planEndTime`, {lineId, maxEndDateTime})
     }
 
     static async updateLineStart(lineId, startLineDateTime) {
