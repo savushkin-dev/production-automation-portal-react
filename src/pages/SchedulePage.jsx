@@ -49,9 +49,11 @@ function SchedulerPage() {
 
     const [groups, setGroups] = useState([]);
     const [items, setItems] = useState([]);
+    const [pdayDataPred, setPdayDataPred] = useState([]);
     const [pdayData, setPdayData] = useState([]);
     const [pdayDataNextDay, setPdayDataNextDay] = useState([]);
     const [pdayDataNext2Day, setPdayDataNext2Day] = useState([]);
+    const [selectJobs, setSelectJobs] = useState([])
 
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingSolve, setIsLoadingSolve] = useState(false);
@@ -118,10 +120,54 @@ function SchedulerPage() {
                 visibleTimeEnd: moment(selectDate).startOf('day').add(30, 'hour')
             }));
 
-
             const response = await SchedulerService.init(selectDate);
-            console.log(response.data)
-            await fetchPlan()
+            fetchPlan();
+
+            const pdayDataPredTemp = [];
+            const pdayDataTemp = [];
+            const pdayDataNextDayTemp = [];
+            const pdayDataNext2DayTemp = [];
+
+            // Определяем базовую дату для сравнения
+            const baseDate = moment(selectDate);
+            const previousDay = moment(baseDate).subtract(1, 'day');
+            const nextDay = moment(baseDate).add(1, 'day');
+            const next2Day = moment(baseDate).add(2, 'day');
+
+            const initialSelectJobs = {};
+
+            response.data.forEach(item => {
+                if (!item.dti) return;
+
+                const itemDate = moment(item.dti).startOf('day');
+                const dataWithSelection = {
+                    ...item,
+                    isSelected: false
+                };
+
+                if (item.snpz) {
+                    initialSelectJobs[item.snpz] = item.startProductionDateTime !== "" && item.startProductionDateTime !== null; // Занятые = true, свободные = false
+                }
+
+                // Сравниваем даты
+                if (itemDate.isSame(previousDay, 'day')) {
+                    pdayDataPredTemp.push(dataWithSelection);
+                } else if (itemDate.isSame(baseDate, 'day')) {
+                    pdayDataTemp.push(dataWithSelection);
+                } else if (itemDate.isSame(nextDay, 'day')) {
+                    pdayDataNextDayTemp.push(dataWithSelection);
+                } else if (itemDate.isSame(next2Day, 'day')) {
+                    pdayDataNext2DayTemp.push(dataWithSelection);
+                }
+
+            });
+
+            setPdayDataPred(pdayDataPredTemp);
+            setPdayData(pdayDataTemp);
+            setPdayDataNextDay(pdayDataNextDayTemp);
+            setPdayDataNext2Day(pdayDataNext2DayTemp);
+
+            setSelectJobs(initialSelectJobs);
 
         } catch (e) {
             console.error(e)
@@ -129,6 +175,7 @@ function SchedulerPage() {
             setIsModalNotify(true);
             setItems([])
             setScore({hard: 0, medium: 0, soft: 0})
+            setPdayDataPred([])
             setPdayData([])
             setPdayDataNextDay([])
             setPdayDataNext2Day([])
@@ -215,6 +262,12 @@ function SchedulerPage() {
         return nextDay.toISOString().split('T')[0];
     }
 
+    function getPredDateStr(date) {
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() - 1);
+        return nextDay.toISOString().split('T')[0];
+    }
+
     async function loadPday() {
         const lineTimes = startTimeLines.reduce((acc, line) => {
             acc[line.lineId] = line.startDateTime;
@@ -277,8 +330,8 @@ function SchedulerPage() {
     useEffect(() => {
         setPlanByHardware([])
         if (startTimeLines) {
-            loadPday()
-            loadPdayNextDay()
+            // loadPday()
+            // loadPdayNextDay()
         }
     }, [selectDate, selectDateTable])
 
@@ -519,8 +572,8 @@ function SchedulerPage() {
 
     useEffect(() => {
         if (startTimeLines) {
-            loadPday()
-            loadPdayNextDay()
+            // loadPday()
+            // loadPdayNextDay()
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
         }
     }, [lineTimes])
@@ -890,7 +943,7 @@ function SchedulerPage() {
 
     async function reloadPlan() {
         try {
-            await SchedulerService.reloadPlan();
+            await SchedulerService.reloadPlan(selectJobs);
             await fetchPlan();
             setMsg("Дозагрузка прошла успешно, можете продолжить планирование.")
             setIsModalNotify(true);
@@ -1101,6 +1154,12 @@ function SchedulerPage() {
 
                         <button
                             className="ml-3 rounded bg-blue-800 hover:bg-blue-700 text-white px-1 h-[30px] w-44 font-medium text-[0.950rem]"
+                            onClick={init}>
+                            Init
+                        </button>
+
+                        <button
+                            className="ml-3 rounded bg-blue-800 hover:bg-blue-700 text-white px-1 h-[30px] w-44 font-medium text-[0.950rem]"
                             onClick={selectSettings}>
                             Загрузить задание
                         </button>
@@ -1119,7 +1178,7 @@ function SchedulerPage() {
                         <div className="inline-flex">
                             {!isSolve &&
                                 <div onClick={solve}>
-                                    <button disabled={isLoadingSolve}
+                                <button disabled={isLoadingSolve}
                                             className="rounded text-white px-1 bg-green-600 hover:bg-green-500 h-[30px] w-36 font-medium text-[0.950rem]">
                                         <i className="fa-solid fa-play"></i>
                                         <span className="pl-1">Планировать</span>
@@ -1326,15 +1385,14 @@ function SchedulerPage() {
                                             updateServiceWork={updateServiceWork}/>
                 }
 
-                <DataTable data={pdayData} setData={setPdayData} updatePday={updatePday} selectDate={selectDateTable}
-                           dateData={selectDate}/>
+                <DataTable data={pdayDataPred} setData={setPdayDataPred} dateData={getPredDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+
+                <DataTable data={pdayData} setData={setPdayData} dateData={selectDate} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
 
-                <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} updatePday={updatePday}
-                           selectDate={selectDate} dateData={getNextDateStr(selectDateTable)}/>
+                <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} dateData={getNextDateStr(selectDateTable)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
-                <DataTable data={pdayDataNext2Day} setData={setPdayDataNext2Day} updatePday={updatePday}
-                           selectDate={selectDate} dateData={getNextDateStr(getNextDateStr(selectDateTable))}/>
+                <DataTable data={pdayDataNext2Day} setData={setPdayDataNext2Day}  dateData={getNextDateStr(getNextDateStr(selectDateTable))} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
 
             </div>

@@ -301,8 +301,8 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/work`, {})
     }
 
-    static async reloadPlan() {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/updateOrderList`, {})
+    static async reloadPlan(selection) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/selection`, {selection})
     }
 
     static async updateMaxEndDateTime(lineId, maxEndDateTime) {
