@@ -31,14 +31,8 @@ export function ModalDateSettings({lines, setLines, selectDate, setDate, selectE
         );
 
         const line = lines.find(item => item.id === lineId)?.lineId;
-        changeTime(line, newTime);
+        changeMaxEndTime(line, newTime);
     };
-
-
-
-    useEffect(() => {
-        console.log(lines)
-    }, []);
 
     return (
         <>

@@ -32,6 +32,7 @@ export default class ScheduleService {
         });
         let cleaning = [];
         for (let i = 0; i < filteredData.length; i++) {
+            let dur = Math.round(new Date(filteredData[i].startProductionDateTime) - new Date(filteredData[i].startCleaningDateTime))/ 60000;
             cleaning[i] = Object.assign({}, exampleTask);
             cleaning[i].id = i + "cleaning";
             cleaning[i].start_time = new Date(filteredData[i].startCleaningDateTime).getTime();
@@ -40,7 +41,7 @@ export default class ScheduleService {
             cleaning[i].group = filteredData[i].line.id;
             cleaning[i].itemProps = {
                 style: {
-                    background: '#f0f9ff',
+                    background: dur >= 100? "#cff1ff" : '#f0f9ff',
                     border: '1px solid #dcdcdc',
                     color: "#0369a1",
                 },
@@ -50,7 +51,7 @@ export default class ScheduleService {
                 start: filteredData[i].startCleaningDateTime,
                 end: filteredData[i].startProductionDateTime,
                 line: filteredData[i].line.name,
-                duration: Math.round(new Date(filteredData[i].startProductionDateTime) - new Date(filteredData[i].startCleaningDateTime))/ 60000,
+                duration: dur,
                 pinned: false,
                 lineInfo: json.jobs[i].line,
             }
@@ -73,11 +74,17 @@ export default class ScheduleService {
             return acc;
         }, {});
 
-        for (let i = 0; i < json.lines.length; i++) {
+        const sortedLines = [...json.lines].sort((a, b) => {
+            const numA = parseInt(a.name.match(/Линия №(\d+)/)?.[1] || 0);
+            const numB = parseInt(b.name.match(/Линия №(\d+)/)?.[1] || 0);
+            return numA - numB;
+        });
+
+        for (let i = 0; i < sortedLines.length; i++) {
             hardware[i] = Object.assign({}, exampleResourse);
-            hardware[i].id = json.lines[i].id;
-            hardware[i].title = json.lines[i].name;
-            hardware[i].totalMass = groupMass[json.lines[i].id] || 0; // Добавляем общее mass
+            hardware[i].id = sortedLines[i].id;
+            hardware[i].title = sortedLines[i].name;
+            hardware[i].totalMass = groupMass[sortedLines[i].id] || 0; // Добавляем общее mass
         }
 
         return hardware;
