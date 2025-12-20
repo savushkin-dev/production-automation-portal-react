@@ -367,6 +367,12 @@ function SchedulerPage() {
                 if (isDisplayByHardware)
                     setItems(e);
             });
+            SchedulerService.parseDateTimeSettings(downloadedPlan).then((e) => {
+                setStartTimeLines(e)
+            })
+
+
+
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
         }
     }, [downloadedPlan]);

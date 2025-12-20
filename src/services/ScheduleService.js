@@ -26,6 +26,25 @@ const exampleTask = {
 
 export default class ScheduleService {
 
+    static async parseDateTimeSettings(json) {
+        return json.lines
+            .map((line, index) => ({
+                id: String(index + 1),
+                name: line.name.trim(),
+                lineId: line.id,
+                originalName: line.name.trim(),
+                // startDateTime: selectDate+"T08:00",
+                // maxEndDateTime: selectDate+"T08:00",
+                startDateTime: line.startDateTime,
+                maxEndDateTime: "08:00",
+            }))
+            .sort((a, b) => {
+                const numA = parseInt(a.name.match(/Линия №(\d+)/)?.[1] || 0);
+                const numB = parseInt(b.name.match(/Линия №(\d+)/)?.[1] || 0);
+                return numA - numB;
+            });
+    }
+
     static async parseCleaningByHardware(json) {
         const filteredData = json.jobs.filter(item => {
             return item.startCleaningDateTime !== item.startProductionDateTime;
