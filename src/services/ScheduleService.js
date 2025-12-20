@@ -33,10 +33,8 @@ export default class ScheduleService {
                 name: line.name.trim(),
                 lineId: line.id,
                 originalName: line.name.trim(),
-                // startDateTime: selectDate+"T08:00",
-                // maxEndDateTime: selectDate+"T08:00",
                 startDateTime: line.startDateTime,
-                maxEndDateTime: "08:00",
+                maxEndDateTime: line.maxEndTime,
             }))
             .sort((a, b) => {
                 const numA = parseInt(a.name.match(/Линия №(\d+)/)?.[1] || 0);
@@ -331,8 +329,8 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/selection`, {selection})
     }
 
-    static async updateMaxEndDateTime(lineId, maxEndDateTime) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/planEndTime`, {lineId, maxEndDateTime})
+    static async updateMaxEndDateTime(lineId, lineMaxEndDateTime) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/lineMaxEnd`, {lineId, lineMaxEndDateTime})
     }
 
     static async updateLineStart(lineId, startLineDateTime) {
