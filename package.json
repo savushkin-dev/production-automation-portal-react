@@ -54,6 +54,7 @@
     "build:staging": "env-cmd -f .env.staging npm run build",
     "build:prod": "env-cmd -f .env.production npm run build",
     "build:brzprod": "env-cmd -f .env.brzprod npm run build",
+    "build:baranprod": "env-cmd -f .env.baranprod npm run build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
