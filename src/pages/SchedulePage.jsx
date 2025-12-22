@@ -795,9 +795,9 @@ function SchedulerPage() {
         }
     }
 
-    async function assignMaxEndDateTime(maxEndDateTime) {
+    async function assignMaxEndDateTime(lineId, maxEndDateTime) {
         try {
-            await SchedulerService.updateMaxEndDateTime(maxEndDateTime);
+            await SchedulerService.updateMaxEndDateTime(lineId, maxEndDateTime);
             await fetchPlan()
         } catch (e) {
             console.error(e)
