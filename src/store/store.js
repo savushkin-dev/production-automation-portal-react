@@ -28,11 +28,16 @@ export default class Store {
     }
 
     // Создание новой сессии
-    createSession() {
-        const sessionId = `session_${Date.now()}`;
-        this.solverSessionId = sessionId;
-        sessionStorage.setItem('solverSessionId', sessionId);
-        return sessionId;
+    async createSession() {
+        try {
+            const sessionId = `id_${Date.now()}`;
+            this.solverSessionId = sessionId;
+            sessionStorage.setItem('solverSessionId', sessionId);
+            return sessionId;
+        } catch (error) {
+            console.error("Ошибка получения IP:", error);
+            return null;
+        }
     }
 
     // Очистка сессии
@@ -78,7 +83,7 @@ export default class Store {
     async checkAuth(){
         this.isAuthInProgress = true;
         try {
-            const response = await AuthService.getAuthorizedUserData();
+            // const response = await AuthService.getAuthorizedUserData();
             // console.log(response)
             this.setAuth(true);
             const token = AuthService.decodeToken(localStorage.getItem("tokenAutomationProduction"));

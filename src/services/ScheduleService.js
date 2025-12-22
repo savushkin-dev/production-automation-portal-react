@@ -26,36 +26,21 @@ const exampleTask = {
 
 export default class ScheduleService {
 
-    static async parseCleaningByParty(json) {
-        const filteredData = json.jobs.filter(item => {
-            return item.startCleaningDateTime !== item.startProductionDateTime;
-        });
-        let cleaning = [];
-        for (let i = 0; i < filteredData.length; i++) {
-            cleaning[i] = Object.assign({}, exampleTask);
-            cleaning[i].id = filteredData[i].id + 'cl';
-            cleaning[i].start_time = new Date(filteredData[i].startCleaningDateTime).getTime();
-            cleaning[i].end_time = new Date(filteredData[i].startProductionDateTime).getTime();
-            cleaning[i].title = "Мойка, переналадка";
-            cleaning[i].group = filteredData[i].np;
-            cleaning[i].itemProps = {
-                style: {
-                    background: '#f0f9ff',
-                    border: '1px solid #dcdcdc',
-                    color: "#0369a1",
-                },
-            };
-            cleaning[i].info = { //Доп информация
-                name: "Мойка",
-                start: filteredData[i].startCleaningDateTime,
-                end: filteredData[i].startProductionDateTime,
-                line: filteredData[i].line.name,
-                duration: Math.round(new Date(filteredData[i].startProductionDateTime) - new Date(filteredData[i].startCleaningDateTime))/ 60000,
-                pinned: false,
-                lineInfo: json.jobs[i].line,
-            }
-        }
-        return cleaning;
+    static async parseDateTimeSettings(json) {
+        return json.lines
+            .map((line, index) => ({
+                id: String(index + 1),
+                name: line.name.trim(),
+                lineId: line.id,
+                originalName: line.name.trim(),
+                startDateTime: line.startDateTime,
+                maxEndDateTime: line.maxEndTime,
+            }))
+            .sort((a, b) => {
+                const numA = parseInt(a.name.match(/Линия №(\d+)/)?.[1] || 0);
+                const numB = parseInt(b.name.match(/Линия №(\d+)/)?.[1] || 0);
+                return numA - numB;
+            });
     }
 
     static async parseCleaningByHardware(json) {
@@ -64,6 +49,7 @@ export default class ScheduleService {
         });
         let cleaning = [];
         for (let i = 0; i < filteredData.length; i++) {
+            let dur = Math.round(new Date(filteredData[i].startProductionDateTime) - new Date(filteredData[i].startCleaningDateTime))/ 60000;
             cleaning[i] = Object.assign({}, exampleTask);
             cleaning[i].id = i + "cleaning";
             cleaning[i].start_time = new Date(filteredData[i].startCleaningDateTime).getTime();
@@ -72,7 +58,7 @@ export default class ScheduleService {
             cleaning[i].group = filteredData[i].line.id;
             cleaning[i].itemProps = {
                 style: {
-                    background: '#f0f9ff',
+                    background: dur >= 100? "#cff1ff" : '#f0f9ff',
                     border: '1px solid #dcdcdc',
                     color: "#0369a1",
                 },
@@ -82,7 +68,7 @@ export default class ScheduleService {
                 start: filteredData[i].startCleaningDateTime,
                 end: filteredData[i].startProductionDateTime,
                 line: filteredData[i].line.name,
-                duration: Math.round(new Date(filteredData[i].startProductionDateTime) - new Date(filteredData[i].startCleaningDateTime))/ 60000,
+                duration: dur,
                 pinned: false,
                 lineInfo: json.jobs[i].line,
             }
@@ -90,102 +76,35 @@ export default class ScheduleService {
         return cleaning;
     }
 
-    static async parseParty(json) {
-        party = [];
-        const seenNp = new Map();
-
-        // Считаем общее quantity для каждой партии
-        const groupQuantities = json.jobs.reduce((acc, item) => {
-            if (!acc[item.np]) {
-                acc[item.np] = 0;
-            }
-            acc[item.np] += item.quantity || 0;
-            return acc;
-        }, {});
-
-        json.jobs.forEach(item => {
-            if (!seenNp.has(item.np)) {
-                seenNp.set(item.np, item);
-            }
-        });
-
-        party = Array.from(seenNp, ([np, originalItem], index) => ({
-            ...exampleResourse,
-            id: np,
-            title: `Партия №${np}`,
-            index: index,
-            totalQuantity: groupQuantities[np] || 0 // Добавляем общее quantity
-        }));
-
-        return party;
-    }
-
     static async parseHardware(json) {
         hardware = [];
 
-        // Считаем общее quantity для каждой линии
-        const groupQuantities = json.jobs.reduce((acc, item) => {
+        // Считаем общее mass для каждой линии
+        const groupMass = json.jobs.reduce((acc, item) => {
             const lineId = item.line?.id;
             if (lineId) {
                 if (!acc[lineId]) {
                     acc[lineId] = 0;
                 }
-                acc[lineId] += item.quantity || 0;
+                acc[lineId] += item.mass || 0;
             }
             return acc;
         }, {});
 
-        for (let i = 0; i < json.lines.length; i++) {
+        const sortedLines = [...json.lines].sort((a, b) => {
+            const numA = parseInt(a.name.match(/Линия №(\d+)/)?.[1] || 0);
+            const numB = parseInt(b.name.match(/Линия №(\d+)/)?.[1] || 0);
+            return numA - numB;
+        });
+
+        for (let i = 0; i < sortedLines.length; i++) {
             hardware[i] = Object.assign({}, exampleResourse);
-            hardware[i].id = json.lines[i].id;
-            hardware[i].title = json.lines[i].name;
-            hardware[i].totalQuantity = groupQuantities[json.lines[i].id] || 0; // Добавляем общее quantity
+            hardware[i].id = sortedLines[i].id;
+            hardware[i].title = sortedLines[i].name;
+            hardware[i].totalMass = groupMass[sortedLines[i].id] || 0; // Добавляем общее mass
         }
 
         return hardware;
-    }
-
-    static async parsePlanByParty(json) {
-        planByParty = [];
-
-        for (let i = 0; i < json.jobs.length; i++) {
-            planByParty[i] = Object.assign({}, exampleTask);
-            planByParty[i].id = json.jobs[i].id;
-            planByParty[i].start_time = new Date(json.jobs[i].startProductionDateTime).getTime();
-            planByParty[i].end_time = new Date(json.jobs[i].endDateTime).getTime();
-            planByParty[i].title = json.jobs[i].name;
-            planByParty[i].group = json.jobs[i].np;
-
-            planByParty[i].itemProps = {
-                style: {
-                    background: '#fffcd2',
-                    border: '1px solid #dcdcdc',
-                    color: "#a16207",
-                }
-            };
-            planByParty[i].info = { //Доп информация
-                name: json.jobs[i].name,
-                start: json.jobs[i].startProductionDateTime,
-                end: json.jobs[i].endDateTime,
-                line: json.jobs[i].line?.name || "",
-                quantity: json.jobs[i].quantity,
-                np: json.jobs[i].np,
-                duration: Math.round(new Date(json.jobs[i].endDateTime) - new Date(json.jobs[i].startProductionDateTime))/ 60000,
-
-                fullName: json.jobs[i].product.name,
-                type: json.jobs[i].product.type,
-                glaze: json.jobs[i].product.glaze,
-                filling: json.jobs[i].product.filling,
-                _allergen: json.jobs[i].product._allergen,
-                pinned: json.jobs[i].pinned,
-            }
-        }
-
-        let cleaning = await this.parseCleaningByParty(json)
-        let result = [...planByParty, ...cleaning]
-
-        // result = ScheduleService.defineAssignedJobs(result, json) //временно отключено
-        return result;
     }
 
     static async parsePlanByHardware(json) {
@@ -201,9 +120,9 @@ export default class ScheduleService {
 
             planByHardware[i].itemProps = {
                 style: {
-                    background: '#fffcd2',
+                    background: this.getBgColorItem(json.jobs[i]).bg,
                     border: '1px solid #dcdcdc',
-                    color: "#a16207",
+                    color: this.getBgColorItem(json.jobs[i]).color,
                 }
             };
             planByHardware[i].info = { //Доп информация
@@ -212,6 +131,7 @@ export default class ScheduleService {
                 end: json.jobs[i].endDateTime,
                 line: json.jobs[i].line?.name,
                 quantity: json.jobs[i].quantity,
+                mass: json.jobs[i].mass,
                 np: json.jobs[i].np,
                 duration: Math.round(new Date(json.jobs[i].endDateTime) - new Date(json.jobs[i].startProductionDateTime))/ 60000,
 
@@ -220,18 +140,23 @@ export default class ScheduleService {
                 glaze: json.jobs[i].product.glaze,
                 filling: json.jobs[i].product.filling,
                 _allergen: json.jobs[i].product._allergen,
-                pinned: json.jobs[i].pinned,
                 lineInfo: json.jobs[i].line,
+                maintenance: json.jobs[i].maintenance
             }
-            // planByHardware[i].canMove = true
         }
-        // console.log(planByHardware)
+
         let cleaning = await this.parseCleaningByHardware(json)
         let result = [...planByHardware, ...cleaning]
 
-
         result = ScheduleService.defineAssignedJobs(result, json)
         return result;
+    }
+
+    static getBgColorItem(item){
+        if(item.maintenance === true){
+            return {bg:"#ffeaea", color: "#a81a65"}
+        }
+        return {bg:"#fffcd2", color: "#a16207"}
     }
 
     static defineAssignedJobs(result, json){
@@ -314,6 +239,9 @@ export default class ScheduleService {
         }
     }
 
+    static async init(startDate) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/init`, {startDate})
+    }
 
     static async assignSettings(startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes, findSolvedInDb) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/load`, {findSolvedInDb, startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes: JSON.stringify(lineStartTimes)})
@@ -332,7 +260,7 @@ export default class ScheduleService {
     }
 
     static async savePlan() {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/saveToDb`, {})
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/save`, {})
     }
 
     static async removePlan() {
@@ -375,6 +303,42 @@ export default class ScheduleService {
 
     static async assignServiceWork(lineId, insertIndex, durationMinutes, name) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, insertIndex, durationMinutes, name})
+    }
+
+    static async assignServiceWorkEmptyLine(lineId, startProductionDateTime, durationMinutes, name) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, startProductionDateTime, durationMinutes, name})
+    }
+
+    static async updateServiceWork(lineId, updateIndex, durationMinutes) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, updateIndex, durationMinutes})
+    }
+
+    static async removeServiceWork(lineId, removeIndex) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, removeIndex})
+    }
+
+    static async sortSchedule() {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/sortByNp`, {})
+    }
+
+    static async sendToWork() {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/work`, {})
+    }
+
+    static async reloadPlan(selection) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/selection`, {selection})
+    }
+
+    static async updateMaxEndDateTime(lineId, lineMaxEndDateTime) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/lineMaxEnd`, {lineId, lineMaxEndDateTime})
+    }
+
+    static async updateLineStart(lineId, startLineDateTime) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/lineStart`, {lineId, startLineDateTime})
+    }
+
+    static async reloadDirectory() {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/reloadDirectory`, {})
     }
 
 }

@@ -1,10 +1,10 @@
 import "./../App.css";
-import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
-import {useNavigate} from "react-router-dom";
+import React, {useCallback, useEffect, useRef, useState} from "react";
+import {useLocation, useNavigate} from "react-router-dom";
 import moment from 'moment';
 import 'moment/locale/ru';
 
-import {Timeline, TimelineHeaders, SidebarHeader, DateHeader, CustomHeader} from "react-calendar-timeline";
+import {DateHeader, SidebarHeader, Timeline, TimelineHeaders} from "react-calendar-timeline";
 import ScheduleService from "../services/ScheduleService";
 import SchedulerService from "../services/ScheduleService";
 import "./../components/scheduler/scheduler.css"
@@ -18,6 +18,8 @@ import {DropDownActionsItem} from "../components/scheduler/DropDownActionsItem";
 import {ModalMoveJobs} from "../components/scheduler/ModalMoveJobs";
 import {DataTable} from "../components/scheduler/DataTable";
 import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
+import {ModalUpdateServiceWork} from "../components/scheduler/ModalUpdateServiceWork";
+import {MyTimeline} from "../components/scheduler/MyTimeline";
 
 // Принудительно устанавливаем русскую локаль
 moment.updateLocale('ru', {
@@ -35,26 +37,27 @@ function SchedulerPage() {
 
     const [isDisplayByHardware, setIsDisplayByHardware] = useState(true);
 
-    const stylePartyBut = isDisplayByHardware ? " hover:bg-gray-100" : " bg-blue-800 hover:bg-blue-700 text-white";
-    const styleHardwareBut = isDisplayByHardware ? " bg-blue-800 hover:bg-blue-700 text-white" : " hover:bg-gray-100";
-
-    const [party, setParty] = useState([]);
-    const [planByParty, setPlanByParty] = useState([]);
     const [hardware, setHardware] = useState([]);
     const [planByHardware, setPlanByHardware] = useState([]);
 
     const [groups, setGroups] = useState([]);
     const [items, setItems] = useState([]);
+    const [pdayDataPred, setPdayDataPred] = useState([]);
     const [pdayData, setPdayData] = useState([]);
     const [pdayDataNextDay, setPdayDataNextDay] = useState([]);
+    const [pdayDataNext2Day, setPdayDataNext2Day] = useState([]);
+    const [selectJobs, setSelectJobs] = useState([])
 
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingSolve, setIsLoadingSolve] = useState(false);
     const [msg, setMsg] = useState("");
     const [isModalNotify, setIsModalNotify] = useState(false);
     const [isModalRemove, setIsModalRemove] = useState(false);
     const [isModalInfoItem, setIsModalInfoItem] = useState(false);
     const [isModalMoveJobs, setIsModalMoveJobs] = useState(false);
     const [isModalAssignServiceWork, setIsModalAssignServiceWork] = useState(false);
+    const [isModalUpdateServiceWork, setIsModalUpdateServiceWork] = useState(false);
+    const [isModalSendToWork, setIsModalSendToWrk] = useState(false);
 
     const [isSolve, setIsSolve] = useState(false);
     const [score, setScore] = useState({hard: 0, medium: 0, soft: 0});
@@ -88,32 +91,92 @@ function SchedulerPage() {
 
     const [currentUnit, setCurrentUnit] = useState('hour');
 
-    async function assignSettings(findSolvedInDb) {
-        const lineTimes = startTimeLines.reduce((acc, line) => {
-            acc[line.lineId] = line.startDateTime;
-            return acc;
-        }, {});
+    const location = useLocation();
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const dateParam = params.get("date");
 
+        if (dateParam && new Date(dateParam).toTimeString() !== "Invalid Date") {
+            setSelectDate(dateParam);
+            setSelectEndDate(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate() + 1)).toISOString().split('T')[0]);
+            setIdealEndDateTime(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate() + 1)).toISOString().replace(/T.*/, 'T02:00'));
+            setMaxEndDateTime(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate() + 1)).toISOString().replace(/T.*/, 'T03:00'));
+            setSelectDateTable(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate())).toISOString().split('T')[0]);
+            init(dateParam);
+        } else {
+            init(new Date(new Date().setDate(new Date().getDate() - 0)).toISOString().split('T')[0])
+        }
 
+    }, [location.search]);
+
+    async function init(date) {
         try {
             setVisibleTimeRange(prevState => ({
                 ...prevState,
-                visibleTimeStart: moment(selectDate).startOf('day').add(-2, 'hour'),
-                visibleTimeEnd: moment(selectDate).startOf('day').add(30, 'hour')
+                visibleTimeStart: moment(date).startOf('day').add(-2, 'hour'),
+                visibleTimeEnd: moment(date).startOf('day').add(30, 'hour')
             }));
 
-            await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, lineTimes, findSolvedInDb);
-            // setPdayDataNextDay([])
-            await fetchPlan()
+            const response = await SchedulerService.init(date);
+            fetchPlan();
+
+            const pdayDataPredTemp = [];
+            const pdayDataTemp = [];
+            const pdayDataNextDayTemp = [];
+            const pdayDataNext2DayTemp = [];
+
+            // Определяем базовую дату для сравнения
+            const baseDate = moment(date);
+            const previousDay = moment(baseDate).subtract(1, 'day');
+            const nextDay = moment(baseDate).add(1, 'day');
+            const next2Day = moment(baseDate).add(2, 'day');
+
+
+            const initialSelectJobs = {};
+
+            response.data.forEach(item => {
+                if (!item.dti) return;
+
+                const itemDate = moment(item.dti).startOf('day');
+                const dataWithSelection = {
+                    ...item,
+                    isSelected: false
+                };
+
+                if (item.snpz) {
+                    initialSelectJobs[item.snpz] = item.startProductionDateTime !== "" && item.startProductionDateTime !== null; // Занятые = true, свободные = false
+                }
+
+                // Сравниваем даты
+                if (itemDate.isSame(previousDay, 'day')) {
+                    pdayDataPredTemp.push(dataWithSelection);
+                } else if (itemDate.isSame(baseDate, 'day')) {
+                    pdayDataTemp.push(dataWithSelection);
+                } else if (itemDate.isSame(nextDay, 'day')) {
+                    pdayDataNextDayTemp.push(dataWithSelection);
+                } else if (itemDate.isSame(next2Day, 'day')) {
+                    pdayDataNext2DayTemp.push(dataWithSelection);
+                }
+
+            });
+
+            setPdayDataPred(pdayDataPredTemp);
+            setPdayData(pdayDataTemp);
+            setPdayDataNextDay(pdayDataNextDayTemp);
+            setPdayDataNext2Day(pdayDataNext2DayTemp);
+
+            setSelectJobs(initialSelectJobs);
 
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка загрузки: " + e.response.data.error)
+            setMsg("Ошибка инициализации: " + e.response.data.error)
             setIsModalNotify(true);
             setItems([])
             setScore({hard: 0, medium: 0, soft: 0})
+            setPdayDataPred([])
             setPdayData([])
             setPdayDataNextDay([])
+            setPdayDataNext2Day([])
         }
     }
 
@@ -123,70 +186,30 @@ function SchedulerPage() {
         return nextDay.toISOString().split('T')[0];
     }
 
-    async function loadPday() {
-        const lineTimes = startTimeLines.reduce((acc, line) => {
-            acc[line.lineId] = line.startDateTime;
-            return acc;
-        }, {});
-
-        try {
-            const date = new Date(selectDateTable);
-            date.setDate(date.getDate() + 1);
-            const selectDatePlusDay = date.toISOString().split('T')[0];
-            const response = await SchedulerService.loadPday(selectDateTable, selectDatePlusDay, idealEndDateTime, maxEndDateTime, lineTimes);
-            setPdayData(response.data)
-        } catch (e) {
-            console.error(e)
-            setMsg(e.response.data.error)
-            setIsModalNotify(true);
-            setPdayData([])
-        }
-    }
-
-    async function loadPdayNextDay() {
-        const lineTimes = startTimeLines.reduce((acc, line) => {
-            acc[line.lineId] = line.startDateTime;
-            return acc;
-        }, {});
-
-        try {
-            const date = new Date(selectDateTable);
-            date.setDate(date.getDate() + 1);
-            const selectDatePlusDay = date.toISOString().split('T')[0];
-            date.setDate(date.getDate() + 1);
-            const selectDatePlus2Day = date.toISOString().split('T')[0];
-
-            const responseNextDay = await SchedulerService.loadPday(selectDatePlusDay, selectDatePlus2Day, idealEndDateTime, maxEndDateTime, lineTimes);
-            setPdayDataNextDay(responseNextDay.data)
-        } catch (e) {
-            console.error(e)
-            setMsg(e.response.data.error)
-            setIsModalNotify(true);
-            setPdayDataNextDay([])
-        }
-    }
-
-    async function updatePday(body) {
-        try {
-            return await SchedulerService.updatePday(body)
-        } catch (e) {
-            console.error(e)
-            setMsg("Не удалось отметить задачу")
-            setIsModalNotify(true);
-            throw e;
-        }
+    function getPredDateStr(date) {
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() - 1);
+        return nextDay.toISOString().split('T')[0];
     }
 
     useEffect(() => {
         setPlanByHardware([])
-        setPlanByParty([])
-        if(startTimeLines){
-            loadPday()
-            loadPdayNextDay()
+        if (startTimeLines) {
+             init(selectDate);
         }
-        // setPdayData([])
-        // setPdayDataNextDay([])
     }, [selectDate, selectDateTable])
+
+    async function sendToWork() {
+        try {
+            await SchedulerService.sendToWork();
+            setMsg("План успешно отправлен в работу.")
+            setIsModalNotify(true);
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка отправки плана в работу: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
 
     async function savePlan() {
         try {
@@ -212,15 +235,14 @@ function SchedulerPage() {
         }
     }
 
-    function clickRemovePlan() {
-        setMsg("Вы уверены что хотите удалить план?")
-        setIsModalRemove(true);
+    function clickSendToWork() {
+        setMsg("Вы уверены что хотите отправить план в работу?")
+        setIsModalSendToWrk(true);
     }
 
     async function fetchLines() {
         try {
             const response = await SchedulerService.getLines();
-
 
             let res = Object.entries(response.data)
                 .map(([lineId, lineName], index) => ({
@@ -228,16 +250,23 @@ function SchedulerPage() {
                     name: lineName.trim(),
                     lineId: lineId,
                     originalName: lineName.trim(),
-                    startDateTime: "08:00"
+                    // startDateTime: selectDate+"T08:00",
+                    // maxEndDateTime: selectDate+"T08:00",
+                    startDateTime: "08:00",
+                    maxEndDateTime: "08:00",
                 }))
+                .sort((a, b) => {
+                    const numA = parseInt(a.name.match(/Линия №(\d+)/)?.[1] || 0);
+                    const numB = parseInt(b.name.match(/Линия №(\d+)/)?.[1] || 0);
+                    return numA - numB;
+                });
+
             setStartTimeLines(res)
 
             setLineTimes(res.reduce((acc, line) => {
                 acc[line.lineId] = line.startDateTime;
                 return acc;
             }, {}))
-
-
 
         } catch (e) {
             console.error(e)
@@ -248,26 +277,33 @@ function SchedulerPage() {
 
     async function fetchSolve() {
         try {
+            setIsLoadingSolve(true)
             await SchedulerService.solve();
             setIsSolve(true);
         } catch (e) {
+            console.error(e)
             setMsg("Ошибка начала планирования: " + e.response.data.error)
             setIsModalNotify(true);
-            console.error(e)
+        } finally {
+            setIsLoadingSolve(false)
         }
     }
 
     async function fetchStopSolving() {
         try {
+            setIsLoadingSolve(true)
             await SchedulerService.stopSolving();
         } catch (e) {
             console.error(e)
+            setMsg("Ошибка остановки планирования: " + e.response.data.error)
+            setIsModalNotify(true);
+        } finally {
+            setIsLoadingSolve(false)
         }
     }
 
     async function fetchPlan() {
         try {
-            // setIsLoading(true);
             const response = await SchedulerService.getPlan()
             setDownloadedPlan(response.data)
             setScore(SchedulerService.parseScoreString(response.data.score) || "-0hard/-0medium/-0soft")
@@ -276,6 +312,9 @@ function SchedulerPage() {
             console.error(e)
             setDownloadedPlan(null)
             setScore({hard: 0, medium: 0, soft: 0})
+            setIsSolve(false)
+            setMsg("Ошибка получения плана: " + e.response.data.error)
+            setIsModalNotify(true);
         }
     }
 
@@ -283,44 +322,29 @@ function SchedulerPage() {
         try {
             const response = await SchedulerService.analyze()
             setAnalyzeObj(response.data)
+            setIsModalAnalyze(true);
         } catch (e) {
             console.error(e)
+            setMsg("Ошибка получения подробного анализа: " + e.response.data.error)
+            setIsModalNotify(true);
         }
     }
 
-    async function exportExel() {
+    async function reloadDirectory() {
         try {
-            const response = await SchedulerService.getExel();
-
-            if (!response.data || response.data.size === 0) {
-                throw new Error('Получен пустой файл');
-            }
-
-            const blob = new Blob([response.data], {
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            });
-
-            if (blob.size === 0) {
-                throw new Error('Blob создан, но пуст');
-            }
-
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'schedule_' + new Date().toISOString().split('T')[0] + '.xlsx';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            await SchedulerService.reloadDirectory()
         } catch (e) {
             console.error(e)
+            setMsg("Ошибка обновления справочника: " + e.response.data.error)
+            setIsModalNotify(true);
         }
     }
 
     useEffect(() => {
         if (solverStatus === "NOT_SOLVING") {
             setIsSolve(false)
-            // stopSolving()
+        } else if (solverStatus === "SOLVING_ACTIVE") {
+            setIsSolve(true)
         }
     }, [solverStatus])
 
@@ -331,44 +355,26 @@ function SchedulerPage() {
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }
 
-    function displayByParty() {
-        setIsDisplayByHardware(false);
-        setGroups(party);
-        setItems(planByParty);
-        setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
-    }
-
     useEffect(() => {
-
         if (downloadedPlan) {
-
             ScheduleService.parseHardware(downloadedPlan).then((e) => {
                 setHardware(e);
                 if (isDisplayByHardware)
                     setGroups(e);
             });
-
             ScheduleService.parsePlanByHardware(downloadedPlan).then((e) => {
                 setPlanByHardware(e);
                 if (isDisplayByHardware)
                     setItems(e);
             });
+            SchedulerService.parseDateTimeSettings(downloadedPlan).then((e) => {
+                setStartTimeLines(e)
+            })
 
-            ScheduleService.parseParty(downloadedPlan).then((e) => {
-                setParty(e);
-                if (!isDisplayByHardware) {
-                    setGroups(e);
-                }
-            });
 
-            ScheduleService.parsePlanByParty(downloadedPlan).then((e) => {
-                setPlanByParty(e);
-                if (!isDisplayByHardware)
-                    setItems(e);
-            });
+
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
         }
-
     }, [downloadedPlan]);
 
     async function solve() {
@@ -396,24 +402,18 @@ function SchedulerPage() {
     }
 
     useEffect(() => {
+        fetchStopSolving();
         fetchLines();
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }, [])
 
-    useEffect(() => {
-        if (startTimeLines) {
-            // selectSettings()
-            // fetchPlan()
-            loadPday()
-            loadPdayNextDay()
-            setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
-        }
-    }, [lineTimes])
-
-    async function selectSettings() {
-        await assignSettings(false);
-        setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
-    }
+    // useEffect(() => {
+    //     if (startTimeLines) {
+    //         // loadPday()
+    //         // loadPdayNextDay()
+    //         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
+    //     }
+    // }, [lineTimes])
 
     const [selectedItem, setSelectedItem] = useState(null);
 
@@ -437,7 +437,7 @@ function SchedulerPage() {
             return '--:--';
         }
 
-        if ( unit === 'minute' ) {
+        if (unit === 'minute') {
             return momentDate.format('mm');
         }
 
@@ -492,45 +492,11 @@ function SchedulerPage() {
         return momentDate.format('YYYY');
     };
 
-    //Обертка для исключения в библиотеке о передаче пропсов
-    const originalConsoleError = console.error;
-    useEffect(() => {
-        // const originalError = console.error;
-        //
-        // console.error = (...args) => {
-        //     const errorMessage = args[0];
-        //
-        //     // Все варианты ошибок про невалидные объекты
-        //     const invalidObjectErrors = [
-        //         'Objects are not valid as a React child',
-        //         'found: object with keys',
-        //         'If you meant to render a collection of children, use an array instead'
-        //     ];
-        //
-        //     // Проверяем, нужно ли скрыть эту ошибку
-        //     const shouldSuppress = invalidObjectErrors.some(errorText =>
-        //         typeof errorMessage === 'string' && errorMessage.includes(errorText)
-        //     );
-        //
-        //     if (shouldSuppress) {
-        //         return; // Скрываем только эти ошибки
-        //     }
-        //
-        //     // Все остальные ошибки (сети, JavaScript, etc.) показываем
-        //     originalError.apply(console, args);
-        // };
-        //
-        // return () => {
-        //     console.error = originalError;
-        // };
-    }, []);
+    async function onChangeSelectDate(date) {
+        const selectedDate = new Date(date);
+        setSelectDate(date);
+        setSelectDateTable(date)
 
-    function onChangeSelectDate(e) {
-        const selectedDate = new Date(e);
-        setSelectDate(e);
-        setSelectDateTable(e)
-
-        // Следующий день от выбранной даты
         const nextDay = new Date(selectedDate);
         nextDay.setDate(selectedDate.getDate() + 1);
 
@@ -554,11 +520,10 @@ function SchedulerPage() {
             return;
         }
 
-        const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
-        const clickedItem = itemsArray.find(item => item.id === itemId);
+        const clickedItem = planByHardware.find(item => item.id === itemId);
 
         // Проверяем, кликнули на уже выделенный элемент
-        const isClickingSelected = selectedItems.includes(itemId);
+        const isClickingSelected = selectedItems.includes(clickedItem);
 
         if (isClickingSelected && selectedItems.length > 1) {
             // Клик правой кнопкой на уже выделенный элемент при множественном выделении
@@ -574,7 +539,7 @@ function SchedulerPage() {
             });
         } else {
             // Клик на невыделенный элемент или одиночное выделение
-            setSelectedItems([itemId]);
+            setSelectedItems([clickedItem]);
             setSelectedItem(clickedItem);
             setLastSelectedItem(clickedItem);
 
@@ -585,25 +550,23 @@ function SchedulerPage() {
                 item: clickedItem,
                 forCanvas: false,
                 forMultiple: false,
-                selectedItems: [itemId]
+                selectedItems: [clickedItem]
             });
         }
     };
 
     const handleCanvasRightClick = (groupId, time, e) => {
-
         setSelectedItems([]);
         setSelectedItem(null);
-
         setLastSelectedItem(null);
-            setContextMenu({
-                visible: true,
-                x: e.clientX,
-                y: e.clientY,
-                item: null,
-                forCanvas: true,
-                selectedItems:  []
-            });
+        setContextMenu({
+            visible: true,
+            x: e.clientX,
+            y: e.clientY,
+            item: null,
+            forCanvas: true,
+            selectedItems: []
+        });
     };
 
     // Закрытие контекстного меню
@@ -637,7 +600,7 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка прикрепления: " + e.message)
+            setMsg("Ошибка прикрепления: " + e.response.data.error)
             setIsModalNotify(true);
         }
     }
@@ -648,7 +611,7 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка открепления: " + e.message)
+            setMsg("Ошибка открепления: " + e.response.data.error)
             setIsModalNotify(true);
         }
     }
@@ -656,7 +619,6 @@ function SchedulerPage() {
     const [visibleTimeRange, setVisibleTimeRange] = useState(null);
     const timelineRef = useRef();
 
-    const [timelineContext, setTimelineContext] = useState(null);
 
     const handleTimeChange = useCallback((visibleTimeStart, visibleTimeEnd, updateScrollCanvas, unit, timelineContext) => {
         setVisibleTimeRange({
@@ -664,12 +626,6 @@ function SchedulerPage() {
             visibleTimeEnd,
             updateScrollCanvas
         });
-
-        // Сохраняем контекст timeline, который содержит текущий unit
-        if (timelineContext) {
-            setTimelineContext(timelineContext);
-        }
-
         updateScrollCanvas(visibleTimeStart, visibleTimeEnd);
     }, []);
 
@@ -691,20 +647,15 @@ function SchedulerPage() {
     }, [planByHardware])
 
     function onItemDoubleClick(itemId, e, time) {
-        if (isDisplayByHardware) {
-            setSelectedItem(planByHardware.find(item => item.id === itemId))
-            setIsModalInfoItem(true)
-        } else {
-            setSelectedItem(planByParty.find(item => item.id === itemId))
-            setIsModalInfoItem(true)
-        }
+        setSelectedItem(planByHardware.find(item => item.id === itemId))
+        setIsModalInfoItem(true)
     }
 
     function onItemSelect(itemId, e, time) {
         if (itemId.includes('cleaning')) {
             return;
         }
-        const itemsArray = isDisplayByHardware ? planByHardware : planByParty;
+        const itemsArray = planByHardware;
         const clickedItem = itemsArray.find(item => item.id === itemId);
 
         if (e.shiftKey && lastSelectedItem) {
@@ -712,7 +663,7 @@ function SchedulerPage() {
             handleShiftSelect(itemId, itemsArray, clickedItem.group);
         } else {
             // Проверяем, кликаем на уже выделенный элемент
-            const isClickingSelected = selectedItems.includes(itemId);
+            const isClickingSelected = selectedItems.includes(clickedItem);
 
             if (isClickingSelected && selectedItems.length > 1) {
                 // Клик на уже выделенный элемент при множественном выделении
@@ -721,7 +672,7 @@ function SchedulerPage() {
             } else {
                 // Клик на невыделенный элемент или одиночное выделение
                 setSelectedItem(clickedItem);
-                setSelectedItems([itemId]);
+                setSelectedItems([clickedItem]);
                 setLastSelectedItem(clickedItem);
             }
         }
@@ -752,7 +703,6 @@ function SchedulerPage() {
 
         const rangeSelection = sortedGroupItems
             .slice(startIndex, endIndex + 1)
-            .map(item => item.id);
 
         setSelectedItems(rangeSelection);
         setSelectedItem(currentItem);
@@ -773,9 +723,13 @@ function SchedulerPage() {
         }
     }
 
-    async function assignServiceWork(lineId, insertIndex, duration, name) {
+    async function assignServiceWork(lineId, insertIndex, time, duration, name, isEmptyLine) {
         try {
-            await SchedulerService.assignServiceWork(lineId, insertIndex, duration, name);
+            if(isEmptyLine){
+                await SchedulerService.assignServiceWorkEmptyLine(lineId, time, duration, name);
+            } else {
+                await SchedulerService.assignServiceWork(lineId, insertIndex, duration, name);
+            }
             await fetchPlan();
         } catch (e) {
             console.error(e)
@@ -784,8 +738,77 @@ function SchedulerPage() {
         }
     }
 
+    async function updateServiceWork(lineId, index, duration) {
+        try {
+            await SchedulerService.updateServiceWork(lineId, index, duration);
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка обновления сервисной операции: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
+    async function removeServiceWork(lineId, index) {
+        try {
+            await SchedulerService.removeServiceWork(lineId, index);
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка удаления сервисной операции: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
+    async function sortSchedule() {
+        try {
+            await SchedulerService.sortSchedule();
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка сортировки: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
+    async function reloadPlan() {
+        try {
+            await SchedulerService.reloadPlan(selectJobs);
+            await fetchPlan();
+            setMsg("Дозагрузка прошла успешно, можете продолжить планирование.")
+            setIsModalNotify(true);
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка дозагрузки: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
+    async function assignLineStart(lineId, startLineDateTime) {
+        try {
+            await SchedulerService.updateLineStart(lineId, startLineDateTime);
+            await fetchPlan()
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка назначения времени: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
+    async function assignMaxEndDateTime(lineId, maxEndDateTime) {
+        try {
+            await SchedulerService.updateMaxEndDateTime(lineId, maxEndDateTime);
+            await fetchPlan()
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка назначения времени: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
+
     const customItemRenderer = ({item, itemContext, getItemProps}) => {
-        const isSelected = selectedItems.includes(item.id);
+        const isSelected = selectedItems.includes(item);
         const isSingleSelected = selectedItem?.id === item.id;
 
         const itemProps = getItemProps({
@@ -808,7 +831,7 @@ function SchedulerPage() {
         });
 
         // Удаляем key из полученных пропсов
-        const { key, ...safeItemProps } = itemProps;
+        const {key, ...safeItemProps} = itemProps;
 
         return (
             <>
@@ -821,11 +844,13 @@ function SchedulerPage() {
                         {item.info?.pinned &&
                             <>
                                 {isSelected && selectedItems.length > 1 && (
-                                    <div className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                                        {selectedItems.indexOf(item.id) + 1}
+                                    <div
+                                        className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                                        {selectedItems.findIndex(el => el.id === item.id) + 1}
                                     </div>
                                 )}
-                                <div className="h-2 absolute p-0"><i className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i></div>
+                                <div className="h-2 absolute p-0"><i
+                                    className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i></div>
                                 <span className="ml-4">{item.title}</span>
                             </>
                         }
@@ -833,8 +858,9 @@ function SchedulerPage() {
                         {!item.info?.pinned &&
                             <>
                                 {isSelected && selectedItems.length > 1 && (
-                                    <div className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                                        {selectedItems.indexOf(item.id) + 1}
+                                    <div
+                                        className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                                        {selectedItems.findIndex(el => el.id === item.id) + 1}
                                     </div>
                                 )}
                                 <span className="">{item.title}</span>
@@ -842,7 +868,7 @@ function SchedulerPage() {
                         }
                     </div>
                     <div className="flex flex-col justify-start text-xs">
-                        {item.info.name !== "Мойка" &&
+                        {item.info.name !== "Мойка" && !item.info.maintenance &&
                             <span className=" px-1 rounded">
                             {item.info?.np && <span className="text-blue-500">{item.info.np}</span>}
                                 <span className="pl-1">№ партии</span>
@@ -867,7 +893,6 @@ function SchedulerPage() {
     };
 
     const customGroupRenderer = ({group}) => {
-
         return (
             <div className="custom-group-renderer flex flex-col justify-center h-full px-2">
                 <div className="group-title font-semibold text-sm mb-1">
@@ -875,7 +900,7 @@ function SchedulerPage() {
                 </div>
 
                 <div className="group-stats text-xs text-gray-500">
-                    Количество: {group.totalQuantity}
+                    Выработка: {group.totalMass} кг.
                 </div>
             </div>
         );
@@ -894,45 +919,35 @@ function SchedulerPage() {
                     <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>
                 }
 
+                <div>
+                    <h1 className=" font-bold text-center text-2xl mb-4 mt-4">Планировщик задач</h1>
+                </div>
+
                 <div className="flex flex-row">
-                    <div className="w-1/3 ">
+                    <div className="w-1/6 ">
                         <button onClick={() => {
                             navigate(from, {replace: true})
-                        }} className=" ml-4 mt-6 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Вернуться назад
+                        }} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Вернуться назад
                         </button>
                     </div>
 
-                    <h1 className="w-1/3 font-bold text-center text-2xl mb-8 mt-6">Планировщик задач</h1>
-                    <div className="w-1/3 mt-6 py-1 flex justify-end pr-3">
-                        <button onClick={()=>{assignSettings(true)}}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
-                            Загрузить план с БД
-                            <i className="pl-2 fa-solid fa-floppy-disk"></i>
-                        </button>
+                    <div className="w-5/6 py-1 flex justify-end pr-3">
+
                         <button onClick={savePlan}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                             Сохранить
                             <i className="pl-2 fa-solid fa-floppy-disk"></i>
                         </button>
-                        <button onClick={clickRemovePlan}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
-                            Удалить
-                            <i className="pl-2 fa-solid fa-trash-can"></i>
-                        </button>
-                        <button onClick={exportExel}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-400 hover:bg-gray-200">
-                            Excel экспорт
-                            <i className="pl-2 fa-solid fa-file-excel"></i>
-                        </button>
+
                     </div>
                 </div>
 
                 <div className="flex flex-row justify-between my-4 px-4 ">
 
-                    <div>
-                        <div className="inline-flex px-2 h-[32px] items-center border rounded-md">
-                            <span className="py-1 font-medium text-nowrap">Дата:</span>
-                            <input className={"px-2 font-medium w-32"} type="date"
+                    <div className="w-1/3">
+                        <div className="inline-flex px-2 h-[30px] items-center border rounded-md hover:bg-gray-100 selection:border-0">
+                            <span className="py-1 font-medium text-nowrap ">Дата:</span>
+                            <input className={"px-2 font-medium w-32 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:border-transparent"} type="date"
                                    value={selectDate}
                                    onChange={(e) => onChangeSelectDate(e.target.value)}
                             />
@@ -941,36 +956,57 @@ function SchedulerPage() {
                         <button onClick={() => {
                             setIsModalDateSettings(true)
                         }}
-                                className={"ml-3 rounded bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px]"}>
+                                className={"ml-3 rounded border border-slate-300 bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px] font-medium text-[0.950rem]"}>
                             Настройка линий
                         </button>
 
-                        <button className="ml-3 rounded bg-blue-800 text-white px-1 h-[30px] w-44"
-                                onClick={selectSettings}>
-                            Загрузить задание
-                        </button>
                     </div>
 
-                    <div className="flex flex-row" style={{zIndex: 20}}>
+                    <div className="flex flex-row w-2/3 justify-between" style={{zIndex: 20}}>
 
-                        {!isSolve &&
-                            <div onClick={solve}>
-                                <button
-                                    className="rounded text-white px-1 bg-green-600 hover:bg-green-500 h-[30px] w-36">
-                                    <i className="fa-solid fa-play"></i>
-                                    <span className="pl-1">Планировать</span>
-                                </button>
-                            </div>
-                        }
-                        {isSolve &&
-                            <div onClick={stopSolving}>
-                                <button
-                                    className="rounded text-white px-1 bg-red-600 hover:bg-red-500 h-[30px] w-36">
-                                    <i className="fa-solid fa-stop"></i>
-                                    <span className="pl-1">Остановить</span>
-                                </button>
-                            </div>
-                        }
+                        <div className="inline-flex">
+                            {!isSolve &&
+                                <div onClick={solve}>
+                                    <button disabled={isLoadingSolve}
+                                            className="rounded text-white px-1 bg-green-600 hover:bg-green-500 h-[30px] w-36 font-medium text-[0.950rem]">
+                                        <i className="fa-solid fa-play"></i>
+                                        <span className="pl-1">Планировать</span>
+                                    </button>
+                                </div>
+                            }
+                            {isSolve &&
+                                <div onClick={stopSolving}>
+                                    <button disabled={isLoadingSolve}
+                                            className="rounded text-white px-1 bg-red-600 hover:bg-red-500 h-[30px] w-36 font-medium text-[0.950rem]">
+                                        <i className="fa-solid fa-stop"></i>
+                                        <span className="pl-1">Остановить</span>
+                                    </button>
+                                </div>
+                            }
+
+                            <button onClick={() => {
+                                reloadPlan();
+                            }}
+                                    className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
+                                Догрузить план
+                                <i className="pl-2 fa-solid fa-arrows-rotate"></i>
+                            </button>
+
+                            <button
+                                className="mr-1 rounded border border-slate-300 hover:bg-gray-100  px-3 h-[30px] font-medium text-[0.950rem]"
+                                onClick={sortSchedule}>
+                                Отсортировать
+                            </button>
+
+                            <button onClick={() => {
+                                clickSendToWork()
+                            }}
+                                    className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-cyan-500 bg-cyan-600 text-white font-medium text-[0.950rem]">
+                                Отправить в работу
+                                <i className="pl-2 fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+
 
                         <div className="flex items-center border rounded-md ml-2 ">
                             <div
@@ -992,24 +1028,13 @@ function SchedulerPage() {
                             </div>
                             <button onClick={() => {
                                 fetchAnalyze();
-                                setIsModalAnalyze(true);
                             }}
-                                    className={" h-full rounded-r px-2 bg-blue-800 hover:bg-blue-700 text-white"}>
+                                    className={" h-full rounded-r px-2 bg-blue-800 hover:bg-blue-700 text-white font-medium text-[0.950rem]"}>
                                 Подробнее
                             </button>
                         </div>
 
-                    </div>
 
-                    <div className="">
-                        <button onClick={displayByParty}
-                                className={"border h-[30px] border-r-0 rounded-l-md px-2 " + stylePartyBut}>По
-                            партиям
-                        </button>
-                        <button onClick={displayByHardware}
-                                className={"border h-[30px] rounded-r-md px-2 " + styleHardwareBut}>По
-                            оборудованию
-                        </button>
                     </div>
 
                 </div>
@@ -1040,11 +1065,11 @@ function SchedulerPage() {
                     >
                         <TimelineHeaders className="sticky">
                             <SidebarHeader>
-                                {({ getRootProps }) => (
+                                {({getRootProps}) => (
                                     <div {...getRootProps()} className="bg-blue-800">
                                         {/* Заголовок сайдбара */}
                                         <div
-                                            className="text-white font-medium text-3xl text-center h-full align-middle content-center">
+                                            className="text-white font-medium text-3xl text-center h-full content-center">
                                             {/*<i className="fa-regular fa-calendar-check"></i>*/}
                                         </div>
                                     </div>
@@ -1068,6 +1093,11 @@ function SchedulerPage() {
                                     height: 30
                                 }}
                             />
+
+
+                            {false &&
+                                <MyTimeline/>
+                            }
                         </TimelineHeaders>
                     </Timeline>
                 </div>
@@ -1082,6 +1112,8 @@ function SchedulerPage() {
                                                            setIdealEndDateTime={setIdealEndDateTime}
                                                            maxEndDateTime={maxEndDateTime}
                                                            setMaxEndDateTime={setMaxEndDateTime}
+                                                           selectDate={selectDate}
+                                                           changeTime={assignLineStart} changeMaxEndTime={assignMaxEndDateTime}
                 />}
 
                 {isModalAnalyze && <ModalAnalyze onClose={() => setIsModalAnalyze(false)}
@@ -1099,38 +1131,52 @@ function SchedulerPage() {
                                            removePlan();
                                        }} onDisagree={() => setIsModalRemove(false)}/>}
 
+                {isModalSendToWork &&
+                    <ModalConfirmation title={"Подтверждение действия"} message={msg}
+                                       onClose={() => setIsModalSendToWrk(false)}
+                                       onAgree={() => {
+                                           setIsModalSendToWrk(false);
+                                           sendToWork();
+                                       }} onDisagree={() => setIsModalSendToWrk(false)}/>}
+
                 {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItems} unpin={unpinLine}
                                                              isDisplayByHardware={isDisplayByHardware}
                                                              openModalMoveJobs={() => setIsModalMoveJobs(true)}
-                                                             openModalAssignSettings={()=> setIsModalAssignServiceWork(true)}/>}
+                                                             openModalAssignSettings={() => setIsModalAssignServiceWork(true)}
+                                                             selectedItems={selectedItems}
+                                                             updateServiceWork={() => setIsModalUpdateServiceWork(true)}
+                                                             removeServiceWork={removeServiceWork}/>}
 
                 {isModalMoveJobs &&
                     <ModalMoveJobs selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}
                                    moveJobs={moveJobs} onClose={() => setIsModalMoveJobs(false)}
-                                   lines={startTimeLines} planByParty={planByParty} planByHardware={planByHardware}
+                                   lines={startTimeLines} planByHardware={planByHardware}
                     />}
 
                 {isModalAssignServiceWork &&
                     <ModalAssignServiceWork selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}
-                                   assignServiceWork={assignServiceWork} onClose={() => setIsModalAssignServiceWork(false)}
-                                   lines={startTimeLines} planByParty={planByParty} planByHardware={planByHardware}
+                                            assignServiceWork={assignServiceWork}
+                                            onClose={() => setIsModalAssignServiceWork(false)}
+                                            lines={startTimeLines}
+                                            planByHardware={planByHardware} selectDate={selectDate}
                     />}
 
-                <DataTable data={pdayData} setData={setPdayData} updatePday={updatePday} selectDate={selectDateTable}
-                           dateData={selectDate}/>
+                {isModalUpdateServiceWork &&
+                    <ModalUpdateServiceWork selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}
+                                            onClose={() => setIsModalUpdateServiceWork(false)}
+                                            lines={startTimeLines}
+                                            planByHardware={planByHardware}
+                                            updateServiceWork={updateServiceWork}/>
+                }
 
-                {/*<div className="px-3 py-2 rounded flex flex-row justify-between align-middle text-black mb-2">*/}
-                {/*    <div style={{fontSize: '16px'}}>*/}
-                {/*        <button*/}
-                {/*            className="ml-4 bg-blue-800 text-white px-3 py-1 rounded" onClick={loadPdayNextDay}>*/}
-                {/*            Подгрузить следующий день*/}
-                {/*        </button>*/}
-                {/*    </div>*/}
-                {/*</div>*/}
+                <DataTable data={pdayDataPred} setData={setPdayDataPred} dateData={getPredDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
-                {/*{pdayDataNextDay.length !== 0 &&}*/}
-                    <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} updatePday={updatePday}
-                               selectDate={selectDate} dateData={getNextDateStr(selectDateTable)}/>
+                <DataTable data={pdayData} setData={setPdayData} dateData={selectDate} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+
+
+                <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} dateData={getNextDateStr(selectDateTable)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+
+                <DataTable data={pdayDataNext2Day} setData={setPdayDataNext2Day}  dateData={getNextDateStr(getNextDateStr(selectDateTable))} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
 
             </div>

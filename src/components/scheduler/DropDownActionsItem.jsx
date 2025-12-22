@@ -1,12 +1,11 @@
 import React from "react";
 
 
-export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs, openModalAssignSettings, isDisplayByHardware}) {
-
+export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs, openModalAssignSettings, selectedItems,
+                                    updateServiceWork, removeServiceWork}) {
 
     return (
         <>
-            {isDisplayByHardware &&
                 <div
                     className="bg-white border rounded-md shadow"
                     style={{
@@ -37,23 +36,37 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                                     openModalMoveJobs()
                                 }} className="hover:bg-gray-100 w-full text-start px-2 rounded">Переместить
                                 </button>
-                                {/*<button onClick={() => {*/}
-                                {/*    openModalAssignSettings()*/}
-                                {/*}} className="hover:bg-gray-100 w-full text-start px-2 rounded">*/}
-                                {/*    Добавить сервисную операцию*/}
-                                {/*</button>*/}
+                                <button onClick={() => {
+                                    openModalAssignSettings()
+                                }} className="hover:bg-gray-100 w-full text-start px-2 rounded">
+                                    Добавить сервисную операцию
+                                </button>
+
+                                {/*Отображение для сервисной работы*/}
+                                {contextMenu.item.info.maintenance === true && selectedItems.length === 1 &&
+                                    <>
+                                        <button onClick={() => {updateServiceWork()}} className="hover:bg-gray-100 w-full text-start px-2 rounded">
+                                            Изменить сервисную операцию
+                                        </button>
+                                        <button onClick={() => {removeServiceWork(selectedItems[0].group, selectedItems[0].info.groupIndex-1)}} className="hover:bg-gray-100 w-full text-start px-2 rounded">
+                                            Удалить сервисную операцию
+                                        </button>
+                                      </>
+                                }
+
                             </>
                         }
-                        {/*{contextMenu.forCanvas &&*/}
-                        {/*    <button onClick={() => {*/}
-                        {/*        openModalAssignSettings()*/}
-                        {/*    }} className="hover:bg-gray-100 w-full text-start px-2 rounded">*/}
-                        {/*        Добавить сервисную операцию*/}
-                        {/*    </button>*/}
-                        {/*}*/}
+                        {/*Меню вне элементов*/}
+                        {contextMenu.forCanvas &&
+                            <button onClick={() => {
+                                openModalAssignSettings()
+                            }} className="hover:bg-gray-100 w-full text-start px-2 rounded">
+                            Добавить сервисную операцию
+                            </button>
+                        }
                     </div>
 
-                </div>}
+                </div>
         </>
     )
 }

@@ -1,8 +1,9 @@
-import React from 'react'
+import React, {useEffect} from 'react'
 
 
 export function ModalDateSettings({lines, setLines, selectDate, setDate, selectEndDate, setSelectEndDate,
-                                      onClose, apply, idealEndDateTime, setIdealEndDateTime, maxEndDateTime, setMaxEndDateTime}) {
+                                      onClose, apply, idealEndDateTime, setIdealEndDateTime, maxEndDateTime, setMaxEndDateTime,
+                                  changeTime, changeMaxEndTime}) {
 
     const styleLable = "py-1 font-medium w-2/3 ";
     const styleInfo = "py-1 font-medium w-1/3 ";
@@ -15,6 +16,22 @@ export function ModalDateSettings({lines, setLines, selectDate, setDate, selectE
                     : line
             )
         );
+
+        const line = lines.find(item => item.id === lineId)?.lineId;
+        changeTime(line, newTime);
+    };
+
+    const handleMaxTimeChange = (lineId, newTime) => {
+        setLines(prevLines =>
+            prevLines.map(line =>
+                line.id === lineId
+                    ? {...line, maxEndDateTime: newTime}
+                    : line
+            )
+        );
+
+        const line = lines.find(item => item.id === lineId)?.lineId;
+        changeMaxEndTime(line, newTime);
     };
 
     return (
@@ -25,19 +42,38 @@ export function ModalDateSettings({lines, setLines, selectDate, setDate, selectE
             />
             <div className="fixed inset-0 flex  items-center justify-center p-4 z-100 pointer-events-none"
                  style={{zIndex: 100}}>
-                <div className="w-auto min-w-[600px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
+                <div className="w-auto min-w-[800px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
                     <h1 className="text-xl font-medium text-start mb-2">Настройки даты и времени планировщика</h1>
                     <hr/>
 
-                    <div className="grid my-3 grid-cols-2 gap-x-8 gap-y-2">
+                    <div className="my-3 ">
+                        <div className="flex flex-row w-full bg-blue-800 rounded text-white justify-between">
+                            <span className="w-[30%] py-1 px-2 font-medium pl-14">Линия</span>
+                            <span className="w-[35%] py-1 px-2 font-medium text-center">Время начала</span>
+                            <span className="w-[35%] py-1 px-2 font-medium text-center">Максимальное время</span>
+                        </div>
                         {lines.map((line, index) => (
-                            <div key={index} className="flex flex-row">
-                                <span className={styleLable}>{line.name}:</span>
-                                <input className={styleInfo} type={"time"}
-                                       value={line.startDateTime}
-                                       onChange={(e) => handleTimeChange(line.id, e.target.value)}
-                                />
+                            <div key={index} className="flex flex-row justify-between py-1 border-b">
+                                <div  className="flex flex-row w-[30%] px-5">
+                                    <span className="py-1 font-medium ">{line.name}:</span>
+                                </div>
+
+                                <div  className="flex flex-row w-[35%] justify-center">
+                                    <input className="py-1 px-2 font-medium " type={"datetime-local"}
+                                           value={line.startDateTime}
+                                           onChange={(e) => handleTimeChange(line.id, e.target.value)}
+                                    />
+                                </div>
+                                <div  className="flex flex-row w-[35%] justify-center">
+
+                                    <input className="py-1 px-2 font-medium " type={"datetime-local"}
+                                           value={line.maxEndDateTime}
+                                           onChange={(e) => handleMaxTimeChange(line.id, e.target.value)}
+                                    />
+                                </div>
+
                             </div>
+
                         ))}
                     </div>
 
@@ -50,15 +86,6 @@ export function ModalDateSettings({lines, setLines, selectDate, setDate, selectE
                         />
                     </div>
 
-                    <div className="flex flex-row mb-2">
-                        <span className={styleLable}>Максимальное время выполнения расчета:</span>
-                        <input className={styleInfo} type={"datetime-local"}
-                               value={maxEndDateTime}
-                               onChange={(e) => {
-                                   setMaxEndDateTime(e.target.value)
-                               }}
-                        />
-                    </div>
 
 
                     <div className="flex flex-row justify-end ">

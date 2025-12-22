@@ -149,7 +149,7 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
                 </div>
 
                 <div className="flex flex-row">
-                    <div className="border-y-2 w-2/3">
+                    <div className="border-y-2 w-3/5">
                         <Editor
                             onMount={handleEditorDidMount}
                             height="85vh"
@@ -166,7 +166,7 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
                             }}
                         />
                     </div>
-                    <div className="flex flex-col w-1/3">
+                    <div className="flex flex-col w-2/5">
                         <div className=" flex-row px-8 h-3/4">
 
                             <div className="flex justify-between items-center">
@@ -188,9 +188,10 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
                             <div className="flex flex-row mb-1">
                                 <span className="text-sm text-center font-medium w-[10%]">№</span>
                                 <span className="text-sm text-center font-medium w-[20%]">Название</span>
-                                <span className="text-sm text-center font-medium w-[20%]">Параметр</span>
+                                <span className="text-sm text-center font-medium w-[15%]">Параметр</span>
                                 <span className="text-sm text-center font-medium w-[20%]">Тип</span>
                                 <span className="text-sm text-center font-medium w-[30%]">Знач. по умолчанию</span>
+                                <span className="text-sm text-center font-medium w-[5%]"></span>
                             </div>
 
                             <div className="max-h-[500px] overflow-auto">

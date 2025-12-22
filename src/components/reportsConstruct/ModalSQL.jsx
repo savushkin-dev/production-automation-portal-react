@@ -103,6 +103,7 @@ export function ModalSQL({value, parameters, isValid, onChange, onClose, setPara
                 <h1 className="text-2xl font-medium text-start mt-2 mb-3">Параметры запроса</h1>
 
                 <div className="flex flex-row mb-1">
+                    <span className="text-sm text-center font-medium w-[10%]">Пор.№</span>
                     <span className="text-sm text-center font-medium w-1/4">Название параметра</span>
                     <span className="text-sm text-center font-medium w-1/4">Параметр</span>
                     <span className="text-sm text-center font-medium w-1/4">Тип</span>
@@ -169,7 +170,7 @@ export function ModalSQL({value, parameters, isValid, onChange, onClose, setPara
                                            value={param.default === true ? "" : param.default || ""}
                                            onChange={(e) => updateParameter(param.key, 'default', e.target.value || "")}
                                            style={{
-                                               paddingRight: '50%',
+                                               paddingRight: '40%',
                                            }}
                                     />
                                     <span className="text-xs" style={{

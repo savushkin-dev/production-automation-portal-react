@@ -19,6 +19,7 @@
     "axios": "^1.7.9",
     "crypto-js": "^4.2.0",
     "devextreme": "^24.2.3",
+    "env-cmd": "^11.0.0",
     "grapesjs": "^0.22.12",
     "grapesjs-blocks-basic": "^1.0.2",
     "grapesjs-preset-webpage": "^1.0.3",
@@ -52,6 +53,8 @@
     "build": "react-scripts build",
     "build:staging": "env-cmd -f .env.staging npm run build",
     "build:prod": "env-cmd -f .env.production npm run build",
+    "build:brzprod": "env-cmd -f .env.brzprod npm run build",
+    "build:baranprod": "env-cmd -f .env.baranprod npm run build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
