@@ -1,17 +1,10 @@
 import "./../App.css";
-import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
 import moment from 'moment';
 import 'moment/locale/ru';
 
-import {
-    Timeline,
-    TimelineHeaders,
-    SidebarHeader,
-    DateHeader,
-    CustomHeader,
-    TimelineMarkers, TodayMarker, CustomMarker
-} from "react-calendar-timeline";
+import {DateHeader, SidebarHeader, Timeline, TimelineHeaders} from "react-calendar-timeline";
 import ScheduleService from "../services/ScheduleService";
 import SchedulerService from "../services/ScheduleService";
 import "./../components/scheduler/scheduler.css"
@@ -49,9 +42,11 @@ function SchedulerPage() {
 
     const [groups, setGroups] = useState([]);
     const [items, setItems] = useState([]);
+    const [pdayDataPred, setPdayDataPred] = useState([]);
     const [pdayData, setPdayData] = useState([]);
     const [pdayDataNextDay, setPdayDataNextDay] = useState([]);
     const [pdayDataNext2Day, setPdayDataNext2Day] = useState([]);
+    const [selectJobs, setSelectJobs] = useState([])
 
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingSolve, setIsLoadingSolve] = useState(false);
@@ -107,77 +102,78 @@ function SchedulerPage() {
             setIdealEndDateTime(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate() + 1)).toISOString().replace(/T.*/, 'T02:00'));
             setMaxEndDateTime(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate() + 1)).toISOString().replace(/T.*/, 'T03:00'));
             setSelectDateTable(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate())).toISOString().split('T')[0]);
+            init(dateParam);
+        } else {
+            init(new Date(new Date().setDate(new Date().getDate() - 0)).toISOString().split('T')[0])
         }
+
     }, [location.search]);
 
-    async function assignSettings(findSolvedInDb) {
-        const lineTimes = startTimeLines.reduce((acc, line) => {
-            acc[line.lineId] = line.startDateTime;
-            return acc;
-        }, {});
-
+    async function init(date) {
         try {
             setVisibleTimeRange(prevState => ({
                 ...prevState,
-                visibleTimeStart: moment(selectDate).startOf('day').add(-2, 'hour'),
-                visibleTimeEnd: moment(selectDate).startOf('day').add(30, 'hour')
+                visibleTimeStart: moment(date).startOf('day').add(-2, 'hour'),
+                visibleTimeEnd: moment(date).startOf('day').add(30, 'hour')
             }));
 
-            // console.log(startTimeLines)
-            // console.log(lineTimes)
+            const response = await SchedulerService.init(date);
+            fetchPlan();
 
-            await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, lineTimes, findSolvedInDb);
-            await fetchPlan()
+            const pdayDataPredTemp = [];
+            const pdayDataTemp = [];
+            const pdayDataNextDayTemp = [];
+            const pdayDataNext2DayTemp = [];
+
+            // Определяем базовую дату для сравнения
+            const baseDate = moment(date);
+            const previousDay = moment(baseDate).subtract(1, 'day');
+            const nextDay = moment(baseDate).add(1, 'day');
+            const next2Day = moment(baseDate).add(2, 'day');
+
+
+            const initialSelectJobs = {};
+
+            response.data.forEach(item => {
+                if (!item.dti) return;
+
+                const itemDate = moment(item.dti).startOf('day');
+                const dataWithSelection = {
+                    ...item,
+                    isSelected: false
+                };
+
+                if (item.snpz) {
+                    initialSelectJobs[item.snpz] = item.startProductionDateTime !== "" && item.startProductionDateTime !== null; // Занятые = true, свободные = false
+                }
+
+                // Сравниваем даты
+                if (itemDate.isSame(previousDay, 'day')) {
+                    pdayDataPredTemp.push(dataWithSelection);
+                } else if (itemDate.isSame(baseDate, 'day')) {
+                    pdayDataTemp.push(dataWithSelection);
+                } else if (itemDate.isSame(nextDay, 'day')) {
+                    pdayDataNextDayTemp.push(dataWithSelection);
+                } else if (itemDate.isSame(next2Day, 'day')) {
+                    pdayDataNext2DayTemp.push(dataWithSelection);
+                }
+
+            });
+
+            setPdayDataPred(pdayDataPredTemp);
+            setPdayData(pdayDataTemp);
+            setPdayDataNextDay(pdayDataNextDayTemp);
+            setPdayDataNext2Day(pdayDataNext2DayTemp);
+
+            setSelectJobs(initialSelectJobs);
 
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка загрузки: " + e.response.data.error)
+            setMsg("Ошибка инициализации: " + e.response.data.error)
             setIsModalNotify(true);
             setItems([])
             setScore({hard: 0, medium: 0, soft: 0})
-            setPdayData([])
-            setPdayDataNextDay([])
-            setPdayDataNext2Day([])
-        }
-    }
-
-    async function loadFromDb() {
-        const lineTimes = startTimeLines.reduce((acc, line) => {
-            acc[line.lineId] = line.startDateTime;
-            return acc;
-        }, {});
-
-        try {
-            setVisibleTimeRange(prevState => ({
-                ...prevState,
-                visibleTimeStart: moment(selectDate).startOf('day').add(-2, 'hour'),
-                visibleTimeEnd: moment(selectDate).startOf('day').add(30, 'hour')
-            }));
-
-            console.log(startTimeLines)
-
-
-
-            await SchedulerService.assignSettings(selectDate, selectEndDate, idealEndDateTime, maxEndDateTime, lineTimes, true);
-            await fetchPlan()
-
-            // // Сопоставляем по lineId
-            // const updatedJobs = jobs.map(job => {
-            //     const line = lines.find(l => l.id === job.lineId);
-            //     return {
-            //         ...job,
-            //         startDateTime: line ? line.startDateTime : job.startDateTime
-            //     };
-            // });
-            //
-            // console.log(updatedJobs);
-
-        } catch (e) {
-            console.error(e)
-            setMsg("Ошибка загрузки: " + e.response.data.error)
-            setIsModalNotify(true);
-            setItems([])
-            setScore({hard: 0, medium: 0, soft: 0})
+            setPdayDataPred([])
             setPdayData([])
             setPdayDataNextDay([])
             setPdayDataNext2Day([])
@@ -190,70 +186,16 @@ function SchedulerPage() {
         return nextDay.toISOString().split('T')[0];
     }
 
-    async function loadPday() {
-        const lineTimes = startTimeLines.reduce((acc, line) => {
-            acc[line.lineId] = line.startDateTime;
-            return acc;
-        }, {});
-
-        try {
-            const date = new Date(selectDateTable);
-            date.setDate(date.getDate() + 1);
-            const selectDatePlusDay = date.toISOString().split('T')[0];
-            const response = await SchedulerService.loadPday(selectDateTable, selectDatePlusDay, idealEndDateTime, maxEndDateTime, lineTimes);
-            setPdayData(response.data)
-        } catch (e) {
-            console.error(e)
-            setMsg(e.response.data.error)
-            setIsModalNotify(true);
-            setPdayData([])
-        }
-    }
-
-    async function loadPdayNextDay() {
-        const lineTimes = startTimeLines.reduce((acc, line) => {
-            acc[line.lineId] = line.startDateTime;
-            return acc;
-        }, {});
-
-        try {
-            const date = new Date(selectDateTable);
-            date.setDate(date.getDate() + 1);
-            const selectDatePlusDay = date.toISOString().split('T')[0];
-            date.setDate(date.getDate() + 1);
-            const selectDatePlus2Day = date.toISOString().split('T')[0];
-            date.setDate(date.getDate() + 1);
-            const selectDatePlus3Day = date.toISOString().split('T')[0];
-
-            const responseNextDay = await SchedulerService.loadPday(selectDatePlusDay, selectDatePlus2Day, idealEndDateTime, maxEndDateTime, lineTimes);
-            setPdayDataNextDay(responseNextDay.data)
-            const responseNext2Day = await SchedulerService.loadPday(selectDatePlus2Day, selectDatePlus3Day, idealEndDateTime, maxEndDateTime, lineTimes);
-            setPdayDataNext2Day(responseNext2Day.data)
-        } catch (e) {
-            console.error(e)
-            setMsg(e.response.data.error)
-            setIsModalNotify(true);
-            setPdayDataNextDay([])
-            setPdayDataNext2Day([])
-        }
-    }
-
-    async function updatePday(body) {
-        try {
-            return await SchedulerService.updatePday(body)
-        } catch (e) {
-            console.error(e)
-            setMsg("Не удалось отметить задачу: " + e.response.data.error)
-            setIsModalNotify(true);
-            throw e;
-        }
+    function getPredDateStr(date) {
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() - 1);
+        return nextDay.toISOString().split('T')[0];
     }
 
     useEffect(() => {
         setPlanByHardware([])
         if (startTimeLines) {
-            loadPday()
-            loadPdayNextDay()
+             init(selectDate);
         }
     }, [selectDate, selectDateTable])
 
@@ -293,11 +235,6 @@ function SchedulerPage() {
         }
     }
 
-    function clickRemovePlan() {
-        setMsg("Вы уверены что хотите удалить план?")
-        setIsModalRemove(true);
-    }
-
     function clickSendToWork() {
         setMsg("Вы уверены что хотите отправить план в работу?")
         setIsModalSendToWrk(true);
@@ -313,9 +250,16 @@ function SchedulerPage() {
                     name: lineName.trim(),
                     lineId: lineId,
                     originalName: lineName.trim(),
-                    startDateTime: "08:00"
+                    // startDateTime: selectDate+"T08:00",
+                    // maxEndDateTime: selectDate+"T08:00",
+                    startDateTime: "08:00",
+                    maxEndDateTime: "08:00",
                 }))
-                .sort((a, b) => a.name.localeCompare(b.name, 'ru')); // сортировка по названию
+                .sort((a, b) => {
+                    const numA = parseInt(a.name.match(/Линия №(\d+)/)?.[1] || 0);
+                    const numB = parseInt(b.name.match(/Линия №(\d+)/)?.[1] || 0);
+                    return numA - numB;
+                });
 
             setStartTimeLines(res)
 
@@ -386,37 +330,6 @@ function SchedulerPage() {
         }
     }
 
-    async function exportExel() {
-        try {
-            const response = await SchedulerService.getExel();
-
-            if (!response.data || response.data.size === 0) {
-                throw new Error('Получен пустой файл');
-            }
-
-            const blob = new Blob([response.data], {
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            });
-
-            if (blob.size === 0) {
-                throw new Error('Blob создан, но пуст');
-            }
-
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'schedule_' + new Date().toISOString().split('T')[0] + '.xlsx';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-        } catch (e) {
-            console.error(e)
-            setMsg("Ошибка экспорта Exel: " + e.response.data.error)
-            setIsModalNotify(true);
-        }
-    }
-
     async function reloadDirectory() {
         try {
             await SchedulerService.reloadDirectory()
@@ -454,6 +367,12 @@ function SchedulerPage() {
                 if (isDisplayByHardware)
                     setItems(e);
             });
+            SchedulerService.parseDateTimeSettings(downloadedPlan).then((e) => {
+                setStartTimeLines(e)
+            })
+
+
+
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
         }
     }, [downloadedPlan]);
@@ -488,18 +407,13 @@ function SchedulerPage() {
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }, [])
 
-    useEffect(() => {
-        if (startTimeLines) {
-            loadPday()
-            loadPdayNextDay()
-            setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
-        }
-    }, [lineTimes])
-
-    async function selectSettings() {
-        await assignSettings(false);
-        setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
-    }
+    // useEffect(() => {
+    //     if (startTimeLines) {
+    //         // loadPday()
+    //         // loadPdayNextDay()
+    //         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
+    //     }
+    // }, [lineTimes])
 
     const [selectedItem, setSelectedItem] = useState(null);
 
@@ -578,12 +492,11 @@ function SchedulerPage() {
         return momentDate.format('YYYY');
     };
 
-    function onChangeSelectDate(e) {
-        const selectedDate = new Date(e);
-        setSelectDate(e);
-        setSelectDateTable(e)
+    async function onChangeSelectDate(date) {
+        const selectedDate = new Date(date);
+        setSelectDate(date);
+        setSelectDateTable(date)
 
-        // Следующий день от выбранной даты
         const nextDay = new Date(selectedDate);
         nextDay.setDate(selectedDate.getDate() + 1);
 
@@ -607,8 +520,7 @@ function SchedulerPage() {
             return;
         }
 
-        const itemsArray = planByHardware;
-        const clickedItem = itemsArray.find(item => item.id === itemId);
+        const clickedItem = planByHardware.find(item => item.id === itemId);
 
         // Проверяем, кликнули на уже выделенный элемент
         const isClickingSelected = selectedItems.includes(clickedItem);
@@ -861,7 +773,7 @@ function SchedulerPage() {
 
     async function reloadPlan() {
         try {
-            await SchedulerService.reloadPlan();
+            await SchedulerService.reloadPlan(selectJobs);
             await fetchPlan();
             setMsg("Дозагрузка прошла успешно, можете продолжить планирование.")
             setIsModalNotify(true);
@@ -883,9 +795,9 @@ function SchedulerPage() {
         }
     }
 
-    async function assignMaxEndDateTime(maxEndDateTime) {
+    async function assignMaxEndDateTime(lineId, maxEndDateTime) {
         try {
-            await SchedulerService.updateMaxEndDateTime(maxEndDateTime);
+            await SchedulerService.updateMaxEndDateTime(lineId, maxEndDateTime);
             await fetchPlan()
         } catch (e) {
             console.error(e)
@@ -1021,65 +933,30 @@ function SchedulerPage() {
 
                     <div className="w-5/6 py-1 flex justify-end pr-3">
 
-
-                        {/*<button onClick={() => {*/}
-
-                        {/*}}*/}
-                        {/*        className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-blue-700 bg-blue-800 text-white font-medium text-[0.950rem]">*/}
-                        {/*    Фактический план*/}
-                        {/*</button>*/}
-
-                        <button onClick={() => {
-                            loadFromDb()
-                        }}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
-                            Загрузить план с БД
-                            <i className="pl-2 fa-solid fa-download"></i>
-                        </button>
                         <button onClick={savePlan}
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                             Сохранить
                             <i className="pl-2 fa-solid fa-floppy-disk"></i>
                         </button>
-                        <button onClick={clickRemovePlan}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
-                            Удалить
-                            <i className="pl-2 fa-solid fa-trash-can"></i>
-                        </button>
-                        <button onClick={exportExel}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
-                            Excel экспорт
-                            <i className="pl-2 fa-solid fa-file-excel"></i>
-                        </button>
-                        <button onClick={reloadDirectory}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
-                            Обновить справочник
-                            <i className="pl-2 fa-solid fa-repeat"></i>
-                        </button>
+
                     </div>
                 </div>
 
                 <div className="flex flex-row justify-between my-4 px-4 ">
 
                     <div className="w-1/3">
-                        <div className="inline-flex px-2 h-[30px] items-center border rounded-md">
+                        <div className="inline-flex px-2 h-[30px] items-center border rounded-md hover:bg-gray-100 selection:border-0">
                             <span className="py-1 font-medium text-nowrap ">Дата:</span>
-                            <input className={"px-2 font-medium w-32"} type="date"
+                            <input className={"px-2 font-medium w-32 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:border-transparent"} type="date"
                                    value={selectDate}
                                    onChange={(e) => onChangeSelectDate(e.target.value)}
                             />
                         </div>
 
-                        <button
-                            className="ml-3 rounded bg-blue-800 hover:bg-blue-700 text-white px-1 h-[30px] w-44 font-medium text-[0.950rem]"
-                            onClick={selectSettings}>
-                            Загрузить задание
-                        </button>
-
                         <button onClick={() => {
                             setIsModalDateSettings(true)
                         }}
-                                className={"ml-3 rounded border border-slate-300 hover:bg-gray-100 px-2 h-[30px] font-medium text-[0.950rem]"}>
+                                className={"ml-3 rounded border border-slate-300 bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px] font-medium text-[0.950rem]"}>
                             Настройка линий
                         </button>
 
@@ -1100,7 +977,7 @@ function SchedulerPage() {
                             {isSolve &&
                                 <div onClick={stopSolving}>
                                     <button disabled={isLoadingSolve}
-                                        className="rounded text-white px-1 bg-red-600 hover:bg-red-500 h-[30px] w-36 font-medium text-[0.950rem]">
+                                            className="rounded text-white px-1 bg-red-600 hover:bg-red-500 h-[30px] w-36 font-medium text-[0.950rem]">
                                         <i className="fa-solid fa-stop"></i>
                                         <span className="pl-1">Остановить</span>
                                     </button>
@@ -1159,11 +1036,6 @@ function SchedulerPage() {
 
 
                     </div>
-
-
-                    {/*<div className="w-1/3 ml-8 flex flex-row justify-end">*/}
-
-                    {/*</div>*/}
 
                 </div>
 
@@ -1297,15 +1169,14 @@ function SchedulerPage() {
                                             updateServiceWork={updateServiceWork}/>
                 }
 
-                <DataTable data={pdayData} setData={setPdayData} updatePday={updatePday} selectDate={selectDateTable}
-                           dateData={selectDate}/>
+                <DataTable data={pdayDataPred} setData={setPdayDataPred} dateData={getPredDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+
+                <DataTable data={pdayData} setData={setPdayData} dateData={selectDate} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
 
-                <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} updatePday={updatePday}
-                           selectDate={selectDate} dateData={getNextDateStr(selectDateTable)}/>
+                <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} dateData={getNextDateStr(selectDateTable)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
-                <DataTable data={pdayDataNext2Day} setData={setPdayDataNext2Day} updatePday={updatePday}
-                           selectDate={selectDate} dateData={getNextDateStr(getNextDateStr(selectDateTable))}/>
+                <DataTable data={pdayDataNext2Day} setData={setPdayDataNext2Day}  dateData={getNextDateStr(getNextDateStr(selectDateTable))} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
 
             </div>

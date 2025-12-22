@@ -26,12 +26,30 @@ const exampleTask = {
 
 export default class ScheduleService {
 
+    static async parseDateTimeSettings(json) {
+        return json.lines
+            .map((line, index) => ({
+                id: String(index + 1),
+                name: line.name.trim(),
+                lineId: line.id,
+                originalName: line.name.trim(),
+                startDateTime: line.startDateTime,
+                maxEndDateTime: line.maxEndTime,
+            }))
+            .sort((a, b) => {
+                const numA = parseInt(a.name.match(/Линия №(\d+)/)?.[1] || 0);
+                const numB = parseInt(b.name.match(/Линия №(\d+)/)?.[1] || 0);
+                return numA - numB;
+            });
+    }
+
     static async parseCleaningByHardware(json) {
         const filteredData = json.jobs.filter(item => {
             return item.startCleaningDateTime !== item.startProductionDateTime;
         });
         let cleaning = [];
         for (let i = 0; i < filteredData.length; i++) {
+            let dur = Math.round(new Date(filteredData[i].startProductionDateTime) - new Date(filteredData[i].startCleaningDateTime))/ 60000;
             cleaning[i] = Object.assign({}, exampleTask);
             cleaning[i].id = i + "cleaning";
             cleaning[i].start_time = new Date(filteredData[i].startCleaningDateTime).getTime();
@@ -40,7 +58,7 @@ export default class ScheduleService {
             cleaning[i].group = filteredData[i].line.id;
             cleaning[i].itemProps = {
                 style: {
-                    background: '#f0f9ff',
+                    background: dur >= 100? "#cff1ff" : '#f0f9ff',
                     border: '1px solid #dcdcdc',
                     color: "#0369a1",
                 },
@@ -50,7 +68,7 @@ export default class ScheduleService {
                 start: filteredData[i].startCleaningDateTime,
                 end: filteredData[i].startProductionDateTime,
                 line: filteredData[i].line.name,
-                duration: Math.round(new Date(filteredData[i].startProductionDateTime) - new Date(filteredData[i].startCleaningDateTime))/ 60000,
+                duration: dur,
                 pinned: false,
                 lineInfo: json.jobs[i].line,
             }
@@ -73,11 +91,17 @@ export default class ScheduleService {
             return acc;
         }, {});
 
-        for (let i = 0; i < json.lines.length; i++) {
+        const sortedLines = [...json.lines].sort((a, b) => {
+            const numA = parseInt(a.name.match(/Линия №(\d+)/)?.[1] || 0);
+            const numB = parseInt(b.name.match(/Линия №(\d+)/)?.[1] || 0);
+            return numA - numB;
+        });
+
+        for (let i = 0; i < sortedLines.length; i++) {
             hardware[i] = Object.assign({}, exampleResourse);
-            hardware[i].id = json.lines[i].id;
-            hardware[i].title = json.lines[i].name;
-            hardware[i].totalMass = groupMass[json.lines[i].id] || 0; // Добавляем общее mass
+            hardware[i].id = sortedLines[i].id;
+            hardware[i].title = sortedLines[i].name;
+            hardware[i].totalMass = groupMass[sortedLines[i].id] || 0; // Добавляем общее mass
         }
 
         return hardware;
@@ -215,6 +239,9 @@ export default class ScheduleService {
         }
     }
 
+    static async init(startDate) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/init`, {startDate})
+    }
 
     static async assignSettings(startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes, findSolvedInDb) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/load`, {findSolvedInDb, startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes: JSON.stringify(lineStartTimes)})
@@ -233,7 +260,7 @@ export default class ScheduleService {
     }
 
     static async savePlan() {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/saveToDb`, {})
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/save`, {})
     }
 
     static async removePlan() {
@@ -298,12 +325,12 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/work`, {})
     }
 
-    static async reloadPlan() {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/updateOrderList`, {})
+    static async reloadPlan(selection) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/selection`, {selection})
     }
 
-    static async updateMaxEndDateTime(maxEndDateTime) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/planEndTime`, {maxEndDateTime})
+    static async updateMaxEndDateTime(lineId, lineMaxEndDateTime) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/lineMaxEnd`, {lineId, lineMaxEndDateTime})
     }
 
     static async updateLineStart(lineId, startLineDateTime) {
