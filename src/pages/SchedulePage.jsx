@@ -86,7 +86,6 @@ function SchedulerPage() {
     })
 
     const [startTimeLines, setStartTimeLines] = useState(undefined);
-    const [lineTimes, setLineTimes] = useState(undefined);
     const [timelineKey, setTimelineKey] = useState(0);
 
     const [currentUnit, setCurrentUnit] = useState('hour');
@@ -250,8 +249,6 @@ function SchedulerPage() {
                     name: lineName.trim(),
                     lineId: lineId,
                     originalName: lineName.trim(),
-                    // startDateTime: selectDate+"T08:00",
-                    // maxEndDateTime: selectDate+"T08:00",
                     startDateTime: "08:00",
                     maxEndDateTime: "08:00",
                 }))
@@ -262,12 +259,6 @@ function SchedulerPage() {
                 });
 
             setStartTimeLines(res)
-
-            setLineTimes(res.reduce((acc, line) => {
-                acc[line.lineId] = line.startDateTime;
-                return acc;
-            }, {}))
-
         } catch (e) {
             console.error(e)
             setMsg("Ошибка загрузки линий отчета: " + e.response.data.error)
@@ -306,7 +297,7 @@ function SchedulerPage() {
         try {
             const response = await SchedulerService.getPlan()
             setDownloadedPlan(response.data)
-            setScore(SchedulerService.parseScoreString(response.data.score) || "-0hard/-0medium/-0soft")
+            setScore(SchedulerService.parseScoreString(response.data.score) || {hard: 0, medium: 0, soft: 0})
             setSolverStatus(response.data.solverStatus)
         } catch (e) {
             console.error(e)
@@ -370,9 +361,6 @@ function SchedulerPage() {
             SchedulerService.parseDateTimeSettings(downloadedPlan).then((e) => {
                 setStartTimeLines(e)
             })
-
-
-
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
         }
     }, [downloadedPlan]);
@@ -406,14 +394,6 @@ function SchedulerPage() {
         fetchLines();
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }, [])
-
-    // useEffect(() => {
-    //     if (startTimeLines) {
-    //         // loadPday()
-    //         // loadPdayNextDay()
-    //         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
-    //     }
-    // }, [lineTimes])
 
     const [selectedItem, setSelectedItem] = useState(null);
 
@@ -806,7 +786,6 @@ function SchedulerPage() {
         }
     }
 
-
     const customItemRenderer = ({item, itemContext, getItemProps}) => {
         const isSelected = selectedItems.includes(item);
         const isSingleSelected = selectedItem?.id === item.id;
@@ -1049,9 +1028,7 @@ function SchedulerPage() {
                         onItemDoubleClick={onItemDoubleClick}
                         onItemContextMenu={handleItemRightClick}
                         onItemSelect={onItemSelect}
-
                         onCanvasContextMenu={handleCanvasRightClick}
-
                         ref={timelineRef}
                         onTimeChange={handleTimeChange}
                         onZoom={handleZoom}
