@@ -10,6 +10,8 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          
       - run: npm ci
-      - run: npm run build  
+      - run: npm install @babel/plugin-proposal-private-property-in-object --save-dev
+      - run: npm run build
+        env:
+          CI: false
