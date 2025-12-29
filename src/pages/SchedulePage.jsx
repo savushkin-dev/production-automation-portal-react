@@ -69,13 +69,8 @@ function SchedulerPage() {
     const [downloadedPlan, setDownloadedPlan] = useState(null);
     const [analyzeObj, setAnalyzeObj] = useState(null);
 
-    const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate() - 0)).toISOString().split('T')[0])
-    const [selectEndDate, setSelectEndDate] = useState(new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0])
+    const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0])
 
-    const [idealEndDateTime, setIdealEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().replace(/T.*/, 'T02:00'));
-    const [maxEndDateTime, setMaxEndDateTime] = useState(() => new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().replace(/T.*/, 'T03:00'));
-
-    const [selectDateTable, setSelectDateTable] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0])
 
     const [contextMenu, setContextMenu] = useState({
         visible: false,
@@ -97,13 +92,9 @@ function SchedulerPage() {
 
         if (dateParam && new Date(dateParam).toTimeString() !== "Invalid Date") {
             setSelectDate(dateParam);
-            setSelectEndDate(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate() + 1)).toISOString().split('T')[0]);
-            setIdealEndDateTime(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate() + 1)).toISOString().replace(/T.*/, 'T02:00'));
-            setMaxEndDateTime(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate() + 1)).toISOString().replace(/T.*/, 'T03:00'));
-            setSelectDateTable(new Date(new Date(dateParam).setDate(new Date(dateParam).getDate())).toISOString().split('T')[0]);
             init(dateParam);
         } else {
-            init(new Date(new Date().setDate(new Date().getDate() - 0)).toISOString().split('T')[0])
+            init(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0])
         }
 
     }, [location.search]);
@@ -196,7 +187,7 @@ function SchedulerPage() {
         if (startTimeLines) {
              init(selectDate);
         }
-    }, [selectDate, selectDateTable])
+    }, [selectDate])
 
     async function sendToWork() {
         try {
@@ -473,24 +464,7 @@ function SchedulerPage() {
     };
 
     async function onChangeSelectDate(date) {
-        const selectedDate = new Date(date);
         setSelectDate(date);
-        setSelectDateTable(date)
-
-        const nextDay = new Date(selectedDate);
-        nextDay.setDate(selectedDate.getDate() + 1);
-
-        const dateString = nextDay.toISOString().split('T')[0];
-
-        setSelectEndDate(dateString);
-        setIdealEndDateTime(`${dateString}T02:00`);
-        setMaxEndDateTime(`${dateString}T03:00`);
-    }
-
-    function onChangeEndDate(e) {
-        setSelectEndDate(e);
-        setIdealEndDateTime(new Date(e).toISOString().replace(/T.*/, 'T02:00'));
-        setMaxEndDateTime(new Date(e).toISOString().replace(/T.*/, 'T03:00'));
     }
 
     const handleItemRightClick = (itemId, e) => {
@@ -1081,8 +1055,6 @@ function SchedulerPage() {
 
                                                            lines={startTimeLines}
                                                            setLines={setStartTimeLines}
-                                                           idealEndDateTime={idealEndDateTime}
-                                                           setIdealEndDateTime={setIdealEndDateTime}
                                                            changeTime={assignLineStart} changeMaxEndTime={assignMaxEndDateTime}
                 />}
 
@@ -1144,9 +1116,9 @@ function SchedulerPage() {
                 <DataTable data={pdayData} setData={setPdayData} dateData={selectDate} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
 
-                <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} dateData={getNextDateStr(selectDateTable)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} dateData={getNextDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
-                <DataTable data={pdayDataNext2Day} setData={setPdayDataNext2Day}  dateData={getNextDateStr(getNextDateStr(selectDateTable))} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                <DataTable data={pdayDataNext2Day} setData={setPdayDataNext2Day}  dateData={getNextDateStr(getNextDateStr(selectDate))} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
 
             </div>
