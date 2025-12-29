@@ -501,8 +501,6 @@ function SchedulerPage() {
         }
 
         const clickedItem = planByHardware.find(item => item.id === itemId);
-
-        // Проверяем, кликнули на уже выделенный элемент
         const isClickingSelected = selectedItems.includes(clickedItem);
 
         if (isClickingSelected && selectedItems.length > 1) {
@@ -665,12 +663,10 @@ function SchedulerPage() {
 
         if (!lastItem || !currentItem) return;
 
-        // Фильтруем элементы ТОЛЬКО из этой группы и исключаем cleaning
         const groupItems = itemsArray.filter(item =>
             item.group === groupId && !item.id.includes('cleaning')
         );
 
-        // Остальной код без изменений...
         const sortedGroupItems = [...groupItems].sort((a, b) => a.start_time - b.start_time);
 
         const lastIndex = sortedGroupItems.findIndex(item => item.id === lastItem.id);
@@ -815,8 +811,8 @@ function SchedulerPage() {
         return (
             <>
                 <div
-                    key={item.id} // Явно передаем key
-                    {...safeItemProps} // Распространяем пропсы БЕЗ key
+                    key={item.id}
+                    {...safeItemProps}
                     className="rct-item"
                 >
                     <div className="flex px-1 justify-between font-medium text-sm text-black">
@@ -1082,14 +1078,11 @@ function SchedulerPage() {
                 {isModalDateSettings && <ModalDateSettings onClose={() => {
                     setIsModalDateSettings(false)
                 }}
-                                                           selectEndDate={selectEndDate}
-                                                           setSelectEndDate={onChangeEndDate}
-                                                           lines={startTimeLines} setLines={setStartTimeLines}
+
+                                                           lines={startTimeLines}
+                                                           setLines={setStartTimeLines}
                                                            idealEndDateTime={idealEndDateTime}
                                                            setIdealEndDateTime={setIdealEndDateTime}
-                                                           maxEndDateTime={maxEndDateTime}
-                                                           setMaxEndDateTime={setMaxEndDateTime}
-                                                           selectDate={selectDate}
                                                            changeTime={assignLineStart} changeMaxEndTime={assignMaxEndDateTime}
                 />}
 

@@ -1,8 +1,7 @@
-import React, {useEffect} from 'react'
+import React from 'react'
 
 
-export function ModalDateSettings({lines, setLines, selectDate, setDate, selectEndDate, setSelectEndDate,
-                                      onClose, apply, idealEndDateTime, setIdealEndDateTime, maxEndDateTime, setMaxEndDateTime,
+export function ModalDateSettings({lines, setLines, onClose,  idealEndDateTime, setIdealEndDateTime,
                                   changeTime, changeMaxEndTime}) {
 
     const styleLable = "py-1 font-medium w-2/3 ";
@@ -77,7 +76,6 @@ export function ModalDateSettings({lines, setLines, selectDate, setDate, selectE
                         ))}
                     </div>
 
-
                     <div className="flex flex-row my-2 hidden">
                         <span className={styleLable}>Идеальное время выполнения расчета:</span>
                         <input className={styleInfo} type={"datetime-local"}
@@ -85,8 +83,6 @@ export function ModalDateSettings({lines, setLines, selectDate, setDate, selectE
                                onChange={(e) => setIdealEndDateTime(e.target.value)}
                         />
                     </div>
-
-
 
                     <div className="flex flex-row justify-end ">
                         <div className="flex flex-row justify-end items-center bg-white my-2">
@@ -96,7 +92,6 @@ export function ModalDateSettings({lines, setLines, selectDate, setDate, selectE
                             </button>
                         </div>
                     </div>
-
 
                 </div>
             </div>
