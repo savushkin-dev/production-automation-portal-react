@@ -35,7 +35,10 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
             productGroups[productName].items.push(item);
         });
 
-        return Object.values(productGroups);
+        return Object.values(productGroups).map(group => ({
+            ...group,
+            items: group.items.sort((a, b) => a.NP - b.NP)
+        }));
     }, [itemsArray]);
 
     // Считаем выбранные элементы только в этом компоненте

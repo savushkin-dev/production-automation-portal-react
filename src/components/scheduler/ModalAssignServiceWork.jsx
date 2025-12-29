@@ -19,9 +19,11 @@ export function ModalAssignServiceWork({
     const [selectLine, setSelectLine] = useState(options[0]);
     const [insertIndex, setInsertIndex] = useState(1);
     const [isLastPos, setIsLastPos] = useState(false);
-    const [duration, setDuration] = useState(10);
     const [time, setTime] = useState(new Date(selectDate).toISOString().replace(/T.*/, 'T08:00'));
-    const [nameOperation, setNameOperation] = useState("");
+    const [nameOperation, setNameOperation] = useState("Обслуживание");
+
+    const [hour, setHour] = useState(0);
+    const [min, setMin] = useState(30);
 
     const [isAddingEmptyLine, setIsAddingEmptyLine] = useState(false);
 
@@ -40,7 +42,31 @@ export function ModalAssignServiceWork({
     };
 
     function assign() {
-        assignServiceWork(selectLine.value, insertIndex - 1, time, duration, nameOperation, isAddingEmptyLine);
+        assignServiceWork(selectLine.value, insertIndex - 1, time, getTotalMinutes(), nameOperation, isAddingEmptyLine);
+    }
+
+    const getTotalMinutes = () => { return hour * 60 + min; };
+
+    function onChangeHour(e) {
+        if(e<0){
+            setHour(0);
+            return;
+        } else if(e>100){
+            setHour(99);
+            return;
+        }
+        setHour(e);
+    }
+
+    function onChangeMin(e) {
+        if(e<0){
+            setMin(0);
+            return;
+        } else if(e>59){
+            setMin(59);
+            return;
+        }
+        setMin(e);
     }
 
     const handleChangeSelect = (event) => {
@@ -151,13 +177,23 @@ export function ModalAssignServiceWork({
                     }
 
                     <div className="flex flex-row my-2 font-medium">
-                        <span className="py-1 font-medium w-1/2">Длительность операции (минут):</span>
-                        <input className={styleInputWithoutRounded + "rounded ml-4 w-1/2"}
-                               type="number"
-                               min={1}
-                               value={duration}
-                               onChange={(e) => setDuration(e.target.value)}
-                        />
+                        <span className="py-1 font-medium w-1/2">Длительность операции:</span>
+
+                        <div className="ml-4 w-1/2 flex flex-row">
+                            <input min={0}  className={styleInputWithoutRounded + "rounded w-[54px]"}
+                                   type="number"
+                                   value={hour}
+                                   onChange={(e) => onChangeHour(e.target.value)}
+                            />
+                            <span className=" py-1 font-medium text-center w-[30px]">ч.</span>
+                            <input min={0} max={59} className={styleInputWithoutRounded + "rounded w-[54px]"}
+                                   type="number"
+                                   value={min}
+                                   onChange={(e) => onChangeMin(e.target.value)}
+                            />
+                            <span className="py-1 font-medium text-center w-[40px]">мин.</span>
+                        </div>
+
                     </div>
                     <div className="flex flex-row my-2 font-medium">
                         <span className="py-1 font-medium w-1/2">Название операции:</span>

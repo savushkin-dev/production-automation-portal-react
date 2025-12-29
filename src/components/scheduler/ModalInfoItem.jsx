@@ -15,48 +15,54 @@ export function ModalInfoItem({info, onClose}) {
                  style={{zIndex: 100}}>
                 <div className="w-auto min-w-[700px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
                     <h1 className="text-xl font-medium text-start mb-2">{info.name}</h1>
-                    <hr/>
+
+                    <hr className="mb-3"/>
 
                     {info.name !== "Мойка" && !info.maintenance &&
-                        <>
-                            <div className="flex flex-row">
+                        <div className="">
+                            <div className="flex flex-row bg-blue-800 rounded text-white px-4">
                                 <span className={styleLable}>Наименование:</span>
                                 <span className={styleInfo}>{info.fullName || "-"}</span>
                             </div>
 
-                            <div className="flex flex-row">
+                            <div className="flex flex-row px-4">
+                                <span className={styleLable}>Snpz:</span>
+                                <span className={styleInfo}>{info.snpz || "-"}</span>
+                            </div>
+
+                            <div className="flex flex-row px-4">
                                 <span className={styleLable}>№ партии:</span>
                                 <span className={styleInfo}>{info.np || "-"}</span>
                             </div>
 
-                            <div className="flex flex-row">
+                            <div className="flex flex-row px-4">
                                 <span className={styleLable}>Тип:</span>
                                 <span className={styleInfo}>{info.type || "-"}</span>
                             </div>
 
-                            <div className="flex flex-row">
+                            <div className="flex flex-row px-4">
                                 <span className={styleLable}>Количество:</span>
                                 <span className={styleInfo}>{info.quantity || "-"} шт.</span>
                             </div>
 
-                            <div className="flex flex-row">
+                            <div className="flex flex-row px-4">
                                 <span className={styleLable}>Масса:</span>
                                 <span className={styleInfo}>{info.mass || "-"} кг.</span>
                             </div>
-                        </>
+                        </div>
                     }
 
-                    <div className="flex flex-row">
+                    <div className="flex flex-row px-4">
                         <span className={styleLable}>Линия:</span>
                         <span className={styleInfo}>{info.line || "-"}</span>
                     </div>
 
-                    <div className="flex flex-row">
+                    <div className="flex flex-row px-4">
                         <span className={styleLable}>Начало:</span>
                         <span className={styleInfo}>{info.start || "-"}</span>
                     </div>
 
-                    <div className="flex flex-row">
+                    <div className="flex flex-row px-4">
                         <span className={styleLable}>Конец:</span>
                         <span className={styleInfo}>{info.end || ""}</span>
                     </div>
