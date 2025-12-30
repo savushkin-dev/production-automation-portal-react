@@ -1,12 +1,8 @@
 import $apiSchedule, {API_URL_SCHEDULER} from "../http/scheduler";
 import moment from "moment/moment";
 
-export let party = []
 export let hardware = []
-
-export let planByParty = []
 export let planByHardware = []
-
 
 const exampleResourse = {
     id: 1,
@@ -244,10 +240,6 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/init`, {startDate})
     }
 
-    static async assignSettings(startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes, findSolvedInDb) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/load`, {findSolvedInDb, startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes: JSON.stringify(lineStartTimes)})
-    }
-
     static async getPlan() {
         return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule`)
     }
@@ -276,30 +268,12 @@ export default class ScheduleService {
         return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/analyze`, {})
     }
 
-    static async getExel() {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/export`, {}, {
-            responseType: 'blob'
-        });
-    }
-
     static async pinItem(lineId, pinCount) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/pin`, {lineId, pinCount})
     }
 
     static async moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/moveJobs`, {fromLineId, toLineId, fromIndex, count, insertIndex})
-    }
-
-    static async loadPday(startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes ) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/loadpday`, {startDate, endDate, idealEndDateTime, maxEndDateTime, lineStartTimes: JSON.stringify(lineStartTimes)})
-    }
-
-    static async updatePday(body) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/updatepday`, body, {
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
     }
 
     static async assignServiceWork(lineId, insertIndex, durationMinutes, name) {
