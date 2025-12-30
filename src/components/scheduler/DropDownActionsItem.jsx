@@ -4,6 +4,19 @@ import React from "react";
 export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs, openModalAssignSettings, selectedItems,
                                     updateServiceWork, removeServiceWork}) {
 
+    const isDateWithinLastDays = (isoDateString, days) => {
+        if (!isoDateString) return false;
+        try {
+            const date = new Date(isoDateString);
+            const daysAgo = new Date();
+            daysAgo.setDate(daysAgo.getDate() - days);
+            return date >= daysAgo;
+        } catch (e) {
+            console.error('Ошибка парсинга даты:', isoDateString, e);
+            return false;
+        }
+    };
+
     return (
         <>
                 <div
@@ -48,9 +61,12 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                                         <button onClick={() => {updateServiceWork()}} className="hover:bg-gray-100 w-full text-start px-2 rounded">
                                             Изменить сервисную операцию
                                         </button>
-                                        <button onClick={() => {removeServiceWork(selectedItems[0].group, selectedItems[0].info.groupIndex-1)}} className="hover:bg-gray-100 w-full text-start px-2 rounded">
-                                            Удалить сервисную операцию
-                                        </button>
+
+                                        {contextMenu.item.info.start && isDateWithinLastDays(contextMenu.item.info.start, 2) &&
+                                            <button onClick={() => {removeServiceWork(selectedItems[0].group, selectedItems[0].info.groupIndex-1)}} className="hover:bg-gray-100 w-full text-start px-2 rounded">
+                                                Удалить сервисную операцию
+                                            </button>
+                                        }
                                       </>
                                 }
 

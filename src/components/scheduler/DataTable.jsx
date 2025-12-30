@@ -35,7 +35,10 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
             productGroups[productName].items.push(item);
         });
 
-        return Object.values(productGroups);
+        return Object.values(productGroups).map(group => ({
+            ...group,
+            items: group.items.sort((a, b) => a.NP - b.NP)
+        }));
     }, [itemsArray]);
 
     // Считаем выбранные элементы только в этом компоненте
@@ -92,14 +95,12 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
 
     function selectAll() {
         const allItems = groupedData.flatMap(group => group.items);
-        const availableItems = allItems.filter(item => !item.PDTN || item.PDTN === "" || item.PDTN === null);
 
-        if (availableItems.length === 0) return;
+        const allAvailableItems = allItems.filter(item => isItemAvailable(item.PDTN));
+        const allAvailableSelected = allAvailableItems.every(item => item.isSelected);
+        const shouldSelect = !allAvailableSelected;
 
-        const allSelected = availableItems.every(item => item.isSelected);
-        const shouldSelect = !allSelected;
-
-        updateSelectedItems(allItems, shouldSelect);
+        updateSelectedItems(allAvailableItems, shouldSelect);
     }
 
     function selectAllInGroup(e, productGroup) {
@@ -152,9 +153,9 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
                     <button
                         className="ml-4 bg-blue-800 hover:bg-blue-700 text-white px-3 py-1 w-36 rounded font-medium text-[0.950rem]"
                         onClick={selectAll}
-                        disabled={availableItemsCount === 0 && !allAvailableSelected}
+                        disabled={availableItemsCount === 0}
                     >
-                        {availableItemsCount === 0 && !allAvailableSelected
+                        {availableItemsCount === 0
                             ? 'Нет доступных'
                             : allAvailableSelected
                                 ? 'Снять все'

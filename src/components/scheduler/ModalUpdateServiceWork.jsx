@@ -1,16 +1,50 @@
-import React, {useState} from 'react'
+import React, {useEffect, useState} from 'react'
 import {styleInputWithoutRounded} from "../../data/styles";
 
 
 export function ModalUpdateServiceWork({onClose, selectedItems, updateServiceWork}) {
 
-    const [duration, setDuration] = useState(10);
+    const [hour, setHour] = useState(0);
+    const [min, setMin] = useState(0);
 
     function update() {
         const firstItem = selectedItems[0];
         const index = firstItem.info.groupIndex-1;
         const line = firstItem.group;
-        updateServiceWork(line, index, duration)
+        updateServiceWork(line, index, getTotalMinutes())
+    }
+
+    useEffect(()=>{
+        setHourAndMin(selectedItems[0].info.duration)
+    }, [])
+
+    const setHourAndMin = (totalMinutes) => {
+        setHour(Math.floor(totalMinutes / 60));
+        setMin(totalMinutes % 60);
+    };
+
+    const getTotalMinutes = () => { return Number(hour) * 60 + Number(min); };
+
+    function onChangeHour(e) {
+        if(e<0){
+            setHour(0);
+            return;
+        } else if(e>100){
+            setHour(99);
+            return;
+        }
+        setHour(e);
+    }
+
+    function onChangeMin(e) {
+        if(e<0){
+            setMin(0);
+            return;
+        } else if(e>59){
+            setMin(59);
+            return;
+        }
+        setMin(e);
     }
 
 
@@ -22,18 +56,28 @@ export function ModalUpdateServiceWork({onClose, selectedItems, updateServiceWor
             />
             <div className="fixed inset-0 flex  items-center justify-center p-4 z-100 pointer-events-none"
                  style={{zIndex: 100}}>
-                <div className="w-auto min-w-[600px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
+                <div className="w-auto min-w-[500px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
                     <h1 className="text-xl font-medium text-start mb-2">Изменение длительности сервисной операции</h1>
                     <hr/>
 
                     <div className="flex flex-row my-2 font-medium">
-                        <span className="py-1 font-medium w-1/2">Длительность операции (минут):</span>
-                        <input className={styleInputWithoutRounded + "rounded ml-4 w-1/2"}
-                               type="number"
-                               min={1}
-                               value={duration}
-                               onChange={(e) => setDuration(e.target.value)}
-                        />
+                        <span className="py-1 font-medium w-1/2">Длительность операции:</span>
+
+                        <div className="ml-4 w-1/2 flex flex-row justify-end">
+                            <input min={0} className={styleInputWithoutRounded + "rounded w-[54px]"}
+                                   type="number"
+                                   value={hour}
+                                   onChange={(e) => onChangeHour(e.target.value)}
+                            />
+                            <span className=" py-1 font-medium text-center w-[30px]">ч.</span>
+                            <input min={0} max={59} className={styleInputWithoutRounded + "rounded w-[54px]"}
+                                   type="number"
+                                   value={min}
+                                   onChange={(e) => onChangeMin(e.target.value)}
+                            />
+                            <span className="py-1 font-medium text-center w-[40px]">мин.</span>
+                        </div>
+
                     </div>
 
                     <div className="flex flex-row justify-end ">
