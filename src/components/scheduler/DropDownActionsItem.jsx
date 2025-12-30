@@ -4,16 +4,12 @@ import React from "react";
 export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs, openModalAssignSettings, selectedItems,
                                     updateServiceWork, removeServiceWork}) {
 
-    console.log(selectedItems)
-
     const isDateWithinLastDays = (isoDateString, days) => {
         if (!isoDateString) return false;
-
         try {
-            const date = new Date(isoDateString); // Корректно парсит "2025-11-20T11:51:00"
+            const date = new Date(isoDateString);
             const daysAgo = new Date();
             daysAgo.setDate(daysAgo.getDate() - days);
-
             return date >= daysAgo;
         } catch (e) {
             console.error('Ошибка парсинга даты:', isoDateString, e);
