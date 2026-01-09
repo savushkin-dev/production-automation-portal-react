@@ -315,10 +315,13 @@ function SchedulerPage() {
     async function reloadDirectory() {
         try {
             await SchedulerService.reloadDirectory()
+            await init(selectDate);
+            setMsg("Справочные данные успешно обновлены.")
+            setIsModalNotify(true)
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка обновления справочника: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка обновления справочных данных: " + e.response.data.error)
+            setIsModalNotify(true)
         }
     }
 
@@ -888,13 +891,20 @@ function SchedulerPage() {
                             <i className="pl-2 fa-solid fa-floppy-disk"></i>
                         </button>
 
+                        <button onClick={reloadDirectory}
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
+                            Обновить справочные данные
+                            <i className="pl-2 fa-solid fa-cloud-arrow-down"></i>
+                        </button>
+
                     </div>
                 </div>
 
                 <div className="flex flex-row justify-between my-4 px-4 ">
 
                     <div className="w-1/3">
-                        <div className="inline-flex px-2 h-[30px] items-center border rounded-md hover:bg-gray-100 selection:border-0">
+                        <div
+                            className="inline-flex px-2 h-[30px] items-center border rounded-md hover:bg-gray-100 selection:border-0">
                             <span className="py-1 font-medium text-nowrap ">Дата:</span>
                             <input className={"px-2 font-medium w-32 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:border-transparent"} type="date"
                                    value={selectDate}
