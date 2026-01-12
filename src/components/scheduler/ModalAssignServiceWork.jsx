@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react'
 import {styleInputWithoutRounded} from "../../data/styles";
 import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
+import {convertHoursMinutesToMinutes, validateHours, validateMinutes} from "../../utils/serviceWorkUtils";
 
 
 export function ModalAssignServiceWork({
@@ -22,8 +23,8 @@ export function ModalAssignServiceWork({
     const [time, setTime] = useState(new Date(selectDate).toISOString().replace(/T.*/, 'T08:00'));
     const [nameOperation, setNameOperation] = useState("Обслуживание");
 
-    const [hour, setHour] = useState(0);
-    const [min, setMin] = useState(30);
+    const [hour, setHour] = useState(1);
+    const [min, setMin] = useState(0);
 
     const [isAddingEmptyLine, setIsAddingEmptyLine] = useState(false);
 
@@ -45,28 +46,18 @@ export function ModalAssignServiceWork({
         assignServiceWork(selectLine.value, insertIndex - 1, time, getTotalMinutes(), nameOperation, isAddingEmptyLine);
     }
 
-    const getTotalMinutes = () => { return hour * 60 + min; };
+    const getTotalMinutes = () => {
+        return convertHoursMinutesToMinutes(hour, min);
+    };
 
     function onChangeHour(e) {
-        if(e<0){
-            setHour(0);
-            return;
-        } else if(e>100){
-            setHour(99);
-            return;
-        }
-        setHour(e);
+        const validatedValue = validateHours(e, 99);
+        setHour(validatedValue);
     }
 
     function onChangeMin(e) {
-        if(e<0){
-            setMin(0);
-            return;
-        } else if(e>59){
-            setMin(59);
-            return;
-        }
-        setMin(e);
+        const validatedValue = validateMinutes(e, 59);
+        setMin(validatedValue);
     }
 
     const handleChangeSelect = (event) => {

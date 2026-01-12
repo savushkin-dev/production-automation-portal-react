@@ -5,6 +5,7 @@ export function ModalInfoItem({info, onClose}) {
 
     const styleLable = "py-1 font-medium w-1/5 ";
     const styleInfo = "py-1 font-medium w-4/5 ";
+    console.log(info)
     return (
         <>
             <div
@@ -66,6 +67,13 @@ export function ModalInfoItem({info, onClose}) {
                         <span className={styleLable}>Конец:</span>
                         <span className={styleInfo}>{info.end || ""}</span>
                     </div>
+
+                    {info.maintenance &&
+                        <div className="flex flex-row px-4">
+                            <span className={styleLable}>Id:</span>
+                            <span className={styleInfo}>{info.maintenanceId || "-"}</span>
+                        </div>
+                    }
 
 
                 </div>
