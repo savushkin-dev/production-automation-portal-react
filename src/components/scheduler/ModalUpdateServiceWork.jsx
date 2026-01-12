@@ -1,5 +1,11 @@
 import React, {useEffect, useState} from 'react'
 import {styleInputWithoutRounded} from "../../data/styles";
+import {
+    convertHoursMinutesToMinutes,
+    convertMinutesToHoursMinutes,
+    validateHours,
+    validateMinutes
+} from "../../utils/serviceWorkUtils";
 
 
 export function ModalUpdateServiceWork({onClose, selectedItems, updateServiceWork}) {
@@ -11,42 +17,25 @@ export function ModalUpdateServiceWork({onClose, selectedItems, updateServiceWor
         const firstItem = selectedItems[0];
         const index = firstItem.info.groupIndex-1;
         const line = firstItem.group;
-        updateServiceWork(line, index, getTotalMinutes())
+        const totalMinutes = convertHoursMinutesToMinutes(hour, min)
+        updateServiceWork(line, index, totalMinutes)
     }
 
     useEffect(()=>{
-        setHourAndMin(selectedItems[0].info.duration)
+        const { hours, minutes } = convertMinutesToHoursMinutes(selectedItems[0].info.duration);
+        setHour(hours);
+        setMin(minutes);
     }, [])
 
-    const setHourAndMin = (totalMinutes) => {
-        setHour(Math.floor(totalMinutes / 60));
-        setMin(totalMinutes % 60);
-    };
-
-    const getTotalMinutes = () => { return Number(hour) * 60 + Number(min); };
-
     function onChangeHour(e) {
-        if(e<0){
-            setHour(0);
-            return;
-        } else if(e>100){
-            setHour(99);
-            return;
-        }
-        setHour(e);
+        const validatedValue = validateHours(e, 99);
+        setHour(validatedValue);
     }
 
     function onChangeMin(e) {
-        if(e<0){
-            setMin(0);
-            return;
-        } else if(e>59){
-            setMin(59);
-            return;
-        }
-        setMin(e);
+        const validatedValue = validateMinutes(e, 59);
+        setMin(validatedValue);
     }
-
 
     return (
         <>
