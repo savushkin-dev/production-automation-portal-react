@@ -313,7 +313,7 @@ export default class ScheduleService {
     }
 
     static async reloadDirectory() {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/reloadDirectory`, {})
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/refreshData`, {})
     }
 
 }
