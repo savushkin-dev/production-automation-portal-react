@@ -138,7 +138,8 @@ export default class ScheduleService {
                 filling: json.jobs[i].product.filling,
                 _allergen: json.jobs[i].product._allergen,
                 lineInfo: json.jobs[i].line,
-                maintenance: json.jobs[i].maintenance
+                maintenance: json.jobs[i].maintenance,
+                maintenanceId: json.jobs[i].fid
             }
         }
 
