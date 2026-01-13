@@ -62,11 +62,11 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                                             Изменить сервисную операцию
                                         </button>
 
-                                        {contextMenu.item.info.start && isDateWithinLastDays(contextMenu.item.info.start, 2) &&
+                                        {/*{contextMenu.item.info.start && isDateWithinLastDays(contextMenu.item.info.start, 2) &&*/}
                                             <button onClick={() => {removeServiceWork(selectedItems[0].group, selectedItems[0].info.groupIndex-1)}} className="hover:bg-gray-100 w-full text-start px-2 rounded">
                                                 Удалить сервисную операцию
                                             </button>
-                                        }
+                                        {/*}*/}
                                       </>
                                 }
 
