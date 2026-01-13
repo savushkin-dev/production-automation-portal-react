@@ -5,7 +5,7 @@ export function ModalInfoItem({info, onClose}) {
 
     const styleLable = "py-1 font-medium w-1/5 ";
     const styleInfo = "py-1 font-medium w-4/5 ";
-    console.log(info)
+
     return (
         <>
             <div

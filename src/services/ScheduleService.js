@@ -45,13 +45,17 @@ export default class ScheduleService {
         });
         let cleaning = [];
         for (let i = 0; i < filteredData.length; i++) {
+            if(!filteredData[i].line){
+                console.warn("Job with id " + filteredData[i].id + " has a null line field")
+                continue;
+            }
             let dur = Math.round(new Date(filteredData[i].startProductionDateTime) - new Date(filteredData[i].startCleaningDateTime))/ 60000;
             cleaning[i] = Object.assign({}, exampleTask);
             cleaning[i].id = i + "cleaning";
             cleaning[i].start_time = new Date(filteredData[i].startCleaningDateTime).getTime();
             cleaning[i].end_time = new Date(filteredData[i].startProductionDateTime).getTime();
             cleaning[i].title = "Мойка, переналадка";
-            cleaning[i].group = filteredData[i].line.id;
+            cleaning[i].group = filteredData[i].line?.id || "NAN";
             cleaning[i].itemProps = {
                 style: {
                     background: dur >= 100? "#cff1ff" : '#f0f9ff',
@@ -63,7 +67,7 @@ export default class ScheduleService {
                 name: "Мойка",
                 start: filteredData[i].startCleaningDateTime,
                 end: filteredData[i].startProductionDateTime,
-                line: filteredData[i].line.name,
+                line: filteredData[i].line?.name || "NAN",
                 duration: dur,
                 pinned: false,
                 lineInfo: json.jobs[i].line,
@@ -107,12 +111,17 @@ export default class ScheduleService {
         planByHardware = [];
 
         for (let i = 0; i < json.jobs.length; i++) {
+            if(!json.jobs[i].line){
+                console.warn("Job with id " + json.jobs[i].id + " has a null line field")
+                continue;
+            }
+
             planByHardware[i] = Object.assign({}, exampleTask);
             planByHardware[i].id = json.jobs[i].id;
             planByHardware[i].start_time = new Date(json.jobs[i].startProductionDateTime).getTime();
             planByHardware[i].end_time = new Date(json.jobs[i].endDateTime).getTime();
             planByHardware[i].title = json.jobs[i].name;
-            planByHardware[i].group = json.jobs[i].line?.id || "";
+            planByHardware[i].group = json.jobs[i].line.id ;
 
             planByHardware[i].itemProps = {
                 style: {
@@ -145,7 +154,7 @@ export default class ScheduleService {
 
         let cleaning = await this.parseCleaningByHardware(json)
         let result = [...planByHardware, ...cleaning]
-
+        result = result.filter(item => item !== undefined);
         result = ScheduleService.defineAssignedJobs(result, json)
         return result;
     }
