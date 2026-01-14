@@ -1,10 +1,13 @@
 import React from 'react'
 
 
-export function ModalInfoItem({info, onClose}) {
+export function ModalInfoItem({info, onClose, lines}) {
 
-    const styleLable = "py-1 font-medium w-1/5 ";
-    const styleInfo = "py-1 font-medium w-4/5 ";
+    const styleLable = "py-1 font-medium w-[25%] ";
+    const styleInfo = "py-1 font-medium w-[75%] ";
+
+    const isFact = info.startFact !== null;
+    const isLinesMatch = info.lineIdFact === info.lineInfo.id;
 
     return (
         <>
@@ -15,7 +18,16 @@ export function ModalInfoItem({info, onClose}) {
             <div className="fixed inset-0 flex  items-center justify-center p-4 z-100 pointer-events-none"
                  style={{zIndex: 100}}>
                 <div className="w-auto min-w-[700px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
-                    <h1 className="text-xl font-medium text-start mb-2">{info.name}</h1>
+                    <div className="flex flex-row justify-between">
+                        <h1 className="text-xl font-medium text-start mb-2">{info.name}</h1>
+                        <span>
+                            {!isLinesMatch && isFact && info.name !== "Мойка" && !info.maintenance &&
+                                <span className="font-medium align-middle text-red-600 pl-2">Фактическая линия не совпадает с планируемой<i
+                                    className="pl-2 fa-solid fa-triangle-exclamation"></i></span>
+                            }
+                        </span>
+                    </div>
+
 
                     <hr className="mb-3"/>
 
@@ -24,6 +36,17 @@ export function ModalInfoItem({info, onClose}) {
                             <div className="flex flex-row bg-blue-800 rounded text-white px-4">
                                 <span className={styleLable}>Наименование:</span>
                                 <span className={styleInfo}>{info.fullName || "-"}</span>
+                            </div>
+
+                            <div className="flex flex-row px-4">
+                                <span className={styleLable}>Статус:</span>
+                                <span className={styleInfo}>
+                                    {isFact ? (
+                                        <span>Произведено</span>
+                                    ) : (
+                                        <span>Запланировано</span>
+                                    )}
+                                </span>
                             </div>
 
                             <div className="flex flex-row px-4">
@@ -58,10 +81,30 @@ export function ModalInfoItem({info, onClose}) {
                         <span className={styleInfo}>{info.line || "-"}</span>
                     </div>
 
+                    {info.name !== "Мойка" && !info.maintenance && isFact &&
+                        <div>
+                            <div className="flex flex-row px-4">
+                                <span className={styleLable}>Линия по факту:</span>
+                                <span className={styleInfo}>
+                                    {lines.find(item => item.id === info.lineIdFact).title || "-"}
+                                </span>
+                            </div>
+                        </div>
+                    }
+
                     <div className="flex flex-row px-4">
                         <span className={styleLable}>Начало:</span>
                         <span className={styleInfo}>{info.start || "-"}</span>
                     </div>
+
+                    {info.name !== "Мойка" && !info.maintenance && isFact &&
+                        <div>
+                            <div className="flex flex-row px-4">
+                                <span className={styleLable}>Начало по факту:</span>
+                                <span className={styleInfo}>{info.startFact || "-"}</span>
+                            </div>
+                        </div>
+                    }
 
                     <div className="flex flex-row px-4">
                         <span className={styleLable}>Конец:</span>
@@ -74,6 +117,8 @@ export function ModalInfoItem({info, onClose}) {
                             <span className={styleInfo}>{info.maintenanceId || "-"}</span>
                         </div>
                     }
+
+
 
 
                 </div>

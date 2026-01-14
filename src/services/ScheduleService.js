@@ -58,7 +58,7 @@ export default class ScheduleService {
             cleaning[i].group = filteredData[i].line?.id || "NAN";
             cleaning[i].itemProps = {
                 style: {
-                    background: dur >= 100? "#cff1ff" : '#f0f9ff',
+                    background: dur >= 100? "#d9f6ff" : '#f0f9ff',
                     border: '1px solid #dcdcdc',
                     color: "#0369a1",
                 },
@@ -148,7 +148,9 @@ export default class ScheduleService {
                 _allergen: json.jobs[i].product._allergen,
                 lineInfo: json.jobs[i].line,
                 maintenance: json.jobs[i].maintenance,
-                maintenanceId: json.jobs[i].fid
+                maintenanceId: json.jobs[i].fid,
+                lineIdFact: json.jobs[i].lineIdFact,
+                startFact: json.jobs[i].startProductionDateTimeFact,
             }
         }
 
