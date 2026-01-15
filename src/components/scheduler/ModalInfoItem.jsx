@@ -60,11 +60,6 @@ export function ModalInfoItem({info, onClose, lines}) {
                             </div>
 
                             <div className="flex flex-row px-4">
-                                <span className={styleLable}>Тип:</span>
-                                <span className={styleInfo}>{info.type || "-"}</span>
-                            </div>
-
-                            <div className="flex flex-row px-4">
                                 <span className={styleLable}>Количество:</span>
                                 <span className={styleInfo}>{info.quantity || "-"} шт.</span>
                             </div>
@@ -86,7 +81,7 @@ export function ModalInfoItem({info, onClose, lines}) {
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Линия по факту:</span>
                                 <span className={styleInfo}>
-                                    {lines.find(item => item.id === info.lineIdFact).title || "-"}
+                                    {lines.find(item => item.id === info.lineIdFact)?.title || "-"}
                                 </span>
                             </div>
                         </div>

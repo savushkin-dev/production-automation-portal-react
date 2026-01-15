@@ -86,6 +86,7 @@ function SchedulerPage() {
     const [currentUnit, setCurrentUnit] = useState('hour');
 
     const location = useLocation();
+
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const dateParam = params.get("date");
@@ -769,12 +770,7 @@ function SchedulerPage() {
         const itemProps = getItemProps({
             style: {
                 background: isSelected ?
-                    // (isSingleSelected ? "#d0ff9a" : "#d0ff9a") : (isFact ? "#d9ffca" : item.itemProps?.style?.background)
-                    // (isSingleSelected ? "#d0ff9a" : "#d0ff9a") : (isFact ? "#c4ffd2" : item.itemProps?.style?.background) //салатовый
-                    (isSingleSelected ? "#d0ff9a" : "#d0ff9a") : (isFact ? "#f6f2ff" : item.itemProps?.style?.background) //фиолетовый
-                    // (isSingleSelected ? "#d0ff9a" : "#d0ff9a") : (isFact ? "#dffff9" : item.itemProps?.style?.background) //берюзовый
-                    // (isSingleSelected ? "#d0ff9a" : "#d0ff9a") : (isFact ? "#f6f6f6" : item.itemProps?.style?.background) //серый
-                    // (isSingleSelected ? "#d0ff9a" : "#d0ff9a") : (isFact ? "#e4ffe4" : item.itemProps?.style?.background) //светло зеленый
+                    (isSingleSelected ? "#cbff93" : "#cbff93") : (isFact ? "#c9ffd7" : item.itemProps?.style?.background)
                     ,
                 border: '1px solid #aeaeae',
                 textAlign: 'start',
@@ -836,8 +832,9 @@ function SchedulerPage() {
                         }
                         {item.info?.duration &&
                             <span className=" px-1 rounded"><span
-                                className="text-pink-500">{item.info.duration} мин. </span> <span
-                                className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
+                                className="text-pink-500">{item.info.duration} мин. </span>
+                                <span className="text-gray-500 px-1">|</span>
+                                <span className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
                         - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span>  Время</span>
                         }
                         {item.info?.groupIndex && !isFact &&
@@ -850,10 +847,14 @@ function SchedulerPage() {
                         {isFact &&
                             <span className=" px-1 rounded">
                                 {!isLinesMatch &&
-                                    <span className="text-red-600 pr-2 h-[20px] w-[20px]"><i className="fa-solid fa-triangle-exclamation"></i></span>
+                                    <span className="text-red-600 pr-2 h-[20px] w-[20px]"><i
+                                        className="fa-solid fa-triangle-exclamation"></i></span>
                                 }
                                 <span className="text-violet-600">{moment(item.info?.startFact).format('HH:mm')}</span>
                                 <span className="pl-1">Факт. время начала</span>
+
+                                <span className="pl-1 text-violet-600">| {item.info?.groupIndex}</span>
+                                <span className="pl-1">Позиция на линии</span>
                             </span>
                         }
                     </div>
