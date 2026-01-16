@@ -86,6 +86,7 @@ function SchedulerPage() {
     const [currentUnit, setCurrentUnit] = useState('hour');
 
     const location = useLocation();
+
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const dateParam = params.get("date");
@@ -763,11 +764,14 @@ function SchedulerPage() {
         const isSelected = selectedItems.includes(item);
         const isSingleSelected = selectedItem?.id === item.id;
 
+        const isFact = item.info.startFact !== null && !item.id.includes('cleaning');
+        const isLinesMatch = item.info.lineIdFact === item.info.lineInfo.id;
+
         const itemProps = getItemProps({
             style: {
                 background: isSelected ?
-                    (isSingleSelected ? "#d0ff9a" : "#d0ff9a") :
-                    item.itemProps?.style?.background,
+                    (isSingleSelected ? "#cbff93" : "#cbff93") : (isFact ? "#c9ffd7" : item.itemProps?.style?.background)
+                    ,
                 border: '1px solid #aeaeae',
                 textAlign: 'start',
                 color: item.itemProps.style.color || 'black',
@@ -828,13 +832,28 @@ function SchedulerPage() {
                         }
                         {item.info?.duration &&
                             <span className=" px-1 rounded"><span
-                                className="text-pink-500">{item.info.duration} мин. </span> <span
-                                className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
+                                className="text-pink-500">{item.info.duration} мин. </span>
+                                <span className="text-gray-500 px-1">|</span>
+                                <span className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
                         - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span>  Время</span>
                         }
-                        {item.info?.groupIndex &&
+                        {item.info?.groupIndex && !isFact &&
                             <span className=" px-1 rounded">
                                 <span className="text-violet-600">{item.info?.groupIndex}</span>
+                                <span className="pl-1">Позиция на линии</span>
+                            </span>
+                        }
+
+                        {isFact &&
+                            <span className=" px-1 rounded">
+                                {!isLinesMatch &&
+                                    <span className="text-red-600 pr-2 h-[20px] w-[20px]"><i
+                                        className="fa-solid fa-triangle-exclamation"></i></span>
+                                }
+                                <span className="text-violet-600">{moment(item.info?.startFact).format('HH:mm')}</span>
+                                <span className="pl-1">Факт. время начала</span>
+
+                                <span className="pl-1 text-violet-600">| {item.info?.groupIndex}</span>
                                 <span className="pl-1">Позиция на линии</span>
                             </span>
                         }
@@ -864,8 +883,8 @@ function SchedulerPage() {
 
                 {isModalInfoItem && selectedItem && <ModalInfoItem info={selectedItem.info} onClose={() => {
                     setSelectedItem(null);
-                    setIsModalInfoItem(false)
-                }}/>}
+                    setIsModalInfoItem(false);
+                }} lines={groups}/>}
 
                 {isLoading &&
                     <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>
