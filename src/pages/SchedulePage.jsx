@@ -71,6 +71,9 @@ function SchedulerPage() {
 
     const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0])
 
+    const [isSort, setIsSort] = useState(false);
+    const [isModalAskSort, setIsModalAskSort] = useState(false);
+
 
     const [contextMenu, setContextMenu] = useState({
         visible: false,
@@ -200,6 +203,17 @@ function SchedulerPage() {
             setMsg("Ошибка отправки плана в работу: " + e.response.data.error)
             setIsModalNotify(true);
         }
+    }
+
+    async function sortAndSave(){
+        setIsModalAskSort(false);
+        await sortSchedule();
+        await savePlan();
+    }
+
+    function clickSavePlan(){
+        setMsg("Вы хотите отсортировать план перед сохранением?")
+        isSort? savePlan() : setIsModalAskSort(true);
     }
 
     async function savePlan() {
@@ -361,6 +375,7 @@ function SchedulerPage() {
     }, [downloadedPlan]);
 
     async function solve() {
+        setIsSort(false);
         await fetchSolve();
     }
 
@@ -718,6 +733,7 @@ function SchedulerPage() {
         try {
             await SchedulerService.sortSchedule();
             await fetchPlan();
+            setIsSort(true);
         } catch (e) {
             console.error(e)
             setMsg("Ошибка сортировки: " + e.response.data.error)
@@ -904,7 +920,7 @@ function SchedulerPage() {
 
                     <div className="w-5/6 py-1 flex justify-end pr-3">
 
-                        <button onClick={savePlan}
+                        <button onClick={clickSavePlan}
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                             Сохранить
                             <i className="pl-2 fa-solid fa-floppy-disk"></i>
@@ -1109,6 +1125,12 @@ function SchedulerPage() {
                                            setIsModalSendToWrk(false);
                                            sendToWork();
                                        }} onDisagree={() => setIsModalSendToWrk(false)}/>}
+
+                {isModalAskSort &&
+                    <ModalConfirmation title={"Подтверждение действия"} message={msg}
+                                       onClose={() => setIsModalAskSort(false)}
+                                       onAgree={() => {sortAndSave()}}
+                                       onDisagree={() => setIsModalAskSort(false)}/>}
 
                 {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItems} unpin={unpinLine}
                                                              isDisplayByHardware={isDisplayByHardware}
