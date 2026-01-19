@@ -71,16 +71,12 @@ function SchedulerPage() {
 
     const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0])
 
-    const [isSort, setIsSort] = useState(false);
-    const [isModalAskSort, setIsModalAskSort] = useState(false);
-
     const [modalSortConfig, setModalSortConfig] = useState({
         isOpen: false,
         isSort: false,
         message: '',
         onConfirm: null
     });
-
 
     const [contextMenu, setContextMenu] = useState({
         visible: false,
