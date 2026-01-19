@@ -74,6 +74,13 @@ function SchedulerPage() {
     const [isSort, setIsSort] = useState(false);
     const [isModalAskSort, setIsModalAskSort] = useState(false);
 
+    const [modalSortConfig, setModalSortConfig] = useState({
+        isOpen: false,
+        isSort: false,
+        message: '',
+        onConfirm: null
+    });
+
 
     const [contextMenu, setContextMenu] = useState({
         visible: false,
@@ -103,6 +110,7 @@ function SchedulerPage() {
 
     }, [location.search]);
 
+    // TODO: Доработать метод инициализации
     async function init(date) {
         try {
             setVisibleTimeRange(prevState => ({
@@ -205,15 +213,30 @@ function SchedulerPage() {
         }
     }
 
-    async function sortAndSave(){
-        setIsModalAskSort(false);
+    async function agreeSorting(){
+        setModalSortConfig(prevState => ({...prevState, isOpen: false}))
         await sortSchedule();
-        await savePlan();
+        await modalSortConfig.onConfirm?.();
+    }
+
+    async function disagreeSorting(){
+        setModalSortConfig(prevState => ({...prevState, isOpen: false}))
+        await modalSortConfig.onConfirm?.();
+    }
+
+    function openModalSendToWork(){
+        setMsg("Вы уверены что хотите отправить план в работу?")
+        setIsModalSendToWrk(true);
+    }
+
+    function clickSendToWork() {
+        setMsg("Вы хотите отсортировать план перед отправкой в работу?")
+        modalSortConfig.isSort? openModalSendToWork() : setModalSortConfig(prevState => ({...prevState, isOpen: true, onConfirm: ()=> openModalSendToWork()}));
     }
 
     function clickSavePlan(){
         setMsg("Вы хотите отсортировать план перед сохранением?")
-        isSort? savePlan() : setIsModalAskSort(true);
+        modalSortConfig.isSort? savePlan() : setModalSortConfig(prevState => ({...prevState, isOpen: true, onConfirm: ()=> savePlan()}));
     }
 
     async function savePlan() {
@@ -238,11 +261,6 @@ function SchedulerPage() {
             setMsg("Ошибка удаления отчета: " + e.response.data.error)
             setIsModalNotify(true);
         }
-    }
-
-    function clickSendToWork() {
-        setMsg("Вы уверены что хотите отправить план в работу?")
-        setIsModalSendToWrk(true);
     }
 
     async function fetchLines() {
@@ -375,7 +393,7 @@ function SchedulerPage() {
     }, [downloadedPlan]);
 
     async function solve() {
-        setIsSort(false);
+        setModalSortConfig(prev => ({...prev, isSort: false}))
         await fetchSolve();
     }
 
@@ -684,6 +702,7 @@ function SchedulerPage() {
     async function moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex) {
         try {
             await SchedulerService.moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex);
+            setModalSortConfig(prev => ({...prev, isSort: false}));
             await fetchPlan();
         } catch (e) {
             console.error(e)
@@ -733,7 +752,7 @@ function SchedulerPage() {
         try {
             await SchedulerService.sortSchedule();
             await fetchPlan();
-            setIsSort(true);
+            setModalSortConfig(prev => ({...prev, isSort: true}))
         } catch (e) {
             console.error(e)
             setMsg("Ошибка сортировки: " + e.response.data.error)
@@ -1126,11 +1145,11 @@ function SchedulerPage() {
                                            sendToWork();
                                        }} onDisagree={() => setIsModalSendToWrk(false)}/>}
 
-                {isModalAskSort &&
+                {modalSortConfig.isOpen &&
                     <ModalConfirmation title={"Подтверждение действия"} message={msg}
-                                       onClose={() => setIsModalAskSort(false)}
-                                       onAgree={() => {sortAndSave()}}
-                                       onDisagree={() => setIsModalAskSort(false)}/>}
+                                       onClose={() => setModalSortConfig(prev => ({...prev, isOpen: false}))}
+                                       onAgree={() => {agreeSorting()}}
+                                       onDisagree={() => {disagreeSorting()}}/>}
 
                 {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItems} unpin={unpinLine}
                                                              isDisplayByHardware={isDisplayByHardware}
