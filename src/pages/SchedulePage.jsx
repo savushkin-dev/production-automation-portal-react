@@ -926,14 +926,18 @@ function SchedulerPage() {
                 </div>
 
                 <div className="flex flex-row">
-                    <div className="w-1/6 ">
+                    <div className="w-2/6 ">
                         <button onClick={() => {
                             navigate(from, {replace: true})
                         }} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Вернуться назад
                         </button>
+                        <button onClick={() => {
+                            navigate("/tracktrace", {replace: true})
+                        }} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Мониторинг
+                        </button>
                     </div>
 
-                    <div className="w-5/6 py-1 flex justify-end pr-3">
+                    <div className="w-4/6 py-1 flex justify-end pr-3">
 
                         <button onClick={clickSavePlan}
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">

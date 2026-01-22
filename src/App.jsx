@@ -9,6 +9,7 @@ import ReportsPage from "./pages/ReportsPage";
 import ViewReportPage from "./pages/ViewReportPage";
 import SchedulePage from "./pages/SchedulePage";
 import AdminPanelPage from "./pages/AdminPanelPage";
+import TrackTracePage from "./pages/TrackTracePage";
 
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
                     <Route path="/" element={<ReportsPage/>}/>
                     <Route path="/report" element={<ViewReportPage/>}/>
                     <Route path="/scheduler" element={<SchedulePage/>}/>
+                    <Route path="/tracktrace" element={<TrackTracePage/>}/>
 
 
 
