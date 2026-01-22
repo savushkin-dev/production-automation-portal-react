@@ -1,22 +1,14 @@
 import {observer} from "mobx-react-lite";
 import {ModalInfoItem} from "../components/scheduler/ModalInfoItem";
 import {DateHeader, SidebarHeader, Timeline, TimelineHeaders} from "react-calendar-timeline";
-import {MyTimeline} from "../components/scheduler/MyTimeline";
-import {ModalDateSettings} from "../components/scheduler/ModalDateSettings";
-import {ModalAnalyze} from "../components/scheduler/ModalAnalyze";
 import {ModalNotify} from "../components/modal/ModalNotify";
-import {ModalConfirmation} from "../components/modal/ModalConfirmation";
-import {DropDownActionsItem} from "../components/scheduler/DropDownActionsItem";
-import {ModalMoveJobs} from "../components/scheduler/ModalMoveJobs";
-import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
-import {ModalUpdateServiceWork} from "../components/scheduler/ModalUpdateServiceWork";
-import {DataTable} from "../components/scheduler/DataTable";
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import SchedulerService from "../services/ScheduleService";
 import moment from "moment/moment";
 import ScheduleService from "../services/ScheduleService";
-import {convertLines, convertLinesWithTimeFields} from "../services/scheduler/schedulerUtils";
+import {convertLines} from "../services/scheduler/schedulerUtils";
+import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/TimelineUtils";
 
 
 function TrackTracePage() {
@@ -49,7 +41,6 @@ function TrackTracePage() {
     }, [])
 
     useEffect(() => {
-        console.log(startTimeLines)
         setPlanByHardware([])
         if (startTimeLines) {
             init(selectDate);
@@ -59,7 +50,7 @@ function TrackTracePage() {
     async function fetchLines() {
         try {
             const response = await SchedulerService.getLines();
-            setStartTimeLines(convertLines(response.data))
+            await setStartTimeLines(convertLines(response.data))
         } catch (e) {
             console.error(e)
             setMsg("Ошибка загрузки линий отчета: " + e.response.data.error)
@@ -138,7 +129,7 @@ function TrackTracePage() {
         updateScrollCanvas(visibleTimeStart, visibleTimeEnd);
     }, []);
 
-    // Добавленные функции для динамического формата
+
     const handleZoom = useCallback((timelineContext) => {
         setCurrentUnit(timelineContext.timelineUnit);
     }, []);
@@ -228,23 +219,23 @@ function TrackTracePage() {
                                 )}
                             </SidebarHeader>
 
-                            {/*/!* Основной заголовок с датой *!/*/}
-                            {/*<DateHeader*/}
-                            {/*    unit="primaryHeader"*/}
-                            {/*    className="bg-blue-800 font-semibold text-sm "*/}
-                            {/*    labelFormat={formatTimelineLabelMain}*/}
-                            {/*/>*/}
+                            {/* Основной заголовок с датой */}
+                            <DateHeader
+                                unit="primaryHeader"
+                                className="bg-blue-800 font-semibold text-sm "
+                                labelFormat={formatTimelineLabelMain}
+                            />
 
-                            {/*/!* Динамический заголовок - меняет формат в зависимости от масштаба *!/*/}
-                            {/*<DateHeader*/}
-                            {/*    unit={currentUnit}*/}
-                            {/*    className=" font-medium text-sm "*/}
-                            {/*    labelFormat={formatTimelineLabel}*/}
-                            {/*    style={{*/}
-                            {/*        backgroundColor: '#f0f0f0',*/}
-                            {/*        height: 30*/}
-                            {/*    }}*/}
-                            {/*/>*/}
+                            {/* Динамический заголовок - меняет формат в зависимости от масштаба */}
+                            <DateHeader
+                                // unit={currentUnit}
+                                className=" font-medium text-sm "
+                                labelFormat={formatTimelineLabel}
+                                style={{
+                                    backgroundColor: '#f0f0f0',
+                                    height: 30
+                                }}
+                            />
 
 
                             {/*{false &&*/}
