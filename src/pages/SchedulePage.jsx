@@ -24,14 +24,6 @@ import {convertLines, convertLinesWithTimeFields} from "../utils/scheduler/lines
 import {createTimelineLabelFormatter, formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
 import {createTimelineRenderers, createTimelineRenderersSheduler} from "../components/scheduler/TimelineItemRenderer";
 
-// Принудительно устанавливаем русскую локаль
-moment.updateLocale('ru', {
-    months: 'Январь_Февраль_Март_Апрель_Май_Июнь_Июль_Август_Сентябрь_Октябрь_Ноябрь_Декабрь'.split('_'),
-    monthsShort: 'Янв_Фев_Мар_Апр_Май_Июн_Июл_Авг_Сен_Окт_Ноя_Дек'.split('_'),
-    weekdays: 'Воскресенье_Понедельник_Вторник_Среда_Четверг_Пятница_Суббота'.split('_'),
-    weekdaysShort: 'вс_пн_вт_ср_чт_пт_сб'.split('_'),
-    weekdaysMin: 'вс_пн_вт_ср_чт_пт_сб'.split('_')
-});
 
 function SchedulerPage() {
 

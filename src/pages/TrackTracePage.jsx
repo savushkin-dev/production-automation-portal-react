@@ -8,10 +8,7 @@ import SchedulerService from "../services/ScheduleService";
 import moment from "moment/moment";
 import ScheduleService from "../services/ScheduleService";
 import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
-import {
-    createTimelineRenderersSheduler,
-    createTimelineRenderersTracktrace
-} from "../components/scheduler/TimelineItemRenderer";
+import {createTimelineRenderersTracktrace} from "../components/scheduler/TimelineItemRenderer";
 import {convertLines} from "../utils/scheduler/lines";
 
 

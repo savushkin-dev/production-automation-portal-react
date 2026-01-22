@@ -10,15 +10,18 @@ import ViewReportPage from "./pages/ViewReportPage";
 import SchedulePage from "./pages/SchedulePage";
 import AdminPanelPage from "./pages/AdminPanelPage";
 import TrackTracePage from "./pages/TrackTracePage";
+import {configureMomentLocale} from "./utils/date/momentConfig";
 
 
 function App() {
+
 
     const {store} = useContext(Context);
 
     const [isCheckAuth, setIsCheckAuth] = useState(false);
 
     useEffect(() => {
+        configureMomentLocale();
         if (localStorage.getItem('tokenAutomationProduction')) {
             store.checkAuth().then(() => setIsCheckAuth(true));
         } else {
