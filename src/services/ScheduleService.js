@@ -260,6 +260,10 @@ export default class ScheduleService {
         return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/lines`)
     }
 
+    static async getServiceTypes() {
+        return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/serviceTypes`)
+    }
+
     static async solve() {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/solve`, {})
     }
@@ -268,9 +272,9 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/save`, {})
     }
 
-    static async removePlan() {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/removeSolution`, {})
-    }
+    // static async removePlan() {
+    //     return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/removeSolution`, {})
+    // }
 
     static async stopSolving() {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/stopSolving`, {})

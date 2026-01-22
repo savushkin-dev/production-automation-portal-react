@@ -88,6 +88,7 @@ function SchedulerPage() {
 
     const [startTimeLines, setStartTimeLines] = useState(undefined);
     const [timelineKey, setTimelineKey] = useState(0);
+    const [serviceTypes, setServiceTypes] = useState([])
 
     const [currentUnit, setCurrentUnit] = useState('hour');
 
@@ -247,14 +248,26 @@ function SchedulerPage() {
         }
     }
 
-    async function removePlan() {
+    // async function removePlan() {
+    //     try {
+    //         await SchedulerService.removePlan();
+    //         setMsg("План успешно удален.")
+    //         setIsModalNotify(true);
+    //     } catch (e) {
+    //         console.error(e)
+    //         setMsg("Ошибка удаления отчета: " + e.response.data.error)
+    //         setIsModalNotify(true);
+    //     }
+    // }
+
+    async function fetchServiceTypes() {
         try {
-            await SchedulerService.removePlan();
-            setMsg("План успешно удален.")
-            setIsModalNotify(true);
+            const response = await SchedulerService.getServiceTypes();
+            console.log(response.data)
+
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка удаления отчета: " + e.response.data.error)
+            setMsg("Ошибка загрузки типов сервисных операций: " + e.response.data.error)
             setIsModalNotify(true);
         }
     }
@@ -416,6 +429,7 @@ function SchedulerPage() {
     useEffect(() => {
         fetchStopSolving();
         fetchLines();
+        fetchServiceTypes();
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }, [])
 
@@ -1125,13 +1139,13 @@ function SchedulerPage() {
                 {isModalNotify &&
                     <ModalNotify title={"Результат операции"} message={msg} onClose={() => setIsModalNotify(false)}/>}
 
-                {isModalRemove &&
-                    <ModalConfirmation title={"Подтверждение действия"} message={msg}
-                                       onClose={() => setIsModalRemove(false)}
-                                       onAgree={() => {
-                                           setIsModalRemove(false);
-                                           removePlan();
-                                       }} onDisagree={() => setIsModalRemove(false)}/>}
+                {/*{isModalRemove &&*/}
+                {/*    <ModalConfirmation title={"Подтверждение действия"} message={msg}*/}
+                {/*                       onClose={() => setIsModalRemove(false)}*/}
+                {/*                       onAgree={() => {*/}
+                {/*                           setIsModalRemove(false);*/}
+                {/*                           removePlan();*/}
+                {/*                       }} onDisagree={() => setIsModalRemove(false)}/>}*/}
 
                 {isModalSendToWork &&
                     <ModalConfirmation title={"Подтверждение действия"} message={msg}
