@@ -11,17 +11,28 @@ import {ModalMoveJobs} from "../components/scheduler/ModalMoveJobs";
 import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
 import {ModalUpdateServiceWork} from "../components/scheduler/ModalUpdateServiceWork";
 import {DataTable} from "../components/scheduler/DataTable";
-import React, {useCallback, useRef, useState} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import {useNavigate} from "react-router-dom";
+import SchedulerService from "../services/ScheduleService";
+import moment from "moment/moment";
+import ScheduleService from "../services/ScheduleService";
+import {convertLines, convertLinesWithTimeFields} from "../services/scheduler/schedulerUtils";
 
 
 function TrackTracePage() {
 
     const navigate = useNavigate();
 
+    const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0])
+
     const [groups, setGroups] = useState([]);
     const [items, setItems] = useState([]);
 
+    const [downloadedPlan, setDownloadedPlan] = useState(null);
+    const [hardware, setHardware] = useState([]);
+    const [planByHardware, setPlanByHardware] = useState([]);
+
+    const [startTimeLines, setStartTimeLines] = useState(undefined);
     const [timelineKey, setTimelineKey] = useState(0);
     const [visibleTimeRange, setVisibleTimeRange] = useState(null);
     const timelineRef = useRef();
@@ -29,6 +40,94 @@ function TrackTracePage() {
 
     const [msg, setMsg] = useState("");
     const [isModalNotify, setIsModalNotify] = useState(false);
+
+
+
+    useEffect(() => {
+        fetchLines();
+        // setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
+    }, [])
+
+    useEffect(() => {
+        console.log(startTimeLines)
+        setPlanByHardware([])
+        if (startTimeLines) {
+            init(selectDate);
+        }
+    }, [selectDate])
+
+    async function fetchLines() {
+        try {
+            const response = await SchedulerService.getLines();
+            setStartTimeLines(convertLines(response.data))
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка загрузки линий отчета: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
+
+    async function init(date) {
+        try {
+            setVisibleTimeRange(prevState => ({
+                ...prevState,
+                visibleTimeStart: moment(date).startOf('day').add(-2, 'hour'),
+                visibleTimeEnd: moment(date).startOf('day').add(30, 'hour')
+            }));
+
+            const response = await SchedulerService.init(date);
+            fetchPlan();
+
+
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка инициализации: " + e.response.data.error)
+            setIsModalNotify(true);
+            setItems([])
+        }
+    }
+
+    async function fetchPlan() {
+        try {
+            const response = await SchedulerService.getPlan()
+            setDownloadedPlan(response.data)
+
+        } catch (e) {
+            console.error(e)
+            setDownloadedPlan([])
+            setMsg("Ошибка получения плана: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
+    useEffect(() => {
+        displayByHardware()
+    }, [planByHardware])
+
+    function displayByHardware() {
+        setGroups(hardware);
+        setItems(planByHardware);
+        setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
+    }
+
+    useEffect(() => {
+        if (downloadedPlan) {
+            ScheduleService.parseHardware(downloadedPlan).then((e) => {
+                setHardware(e);
+                setGroups(e);
+            });
+            ScheduleService.parsePlanByHardware(downloadedPlan).then((e) => {
+                setPlanByHardware(e);
+                setItems(e);
+            });
+            SchedulerService.parseDateTimeSettings(downloadedPlan).then((e) => {
+                setStartTimeLines(e)
+            })
+            setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
+        }
+    }, [downloadedPlan]);
+
 
     const handleTimeChange = useCallback((visibleTimeStart, visibleTimeEnd, updateScrollCanvas, unit, timelineContext) => {
         setVisibleTimeRange({
@@ -79,8 +178,8 @@ function TrackTracePage() {
                             className="inline-flex px-2 h-[30px] items-center border rounded-md hover:bg-gray-100 selection:border-0">
                             <span className="py-1 font-medium text-nowrap ">Дата:</span>
                             <input className={"px-2 font-medium w-32 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:border-transparent"} type="date"
-                                   // value={selectDate}
-                                   // onChange={(e) => onChangeSelectDate(e.target.value)}
+                                   value={selectDate}
+                                   onChange={(e) => setSelectDate(e.target.value)}
                             />
                         </div>
 

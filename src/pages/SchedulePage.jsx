@@ -20,6 +20,7 @@ import {DataTable} from "../components/scheduler/DataTable";
 import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
 import {ModalUpdateServiceWork} from "../components/scheduler/ModalUpdateServiceWork";
 import {MyTimeline} from "../components/scheduler/MyTimeline";
+import {convertLines, convertLinesWithTimeFields} from "../services/scheduler/schedulerUtils";
 
 // Принудительно устанавливаем русскую локаль
 moment.updateLocale('ru', {
@@ -262,23 +263,7 @@ function SchedulerPage() {
     async function fetchLines() {
         try {
             const response = await SchedulerService.getLines();
-
-            let res = Object.entries(response.data)
-                .map(([lineId, lineName], index) => ({
-                    id: String(index + 1),
-                    name: lineName.trim(),
-                    lineId: lineId,
-                    originalName: lineName.trim(),
-                    startDateTime: "08:00",
-                    maxEndDateTime: "08:00",
-                }))
-                .sort((a, b) => {
-                    const numA = parseInt(a.name.match(/Линия №(\d+)/)?.[1] || 0);
-                    const numB = parseInt(b.name.match(/Линия №(\d+)/)?.[1] || 0);
-                    return numA - numB;
-                });
-
-            setStartTimeLines(res)
+            setStartTimeLines(convertLinesWithTimeFields(response.data))
         } catch (e) {
             console.error(e)
             setMsg("Ошибка загрузки линий отчета: " + e.response.data.error)
