@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react'
 import {styleInputWithoutRounded} from "../../data/styles";
 import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
-import {convertHoursMinutesToMinutes, validateHours, validateMinutes} from "../../utils/serviceWorkUtils";
+import {convertHoursMinutesToMinutes, validateHours, validateMinutes} from "../../utils/scheduler/serviceWork";
 
 
 export function ModalAssignServiceWork({

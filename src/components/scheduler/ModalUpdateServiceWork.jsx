@@ -5,7 +5,7 @@ import {
     convertMinutesToHoursMinutes,
     validateHours,
     validateMinutes
-} from "../../utils/serviceWorkUtils";
+} from "../../utils/scheduler/serviceWork";
 
 
 export function ModalUpdateServiceWork({onClose, selectedItems, updateServiceWork}) {

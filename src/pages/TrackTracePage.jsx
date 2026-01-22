@@ -7,8 +7,12 @@ import {useNavigate} from "react-router-dom";
 import SchedulerService from "../services/ScheduleService";
 import moment from "moment/moment";
 import ScheduleService from "../services/ScheduleService";
-import {convertLines} from "../services/scheduler/schedulerUtils";
-import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/TimelineUtils";
+import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
+import {
+    createTimelineRenderersSheduler,
+    createTimelineRenderersTracktrace
+} from "../components/scheduler/TimelineItemRenderer";
+import {convertLines} from "../utils/scheduler/lines";
 
 
 function TrackTracePage() {
@@ -134,6 +138,11 @@ function TrackTracePage() {
         setCurrentUnit(timelineContext.timelineUnit);
     }, []);
 
+    const timelineRenderers = useMemo(
+        () => createTimelineRenderersTracktrace(),
+        []
+    );
+
     return (
         <>
             <div className="w-full">
@@ -186,8 +195,8 @@ function TrackTracePage() {
 
                 <div className="m-4 border-x-2">
                     <Timeline
-                        // itemRenderer={customItemRenderer}
-                        // groupRenderer={customGroupRenderer}
+                        itemRenderer={timelineRenderers.itemRenderer}
+                        groupRenderer={timelineRenderers.groupRenderer}
                         key={timelineKey}
                         groups={groups}
                         items={items}
