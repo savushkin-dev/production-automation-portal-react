@@ -263,8 +263,15 @@ function SchedulerPage() {
     async function fetchServiceTypes() {
         try {
             const response = await SchedulerService.getServiceTypes();
-            console.log(response.data)
-
+            let res = Object.entries(response.data)
+                .map(([typeId, serviceName], index) => ({
+                    id: typeId,
+                    name: serviceName.trim(),
+                }))
+                .sort((a, b) => {
+                    return a - b;
+                });
+            setServiceTypes(res)
         } catch (e) {
             console.error(e)
             setMsg("Ошибка загрузки типов сервисных операций: " + e.response.data.error)
@@ -721,12 +728,12 @@ function SchedulerPage() {
         }
     }
 
-    async function assignServiceWork(lineId, insertIndex, time, duration, name, isEmptyLine) {
+    async function assignServiceWork(lineId, insertIndex, time, duration, type, description, isEmptyLine) {
         try {
             if(isEmptyLine){
-                await SchedulerService.assignServiceWorkEmptyLine(lineId, time, duration, name);
+                await SchedulerService.assignServiceWorkEmptyLine(lineId, time, duration, type, description);
             } else {
-                await SchedulerService.assignServiceWork(lineId, insertIndex, duration, name);
+                await SchedulerService.assignServiceWork(lineId, insertIndex, duration, type, description);
             }
             await fetchPlan();
         } catch (e) {
@@ -1181,6 +1188,7 @@ function SchedulerPage() {
                                             onClose={() => setIsModalAssignServiceWork(false)}
                                             lines={startTimeLines}
                                             planByHardware={planByHardware} selectDate={selectDate}
+                                            serviceTypes={serviceTypes}
                     />}
 
                 {isModalUpdateServiceWork &&
