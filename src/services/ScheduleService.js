@@ -301,8 +301,8 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, startProductionDateTime, durationMinutes, maintenanceTypeId, maintenanceNote})
     }
 
-    static async updateServiceWork(lineId, updateIndex, durationMinutes) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, updateIndex, durationMinutes})
+    static async updateServiceWork(lineId, updateIndex, durationMinutes, maintenanceTypeId, maintenanceNote) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, updateIndex, durationMinutes, maintenanceTypeId, maintenanceNote})
     }
 
     static async removeServiceWork(lineId, removeIndex) {

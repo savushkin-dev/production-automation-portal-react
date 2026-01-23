@@ -743,9 +743,9 @@ function SchedulerPage() {
         }
     }
 
-    async function updateServiceWork(lineId, index, duration) {
+    async function updateServiceWork(lineId, index, duration, type, description) {
         try {
-            await SchedulerService.updateServiceWork(lineId, index, duration);
+            await SchedulerService.updateServiceWork(lineId, index, duration, type, description);
             await fetchPlan();
         } catch (e) {
             console.error(e)
@@ -1196,7 +1196,9 @@ function SchedulerPage() {
                                             onClose={() => setIsModalUpdateServiceWork(false)}
                                             lines={startTimeLines}
                                             planByHardware={planByHardware}
-                                            updateServiceWork={updateServiceWork}/>
+                                            updateServiceWork={updateServiceWork}
+                                            serviceTypes={serviceTypes}
+                    />
                 }
 
                 <DataTable data={pdayDataPred} setData={setPdayDataPred} dateData={getPredDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
