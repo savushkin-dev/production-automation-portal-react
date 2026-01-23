@@ -149,6 +149,7 @@ export default class ScheduleService {
                 lineInfo: json.jobs[i].line,
                 maintenance: json.jobs[i].maintenance,
                 maintenanceId: json.jobs[i].fid,
+                maintenanceNote: json.jobs[i].maintenanceNote,
                 lineIdFact: json.jobs[i].lineIdFact,
                 startFact: json.jobs[i].startProductionDateTimeFact,
             }

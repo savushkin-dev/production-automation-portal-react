@@ -108,12 +108,10 @@ export function ModalInfoItem({info, onClose, lines}) {
 
                     {info.maintenance &&
                         <div className="flex flex-row px-4">
-                            <span className={styleLable}>Id:</span>
-                            <span className={styleInfo}>{info.maintenanceId || "-"}</span>
+                            <span className={styleLable}>Описание:</span>
+                            <span className={styleInfo}>{info.maintenanceNote || "-"}</span>
                         </div>
                     }
-
-
 
 
                 </div>
