@@ -18,6 +18,12 @@ function TrackTracePage() {
 
     const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0])
 
+    const [dateRange, setDateRange] = useState({
+        dateStart: new Date(new Date().setHours(new Date().getHours() - 12)),
+        dateEnd: new Date(new Date().setHours(new Date().getHours() + 12)),
+    });
+
+
     const [groups, setGroups] = useState([]);
     const [items, setItems] = useState([]);
 
@@ -113,9 +119,9 @@ function TrackTracePage() {
                 setPlanByHardware(e);
                 setItems(e);
             });
-            SchedulerService.parseDateTimeSettings(downloadedPlan).then((e) => {
-                setStartTimeLines(e)
-            })
+            // SchedulerService.parseDateTimeSettings(downloadedPlan).then((e) => {
+            //     setStartTimeLines(e)
+            // })
             setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
         }
     }, [downloadedPlan]);
@@ -215,7 +221,7 @@ function TrackTracePage() {
                         <TimelineHeaders className="sticky">
                             <SidebarHeader>
                                 {({getRootProps}) => (
-                                    <div {...getRootProps()} className="bg-blue-800">
+                                    <div {...getRootProps()} className="bg-gray-600">
                                         {/* Заголовок сайдбара */}
                                         <div
                                             className="text-white font-medium text-3xl text-center h-full content-center">
@@ -228,7 +234,7 @@ function TrackTracePage() {
                             {/* Основной заголовок с датой */}
                             <DateHeader
                                 unit="primaryHeader"
-                                className="bg-blue-800 font-semibold text-sm "
+                                className="bg-gray-600 font-semibold text-sm "
                                 labelFormat={formatTimelineLabelMain}
                             />
 
