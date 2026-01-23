@@ -149,6 +149,7 @@ export default class ScheduleService {
                 lineInfo: json.jobs[i].line,
                 maintenance: json.jobs[i].maintenance,
                 maintenanceId: json.jobs[i].fid,
+                maintenanceNote: json.jobs[i].maintenanceNote,
                 lineIdFact: json.jobs[i].lineIdFact,
                 startFact: json.jobs[i].startProductionDateTimeFact,
             }
@@ -260,6 +261,10 @@ export default class ScheduleService {
         return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/lines`)
     }
 
+    static async getServiceTypes() {
+        return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/serviceTypes`)
+    }
+
     static async solve() {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/solve`, {})
     }
@@ -268,9 +273,9 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/save`, {})
     }
 
-    static async removePlan() {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/removeSolution`, {})
-    }
+    // static async removePlan() {
+    //     return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/removeSolution`, {})
+    // }
 
     static async stopSolving() {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/stopSolving`, {})
@@ -288,16 +293,16 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/moveJobs`, {fromLineId, toLineId, fromIndex, count, insertIndex})
     }
 
-    static async assignServiceWork(lineId, insertIndex, durationMinutes, name) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, insertIndex, durationMinutes, name})
+    static async assignServiceWork(lineId, insertIndex, durationMinutes, maintenanceTypeId, maintenanceNote) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, insertIndex, durationMinutes, maintenanceTypeId, maintenanceNote})
     }
 
-    static async assignServiceWorkEmptyLine(lineId, startProductionDateTime, durationMinutes, name) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, startProductionDateTime, durationMinutes, name})
+    static async assignServiceWorkEmptyLine(lineId, startProductionDateTime, durationMinutes, maintenanceTypeId, maintenanceNote) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, startProductionDateTime, durationMinutes, maintenanceTypeId, maintenanceNote})
     }
 
-    static async updateServiceWork(lineId, updateIndex, durationMinutes) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, updateIndex, durationMinutes})
+    static async updateServiceWork(lineId, updateIndex, durationMinutes, maintenanceTypeId, maintenanceNote) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, updateIndex, durationMinutes, maintenanceTypeId, maintenanceNote})
     }
 
     static async removeServiceWork(lineId, removeIndex) {
