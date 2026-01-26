@@ -780,8 +780,8 @@ function SchedulerPage() {
     async function reloadPlan() {
         try {
             await SchedulerService.reloadPlan(selectJobs);
-            await fetchPlan();
             setMsg("Дозагрузка прошла успешно, можете продолжить планирование.")
+            await fetchPlan();
             setIsModalNotify(true);
         } catch (e) {
             console.error(e)
