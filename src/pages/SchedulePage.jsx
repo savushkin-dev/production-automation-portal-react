@@ -23,6 +23,7 @@ import {MyTimeline} from "../components/scheduler/MyTimeline";
 import {convertLines, convertLinesWithTimeFields} from "../utils/scheduler/lines";
 import {createTimelineLabelFormatter, formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
 import {createTimelineRenderers, createTimelineRenderersSheduler} from "../components/scheduler/TimelineItemRenderer";
+import {groupDataByDay} from "../utils/scheduler/pdayParsing";
 
 
 function SchedulerPage() {
@@ -37,10 +38,12 @@ function SchedulerPage() {
 
     const [groups, setGroups] = useState([]);
     const [items, setItems] = useState([]);
-    const [pdayDataPred, setPdayDataPred] = useState([]);
-    const [pdayData, setPdayData] = useState([]);
-    const [pdayDataNextDay, setPdayDataNextDay] = useState([]);
-    const [pdayDataNext2Day, setPdayDataNext2Day] = useState([]);
+    const [pdayData, setPdayData] = useState({
+        previousDay: [],
+        currentDay: [],
+        nextDay: [],
+        next2Day: []
+    });
     const [selectJobs, setSelectJobs] = useState([])
 
     const [isLoading, setIsLoading] = useState(false);
@@ -102,75 +105,41 @@ function SchedulerPage() {
 
     }, [location.search]);
 
-    // TODO: Доработать метод инициализации
     async function init(date) {
         try {
-            setVisibleTimeRange(prevState => ({
-                ...prevState,
-                visibleTimeStart: moment(date).startOf('day').add(-2, 'hour'),
-                visibleTimeEnd: moment(date).startOf('day').add(30, 'hour')
-            }));
+            const baseDate = moment(date);
+
+            //Устанавливаем диапазон видимого времени
+            setVisibleTimeRange({
+                visibleTimeStart: baseDate.clone().startOf('day').add(-2, 'hour'),
+                visibleTimeEnd: baseDate.clone().startOf('day').add(30, 'hour')
+            });
 
             const response = await SchedulerService.init(date);
             fetchPlan();
 
-            const pdayDataPredTemp = [];
-            const pdayDataTemp = [];
-            const pdayDataNextDayTemp = [];
-            const pdayDataNext2DayTemp = [];
+            const groupedData = groupDataByDay(response.data, baseDate);
 
-            // Определяем базовую дату для сравнения
-            const baseDate = moment(date);
-            const previousDay = moment(baseDate).subtract(1, 'day');
-            const nextDay = moment(baseDate).add(1, 'day');
-            const next2Day = moment(baseDate).add(2, 'day');
-
-
-            const initialSelectJobs = {};
-
-            response.data.forEach(item => {
-                if (!item.dti) return;
-
-                const itemDate = moment(item.dti).startOf('day');
-                const dataWithSelection = {
-                    ...item,
-                    isSelected: false
-                };
-
-                if (item.snpz) {
-                    initialSelectJobs[item.snpz] = item.startProductionDateTime !== "" && item.startProductionDateTime !== null; // Занятые = true, свободные = false
-                }
-
-                // Сравниваем даты
-                if (itemDate.isSame(previousDay, 'day')) {
-                    pdayDataPredTemp.push(dataWithSelection);
-                } else if (itemDate.isSame(baseDate, 'day')) {
-                    pdayDataTemp.push(dataWithSelection);
-                } else if (itemDate.isSame(nextDay, 'day')) {
-                    pdayDataNextDayTemp.push(dataWithSelection);
-                } else if (itemDate.isSame(next2Day, 'day')) {
-                    pdayDataNext2DayTemp.push(dataWithSelection);
-                }
-
+            setPdayData({
+                previousDay: groupedData.previousDay,
+                currentDay: groupedData.currentDay,
+                nextDay: groupedData.nextDay,
+                next2Day: groupedData.next2Day
             });
 
-            setPdayDataPred(pdayDataPredTemp);
-            setPdayData(pdayDataTemp);
-            setPdayDataNextDay(pdayDataNextDayTemp);
-            setPdayDataNext2Day(pdayDataNext2DayTemp);
-
-            setSelectJobs(initialSelectJobs);
-
+            setSelectJobs(groupedData.selectJobs);
         } catch (e) {
             console.error(e)
             setMsg("Ошибка инициализации: " + e.response.data.error)
             setIsModalNotify(true);
             setItems([])
             setScore({hard: 0, medium: 0, soft: 0})
-            setPdayDataPred([])
-            setPdayData([])
-            setPdayDataNextDay([])
-            setPdayDataNext2Day([])
+            setPdayData({
+                previousDay: [],
+                currentDay: [],
+                nextDay: [],
+                next2Day: []
+            });
         }
     }
 
@@ -1002,14 +971,25 @@ function SchedulerPage() {
                     />
                 }
 
-                <DataTable data={pdayDataPred} setData={setPdayDataPred} dateData={getPredDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                <DataTable data={pdayData.previousDay} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    previousDay: newData
+                }))} dateData={getPredDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
-                <DataTable data={pdayData} setData={setPdayData} dateData={selectDate} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                <DataTable data={pdayData.currentDay} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    currentDay: newData
+                }))} dateData={selectDate} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
+                <DataTable data={pdayData.nextDay} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    nextDay: newData
+                }))} dateData={getNextDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
-                <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} dateData={getNextDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
-
-                <DataTable data={pdayDataNext2Day} setData={setPdayDataNext2Day}  dateData={getNextDateStr(getNextDateStr(selectDate))} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                <DataTable data={pdayData.next2Day} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    next2Day: newData
+                }))}  dateData={getNextDateStr(getNextDateStr(selectDate))} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
 
             </div>
