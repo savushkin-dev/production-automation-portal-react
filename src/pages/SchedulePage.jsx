@@ -83,6 +83,7 @@ function SchedulerPage() {
 
     const [startTimeLines, setStartTimeLines] = useState(undefined);
     const [timelineKey, setTimelineKey] = useState(0);
+    const [serviceTypes, setServiceTypes] = useState([])
 
     const [currentUnit, setCurrentUnit] = useState('hour');
 
@@ -242,14 +243,33 @@ function SchedulerPage() {
         }
     }
 
-    async function removePlan() {
+    // async function removePlan() {
+    //     try {
+    //         await SchedulerService.removePlan();
+    //         setMsg("План успешно удален.")
+    //         setIsModalNotify(true);
+    //     } catch (e) {
+    //         console.error(e)
+    //         setMsg("Ошибка удаления отчета: " + e.response.data.error)
+    //         setIsModalNotify(true);
+    //     }
+    // }
+
+    async function fetchServiceTypes() {
         try {
-            await SchedulerService.removePlan();
-            setMsg("План успешно удален.")
-            setIsModalNotify(true);
+            const response = await SchedulerService.getServiceTypes();
+            let res = Object.entries(response.data)
+                .map(([typeId, serviceName], index) => ({
+                    id: typeId,
+                    name: serviceName.trim(),
+                }))
+                .sort((a, b) => {
+                    return a - b;
+                });
+            setServiceTypes(res)
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка удаления отчета: " + e.response.data.error)
+            setMsg("Ошибка загрузки типов сервисных операций: " + e.response.data.error)
             setIsModalNotify(true);
         }
     }
@@ -395,6 +415,7 @@ function SchedulerPage() {
     useEffect(() => {
         fetchStopSolving();
         fetchLines();
+        fetchServiceTypes();
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }, [])
 
@@ -616,12 +637,12 @@ function SchedulerPage() {
         }
     }
 
-    async function assignServiceWork(lineId, insertIndex, time, duration, name, isEmptyLine) {
+    async function assignServiceWork(lineId, insertIndex, time, duration, type, description, isEmptyLine) {
         try {
             if(isEmptyLine){
-                await SchedulerService.assignServiceWorkEmptyLine(lineId, time, duration, name);
+                await SchedulerService.assignServiceWorkEmptyLine(lineId, time, duration, type, description);
             } else {
-                await SchedulerService.assignServiceWork(lineId, insertIndex, duration, name);
+                await SchedulerService.assignServiceWork(lineId, insertIndex, duration, type, description);
             }
             await fetchPlan();
         } catch (e) {
@@ -631,9 +652,9 @@ function SchedulerPage() {
         }
     }
 
-    async function updateServiceWork(lineId, index, duration) {
+    async function updateServiceWork(lineId, index, duration, type, description) {
         try {
-            await SchedulerService.updateServiceWork(lineId, index, duration);
+            await SchedulerService.updateServiceWork(lineId, index, duration, type, description);
             await fetchPlan();
         } catch (e) {
             console.error(e)
@@ -668,8 +689,8 @@ function SchedulerPage() {
     async function reloadPlan() {
         try {
             await SchedulerService.reloadPlan(selectJobs);
-            await fetchPlan();
             setMsg("Дозагрузка прошла успешно, можете продолжить планирование.")
+            await fetchPlan();
             setIsModalNotify(true);
         } catch (e) {
             console.error(e)
@@ -926,13 +947,13 @@ function SchedulerPage() {
                 {isModalNotify &&
                     <ModalNotify title={"Результат операции"} message={msg} onClose={() => setIsModalNotify(false)}/>}
 
-                {isModalRemove &&
-                    <ModalConfirmation title={"Подтверждение действия"} message={msg}
-                                       onClose={() => setIsModalRemove(false)}
-                                       onAgree={() => {
-                                           setIsModalRemove(false);
-                                           removePlan();
-                                       }} onDisagree={() => setIsModalRemove(false)}/>}
+                {/*{isModalRemove &&*/}
+                {/*    <ModalConfirmation title={"Подтверждение действия"} message={msg}*/}
+                {/*                       onClose={() => setIsModalRemove(false)}*/}
+                {/*                       onAgree={() => {*/}
+                {/*                           setIsModalRemove(false);*/}
+                {/*                           removePlan();*/}
+                {/*                       }} onDisagree={() => setIsModalRemove(false)}/>}*/}
 
                 {isModalSendToWork &&
                     <ModalConfirmation title={"Подтверждение действия"} message={msg}
@@ -968,6 +989,7 @@ function SchedulerPage() {
                                             onClose={() => setIsModalAssignServiceWork(false)}
                                             lines={startTimeLines}
                                             planByHardware={planByHardware} selectDate={selectDate}
+                                            serviceTypes={serviceTypes}
                     />}
 
                 {isModalUpdateServiceWork &&
@@ -975,7 +997,9 @@ function SchedulerPage() {
                                             onClose={() => setIsModalUpdateServiceWork(false)}
                                             lines={startTimeLines}
                                             planByHardware={planByHardware}
-                                            updateServiceWork={updateServiceWork}/>
+                                            updateServiceWork={updateServiceWork}
+                                            serviceTypes={serviceTypes}
+                    />
                 }
 
                 <DataTable data={pdayDataPred} setData={setPdayDataPred} dateData={getPredDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
