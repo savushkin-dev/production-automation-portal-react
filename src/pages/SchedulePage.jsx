@@ -546,7 +546,7 @@ function SchedulerPage() {
         if (!lastItem || !currentItem) return;
 
         const groupItems = itemsArray.filter(item =>
-            item.group === groupId && !item.id.includes('cleaning')
+            item.group === groupId && !item.id.includes('cleaning') && item.id < 100999999999
         );
 
         const sortedGroupItems = [...groupItems].sort((a, b) => a.start_time - b.start_time);
@@ -834,8 +834,10 @@ function SchedulerPage() {
                         canMove={true}
                         snap={1}
                         snapGrid={1}
+                        buffer={5}
                         sidebarWidth={150}
-                        lineHeight={90}
+                        lineHeight={150}
+
                     >
                         <TimelineHeaders className="sticky">
                             <SidebarHeader>

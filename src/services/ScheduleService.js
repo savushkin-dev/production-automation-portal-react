@@ -110,6 +110,8 @@ export default class ScheduleService {
     static async parsePlanByHardware(json) {
         planByHardware = [];
 
+        let planByHardware2 = [];
+
         for (let i = 0; i < json.jobs.length; i++) {
             if(!json.jobs[i].line){
                 console.warn("Job with id " + json.jobs[i].id + " has a null line field")
@@ -155,10 +157,57 @@ export default class ScheduleService {
             }
         }
 
+        for (let i = 0; i < json.jobs.length; i++) {
+            if(!json.jobs[i].line){
+                console.warn("Job with id " + json.jobs[i].id + " has a null line field")
+                continue;
+            }
+
+            planByHardware2[i] = Object.assign({}, exampleTask);
+            planByHardware2[i].id = json.jobs[i].id + 999999999;
+            planByHardware2[i].start_time = new Date(json.jobs[i].startProductionDateTime).getTime();
+            planByHardware2[i].end_time = new Date(json.jobs[i].endDateTime).getTime();
+            planByHardware2[i].title = json.jobs[i].name;
+            planByHardware2[i].group = json.jobs[i].line.id ;
+
+            planByHardware2[i].itemProps = {
+                style: {
+                    background: "#efefef",
+                    border: '1px solid #dcdcdc',
+                    color: this.getBgColorItem(json.jobs[i]).color,
+                }
+            };
+            planByHardware2[i].info = { //Доп информация
+                name: json.jobs[i].name,
+                start: json.jobs[i].startProductionDateTime,
+                end: json.jobs[i].endDateTime,
+                line: json.jobs[i].line?.name,
+                quantity: json.jobs[i].quantity,
+                mass: json.jobs[i].mass,
+                np: json.jobs[i].np,
+                snpz: json.jobs[i].snpz,
+                duration: Math.round(new Date(json.jobs[i].endDateTime) - new Date(json.jobs[i].startProductionDateTime))/ 60000,
+
+                fullName: json.jobs[i].product.name,
+                type: json.jobs[i].product.type,
+                glaze: json.jobs[i].product.glaze,
+                filling: json.jobs[i].product.filling,
+                _allergen: json.jobs[i].product._allergen,
+                lineInfo: json.jobs[i].line,
+                maintenance: json.jobs[i].maintenance,
+                maintenanceId: json.jobs[i].fid,
+                maintenanceNote: json.jobs[i].maintenanceNote,
+                lineIdFact: json.jobs[i].lineIdFact,
+                startFact: json.jobs[i].startProductionDateTimeFact,
+            }
+        }
+
         let cleaning = await this.parseCleaningByHardware(json)
         let result = [...planByHardware, ...cleaning]
+        result = [...result, ...planByHardware2]
         result = result.filter(item => item !== undefined);
         result = ScheduleService.defineAssignedJobs(result, json)
+        // console.log(result)
         return result;
     }
 
