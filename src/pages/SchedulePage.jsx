@@ -24,6 +24,7 @@ import {convertLines, convertLinesWithTimeFields} from "../utils/scheduler/lines
 import {createTimelineLabelFormatter, formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
 import {createTimelineRenderers, createTimelineRenderersSheduler} from "../components/scheduler/TimelineItemRenderer";
 import {groupDataByDay} from "../utils/scheduler/pdayParsing";
+import {getNext2DateStr, getNextDateStr, getPredDateStr} from "../utils/date/date";
 
 
 function SchedulerPage() {
@@ -140,18 +141,6 @@ function SchedulerPage() {
                 next2Day: []
             });
         }
-    }
-
-    function getNextDateStr(date) {
-        const nextDay = new Date(date);
-        nextDay.setDate(nextDay.getDate() + 1);
-        return nextDay.toISOString().split('T')[0];
-    }
-
-    function getPredDateStr(date) {
-        const nextDay = new Date(date);
-        nextDay.setDate(nextDay.getDate() - 1);
-        return nextDay.toISOString().split('T')[0];
     }
 
     useEffect(() => {
@@ -968,7 +957,7 @@ function SchedulerPage() {
                 <DataTable data={pdayData.next2Day} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     next2Day: newData
-                }))}  dateData={getNextDateStr(getNextDateStr(selectDate))} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                }))}  dateData={getNext2DateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
 
             </div>
