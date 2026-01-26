@@ -273,10 +273,6 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/save`, {})
     }
 
-    // static async removePlan() {
-    //     return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/removeSolution`, {})
-    // }
-
     static async stopSolving() {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/stopSolving`, {})
     }

@@ -50,7 +50,6 @@ function SchedulerPage() {
     const [isLoadingSolve, setIsLoadingSolve] = useState(false);
     const [msg, setMsg] = useState("");
     const [isModalNotify, setIsModalNotify] = useState(false);
-    const [isModalRemove, setIsModalRemove] = useState(false);
     const [isModalInfoItem, setIsModalInfoItem] = useState(false);
     const [isModalMoveJobs, setIsModalMoveJobs] = useState(false);
     const [isModalAssignServiceWork, setIsModalAssignServiceWork] = useState(false);
@@ -211,18 +210,6 @@ function SchedulerPage() {
             setIsModalNotify(true);
         }
     }
-
-    // async function removePlan() {
-    //     try {
-    //         await SchedulerService.removePlan();
-    //         setMsg("План успешно удален.")
-    //         setIsModalNotify(true);
-    //     } catch (e) {
-    //         console.error(e)
-    //         setMsg("Ошибка удаления отчета: " + e.response.data.error)
-    //         setIsModalNotify(true);
-    //     }
-    // }
 
     async function fetchServiceTypes() {
         try {
@@ -915,14 +902,6 @@ function SchedulerPage() {
 
                 {isModalNotify &&
                     <ModalNotify title={"Результат операции"} message={msg} onClose={() => setIsModalNotify(false)}/>}
-
-                {/*{isModalRemove &&*/}
-                {/*    <ModalConfirmation title={"Подтверждение действия"} message={msg}*/}
-                {/*                       onClose={() => setIsModalRemove(false)}*/}
-                {/*                       onAgree={() => {*/}
-                {/*                           setIsModalRemove(false);*/}
-                {/*                           removePlan();*/}
-                {/*                       }} onDisagree={() => setIsModalRemove(false)}/>}*/}
 
                 {isModalSendToWork &&
                     <ModalConfirmation title={"Подтверждение действия"} message={msg}
