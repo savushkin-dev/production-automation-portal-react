@@ -384,6 +384,20 @@ function SchedulerPage() {
         }
 
         const clickedItem = planByHardware.find(item => item.id === itemId);
+
+        if (isFactItem(clickedItem)) {
+            setContextMenu({
+                visible: false,
+                x: 0,
+                y: 0,
+                item: null,
+                forCanvas: false,
+                forMultiple: false,
+                selectedItems: []
+            });
+            return;
+        }
+
         const isClickingSelected = selectedItems.includes(clickedItem);
 
         if (isClickingSelected && selectedItems.length > 1) {
@@ -523,9 +537,7 @@ function SchedulerPage() {
             // Shift+click - выделяем диапазон ТОЛЬКО в той же группе
             handleShiftSelect(itemId, itemsArray, clickedItem.group);
         } else {
-            if (isFactItem(clickedItem)) {
-                return;
-            }
+
             // Проверяем, кликаем на уже выделенный элемент
             const isClickingSelected = selectedItems.includes(clickedItem);
 
