@@ -1,5 +1,6 @@
 import $apiSchedule, {API_URL_SCHEDULER} from "../http/scheduler";
 import moment from "moment/moment";
+import {isFactItem} from "../utils/scheduler/items";
 
 export let hardware = []
 export let planByHardware = []
@@ -252,14 +253,14 @@ export default class ScheduleService {
         return result;
     }
 
-    // Позиция в своей группе (без учета cleaning элементов)
+    // Позиция в своей группе (без учета cleaning и фактических элементов)
     static getGroupPosition = (itemId, allItems) => {
         const item = allItems.find(i => i.id === itemId)
         if (!item) return {position: -1, total: 0}
 
-        // Исключаем cleaning элементы из группы
+        // Исключаем cleaning и фактические элементы из группы
         const groupItems = allItems.filter(i =>
-            i.group === item.group && !i.id.includes('cleaning')
+            i.group === item.group && !i.id.includes('cleaning') && !isFactItem(i)
         )
 
         const sorted = groupItems.sort((a, b) =>
