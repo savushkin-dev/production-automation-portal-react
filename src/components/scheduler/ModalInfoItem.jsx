@@ -1,5 +1,6 @@
 import React from 'react'
 import {isFactItem} from "../../utils/scheduler/items";
+import {formatIsoToDatetimeRegex} from "../../utils/date/date";
 
 
 export function ModalInfoItem({item, onClose, lines}) {
@@ -11,7 +12,6 @@ export function ModalInfoItem({item, onClose, lines}) {
     const isLinesMatch = item.info.lineIdFact === item.info.lineInfo.id;
     const isFactEl = isFactItem(item);
 
-    console.log(item)
 
     return (
         <>
@@ -94,21 +94,21 @@ export function ModalInfoItem({item, onClose, lines}) {
 
                     <div className="flex flex-row px-4">
                         <span className={styleLable}>Начало по плану:</span>
-                        <span className={styleInfo}>{item.info.start || "-"}</span>
+                        <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.start) || "-"}</span>
                     </div>
 
                     {item.info.name !== "Мойка" && !item.info.maintenance && isFact &&
                         <div>
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Начало по факту:</span>
-                                <span className={styleInfo}>{item.info.startFact || "-"}</span>
+                                <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.startFact) || "-"}</span>
                             </div>
                         </div>
                     }
 
                     <div className="flex flex-row px-4">
                         <span className={styleLable}>Конец по плану:</span>
-                        <span className={styleInfo}>{item.info.end || ""}</span>
+                        <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.end) || ""}</span>
                     </div>
 
                     {item.info.maintenance &&
@@ -122,11 +122,11 @@ export function ModalInfoItem({item, onClose, lines}) {
                         <>
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Начало по камере:</span>
-                                <span className={styleInfo}>{item.info.startCameraFact || "-"}</span>
+                                <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.startCameraFact) || "-"}</span>
                             </div>
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Конец по камере:</span>
-                                <span className={styleInfo}>{item.info.endCameraFact || "-"}</span>
+                                <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.endCameraFact) || "-"}</span>
                             </div>
                         </>
                     }

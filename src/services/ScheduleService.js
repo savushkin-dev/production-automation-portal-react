@@ -80,7 +80,7 @@ export default class ScheduleService {
         const filteredData = json.jobs.filter(item => {
             return ((item.cameraEnd !== null) && (item.cameraStart !== null));
         });
-        console.log(filteredData)
+
         let factList = [];
         for (let i = 0; i < filteredData.length; i++) {
             if(!filteredData[i].line){
