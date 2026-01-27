@@ -19,7 +19,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem) => {
             style: {
                 background: isSelected
                     ? (isSingleSelected ? "#cbff93" : "#cbff93")
-                    : (  isFactEl? "#efefef" : (isFact ? "#c9ffd7" : item.itemProps?.style?.background || '#fff')),
+                    : (  isFactEl? "#f1f1f1" : (isFact ? "#c9ffd7" : item.itemProps?.style?.background || '#fff')),
                 border: '1px solid #aeaeae',
                 textAlign: 'start',
                 color: item.itemProps?.style?.color || 'black',
@@ -160,7 +160,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem) => {
 
                             {item.info?.duration && (
                                 <span className="px-1 rounded">
-                                  <span className="text-pink-500">{item.info.duration} мин.</span>
+                                  <span className="text-pink-500">{Number(item.info.durationFactCamera.toFixed(0))} мин.</span>
                                   <span className="text-gray-500 px-1">|</span>
                                   <span className="text-green-600">
                                     {moment(item.start_time).format('HH:mm')}

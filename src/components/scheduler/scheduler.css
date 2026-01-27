@@ -138,13 +138,14 @@
 
 /* Стиль для стандартного элемента плана */
 .rct-item {
-    margin-top: -20px !important;
+    margin-top: -16px !important;
     height: 72px !important;
 }
 
 /* Стиль для фактического элемента плана */
 .rct-item-fact {
-    margin-top: 60px !important;
+    /*margin-top: 60px !important;*/
+    margin-top: 56px !important;
     height: 56px !important;
 }
 

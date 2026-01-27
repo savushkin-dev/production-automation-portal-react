@@ -76,6 +76,63 @@ export default class ScheduleService {
         return cleaning;
     }
 
+    static async parseFactItemsByHardware(json) {
+        const filteredData = json.jobs.filter(item => {
+            return ((item.cameraEnd !== null) && (item.cameraStart !== null));
+        });
+        console.log(filteredData)
+        let factList = [];
+        for (let i = 0; i < filteredData.length; i++) {
+            if(!filteredData[i].line){
+                console.warn("Fact with id " + filteredData[i].id + " has a null line field")
+                continue;
+            }
+
+            factList[i] = Object.assign({}, exampleTask);
+            factList[i].id = i + "fact_camera";
+            factList[i].start_time = new Date(filteredData[i].cameraStart).getTime();
+            factList[i].end_time = new Date(filteredData[i].cameraEnd).getTime();
+            factList[i].title = filteredData[i].name;
+            factList[i].group = filteredData[i].line.id ;
+
+            factList[i].itemProps = {
+                style: {
+                    background: this.getBgColorItem(filteredData[i]).bg,
+                    border: '1px solid #dcdcdc',
+                    color: this.getBgColorItem(filteredData[i]).color,
+                }
+            };
+            factList[i].info = { //Доп информация
+                name: filteredData[i].name,
+                start: filteredData[i].startProductionDateTime,
+                end: filteredData[i].endDateTime,
+                line: filteredData[i].line?.name,
+                quantity: filteredData[i].quantity,
+                mass: filteredData[i].mass,
+                np: filteredData[i].np,
+                snpz: filteredData[i].snpz,
+                duration: Math.round(new Date(filteredData[i].endDateTime) - new Date(filteredData[i].startProductionDateTime))/ 60000,
+                durationFactCamera: Math.round(new Date(filteredData[i].cameraEnd) - new Date(filteredData[i].cameraStart))/ 60000,
+
+                fullName: filteredData[i].product.name,
+                type: filteredData[i].product.type,
+                glaze: filteredData[i].product.glaze,
+                filling: filteredData[i].product.filling,
+                _allergen: filteredData[i].product._allergen,
+                lineInfo: filteredData[i].line,
+                maintenance: filteredData[i].maintenance,
+                maintenanceId: filteredData[i].fid,
+                maintenanceNote: filteredData[i].maintenanceNote,
+                lineIdFact: filteredData[i].lineIdFact,
+                startFact: filteredData[i].startProductionDateTimeFact,
+
+                startCameraFact: filteredData[i].cameraStart,
+                endCameraFact: filteredData[i].cameraEnd,
+            }
+        }
+        return factList;
+    }
+
     static async parseHardware(json) {
         hardware = [];
 
@@ -109,8 +166,6 @@ export default class ScheduleService {
 
     static async parsePlanByHardware(json) {
         planByHardware = [];
-
-        let planByHardware2 = [];
 
         for (let i = 0; i < json.jobs.length; i++) {
             if(!json.jobs[i].line){
@@ -157,54 +212,11 @@ export default class ScheduleService {
             }
         }
 
-        for (let i = 0; i < json.jobs.length; i++) {
-            if(!json.jobs[i].line){
-                console.warn("Job with id " + json.jobs[i].id + " has a null line field")
-                continue;
-            }
-
-            planByHardware2[i] = Object.assign({}, exampleTask);
-            planByHardware2[i].id = json.jobs[i].id + 999999999;
-            planByHardware2[i].start_time = new Date(json.jobs[i].startProductionDateTime).getTime();
-            planByHardware2[i].end_time = new Date(json.jobs[i].endDateTime).getTime();
-            planByHardware2[i].title = json.jobs[i].name;
-            planByHardware2[i].group = json.jobs[i].line.id ;
-
-            planByHardware2[i].itemProps = {
-                style: {
-                    background: "#efefef",
-                    border: '1px solid #dcdcdc',
-                    color: this.getBgColorItem(json.jobs[i]).color,
-                }
-            };
-            planByHardware2[i].info = { //Доп информация
-                name: json.jobs[i].name,
-                start: json.jobs[i].startProductionDateTime,
-                end: json.jobs[i].endDateTime,
-                line: json.jobs[i].line?.name,
-                quantity: json.jobs[i].quantity,
-                mass: json.jobs[i].mass,
-                np: json.jobs[i].np,
-                snpz: json.jobs[i].snpz,
-                duration: Math.round(new Date(json.jobs[i].endDateTime) - new Date(json.jobs[i].startProductionDateTime))/ 60000,
-
-                fullName: json.jobs[i].product.name,
-                type: json.jobs[i].product.type,
-                glaze: json.jobs[i].product.glaze,
-                filling: json.jobs[i].product.filling,
-                _allergen: json.jobs[i].product._allergen,
-                lineInfo: json.jobs[i].line,
-                maintenance: json.jobs[i].maintenance,
-                maintenanceId: json.jobs[i].fid,
-                maintenanceNote: json.jobs[i].maintenanceNote,
-                lineIdFact: json.jobs[i].lineIdFact,
-                startFact: json.jobs[i].startProductionDateTimeFact,
-            }
-        }
-
+        let factList = await this.parseFactItemsByHardware(json)
+        // console.log(factList)
         let cleaning = await this.parseCleaningByHardware(json)
         let result = [...planByHardware, ...cleaning]
-        result = [...result, ...planByHardware2]
+        result = [...result, ...factList]
         result = result.filter(item => item !== undefined);
         result = ScheduleService.defineAssignedJobs(result, json)
         // console.log(result)

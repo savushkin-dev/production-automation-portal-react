@@ -25,6 +25,7 @@ import {createTimelineLabelFormatter, formatTimelineLabel, formatTimelineLabelMa
 import {createTimelineRenderers, createTimelineRenderersSheduler} from "../components/scheduler/TimelineItemRenderer";
 import {groupDataByDay} from "../utils/scheduler/pdayParsing";
 import {getNext2DateStr, getNextDateStr, getPredDateStr} from "../utils/date/date";
+import {isFactItem} from "../utils/scheduler/items";
 
 
 function SchedulerPage() {
@@ -522,6 +523,9 @@ function SchedulerPage() {
             // Shift+click - выделяем диапазон ТОЛЬКО в той же группе
             handleShiftSelect(itemId, itemsArray, clickedItem.group);
         } else {
+            if (isFactItem(clickedItem)) {
+                return;
+            }
             // Проверяем, кликаем на уже выделенный элемент
             const isClickingSelected = selectedItems.includes(clickedItem);
 
@@ -546,7 +550,7 @@ function SchedulerPage() {
         if (!lastItem || !currentItem) return;
 
         const groupItems = itemsArray.filter(item =>
-            item.group === groupId && !item.id.includes('cleaning') && item.id < 100999999999
+            item.group === groupId && !item.id.includes('cleaning') && !isFactItem(item)
         );
 
         const sortedGroupItems = [...groupItems].sort((a, b) => a.start_time - b.start_time);
@@ -675,7 +679,7 @@ function SchedulerPage() {
         <>
             <div className="w-full">
 
-                {isModalInfoItem && selectedItem && <ModalInfoItem info={selectedItem.info} onClose={() => {
+                {isModalInfoItem && selectedItem && <ModalInfoItem item={selectedItem} onClose={() => {
                     setSelectedItem(null);
                     setIsModalInfoItem(false);
                 }} lines={groups}/>}
