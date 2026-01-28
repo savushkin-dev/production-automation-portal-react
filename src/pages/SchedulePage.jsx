@@ -710,10 +710,10 @@ function SchedulerPage() {
                             navigate(from, {replace: true})
                         }} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Вернуться назад
                         </button>
-                        <button onClick={() => {
-                            navigate("/tracktrace", {replace: true})
-                        }} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Мониторинг
-                        </button>
+                        {/*<button onClick={() => {*/}
+                        {/*    navigate("/tracktrace", {replace: true})*/}
+                        {/*}} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Мониторинг*/}
+                        {/*</button>*/}
                     </div>
 
                     <div className="w-4/6 py-1 flex justify-end pr-3">
