@@ -144,14 +144,14 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
             <div className="px-3 py-2 rounded flex flex-row justify-between align-middle text-black mb-2">
                 <div style={{fontSize: '16px'}}>
                     <button
-                        className="bg-gray-600 hover:bg-blue-700 text-white px-3 py-1 w-36 rounded font-medium text-[0.950rem]"
+                        className="bg-blue-800 hover:bg-blue-700 text-white px-3 py-1 w-36 rounded font-medium text-[0.950rem]"
                         onClick={toggleAllGroups}
                     >
                         {expandedGroupsCount === groupedData.length ? 'Свернуть все' : 'Развернуть все'}
                     </button>
 
                     <button
-                        className="ml-4 bg-gray-600 hover:bg-blue-700 text-white px-3 py-1 w-36 rounded font-medium text-[0.950rem]"
+                        className="ml-4 bg-blue-800 hover:bg-blue-700 text-white px-3 py-1 w-36 rounded font-medium text-[0.950rem]"
                         onClick={selectAll}
                         disabled={availableItemsCount === 0}
                     >
@@ -187,7 +187,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
                     if (!hasAvailableItems(productGroup)) {
                         bgGroupName = "bg-gray-300";
                     } else if (isExpanded) {
-                        bgGroupName = "bg-gray-600 text-white";
+                        bgGroupName = "bg-blue-800 text-white";
                     }
 
                     return (
