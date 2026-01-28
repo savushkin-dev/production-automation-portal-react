@@ -76,12 +76,12 @@ export function ModalInfoItem({item, onClose, lines}) {
                     }
 
                     <div className="flex flex-row px-4">
-                        <span className={styleLable}>Линия:</span>
+                        <span className={styleLable}>Линия по плану:</span>
                         <span className={styleInfo}>{item.info.line || "-"}</span>
                     </div>
 
 
-                    {item.info.name !== "Мойка" && !item.info.maintenance && isFact && !isFactEl &&
+                    {item.info.name !== "Мойка" && !item.info.maintenance && isFact &&
                         <div>
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Линия по факту:</span>
