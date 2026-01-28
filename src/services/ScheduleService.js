@@ -1,5 +1,6 @@
 import $apiSchedule, {API_URL_SCHEDULER} from "../http/scheduler";
 import moment from "moment/moment";
+import {isFactItem} from "../utils/scheduler/items";
 
 export let hardware = []
 export let planByHardware = []
@@ -74,6 +75,62 @@ export default class ScheduleService {
             }
         }
         return cleaning;
+    }
+
+    static async parseFactItemsByHardware(json) {
+        const filteredData = json.jobs.filter(item => {
+            return ((item.cameraEnd !== null) && (item.cameraStart !== null));
+        });
+
+        let factList = [];
+        for (let i = 0; i < filteredData.length; i++) {
+            if(!filteredData[i].line){
+                console.warn("Fact with id " + filteredData[i].id + " has a null line field")
+                continue;
+            }
+
+            factList[i] = Object.assign({}, exampleTask);
+            factList[i].id = filteredData[i].id + "fact_camera";
+            factList[i].start_time = new Date(filteredData[i].cameraStart).getTime();
+            factList[i].end_time = new Date(filteredData[i].cameraEnd).getTime();
+            factList[i].title = filteredData[i].name;
+            factList[i].group = filteredData[i].lineIdFact;
+
+            factList[i].itemProps = {
+                style: {
+                    background: this.getBgColorItem(filteredData[i]).bg,
+                    border: '1px solid #dcdcdc',
+                    color: this.getBgColorItem(filteredData[i]).color,
+                }
+            };
+            factList[i].info = { //Доп информация
+                name: filteredData[i].name,
+                start: filteredData[i].startProductionDateTime,
+                end: filteredData[i].endDateTime,
+                line: filteredData[i].line?.name,
+                quantity: filteredData[i].quantity,
+                mass: filteredData[i].mass,
+                np: filteredData[i].np,
+                snpz: filteredData[i].snpz,
+                duration: Math.round(new Date(filteredData[i].endDateTime) - new Date(filteredData[i].startProductionDateTime))/ 60000,
+                durationFactCamera: Math.round(new Date(filteredData[i].cameraEnd) - new Date(filteredData[i].cameraStart))/ 60000,
+
+                fullName: filteredData[i].product.name,
+                type: filteredData[i].product.type,
+                glaze: filteredData[i].product.glaze,
+                filling: filteredData[i].product.filling,
+                _allergen: filteredData[i].product._allergen,
+                lineInfo: filteredData[i].line,
+                maintenance: filteredData[i].maintenance,
+                maintenanceId: filteredData[i].fid,
+                maintenanceNote: filteredData[i].maintenanceNote,
+                lineIdFact: filteredData[i].lineIdFact,
+                startFact: filteredData[i].startProductionDateTimeFact,
+                startCameraFact: filteredData[i].cameraStart,
+                endCameraFact: filteredData[i].cameraEnd,
+            }
+        }
+        return factList;
     }
 
     static async parseHardware(json) {
@@ -152,11 +209,15 @@ export default class ScheduleService {
                 maintenanceNote: json.jobs[i].maintenanceNote,
                 lineIdFact: json.jobs[i].lineIdFact,
                 startFact: json.jobs[i].startProductionDateTimeFact,
+                startCameraFact: json.jobs[i].cameraStart,
+                endCameraFact: json.jobs[i].cameraEnd,
             }
         }
 
+        let factList = await this.parseFactItemsByHardware(json)
         let cleaning = await this.parseCleaningByHardware(json)
         let result = [...planByHardware, ...cleaning]
+        result = [...result, ...factList]
         result = result.filter(item => item !== undefined);
         result = ScheduleService.defineAssignedJobs(result, json)
         return result;
@@ -191,14 +252,14 @@ export default class ScheduleService {
         return result;
     }
 
-    // Позиция в своей группе (без учета cleaning элементов)
+    // Позиция в своей группе (без учета cleaning и фактических элементов)
     static getGroupPosition = (itemId, allItems) => {
         const item = allItems.find(i => i.id === itemId)
         if (!item) return {position: -1, total: 0}
 
-        // Исключаем cleaning элементы из группы
+        // Исключаем cleaning и фактические элементы из группы
         const groupItems = allItems.filter(i =>
-            i.group === item.group && !i.id.includes('cleaning')
+            i.group === item.group && !i.id.includes('cleaning') && !isFactItem(i)
         )
 
         const sorted = groupItems.sort((a, b) =>
@@ -272,10 +333,6 @@ export default class ScheduleService {
     static async savePlan() {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/save`, {})
     }
-
-    // static async removePlan() {
-    //     return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/removeSolution`, {})
-    // }
 
     static async stopSolving() {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/stopSolving`, {})

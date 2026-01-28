@@ -2,7 +2,8 @@ import React, {useEffect, useState} from 'react'
 import {styleInputWithoutRounded} from "../../data/styles";
 import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
-import {convertHoursMinutesToMinutes, validateHours, validateMinutes} from "../../utils/serviceWorkUtils";
+import {convertHoursMinutesToMinutes, validateHours, validateMinutes} from "../../utils/scheduler/serviceWork";
+import {getLastItemIndexInGroup} from "../../utils/scheduler/items";
 
 
 export function ModalAssignServiceWork({
@@ -34,20 +35,6 @@ export function ModalAssignServiceWork({
 
     const [isAddingEmptyLine, setIsAddingEmptyLine] = useState(false);
 
-    const getLastItemIndexInGroup = (groupId) => {
-        // Фильтруем элементы по группе и ИСКЛЮЧАЕМ мойки
-        const groupItems = planByHardware
-            .filter(item => item.group === groupId && !item.id.includes('cleaning'))
-            .sort((a, b) => a.start_time - b.start_time);
-
-        if (groupItems.length === 0) {
-            return -1; // Группа пустая
-        }
-
-        // Возвращаем индекс последнего элемента (без учета моек)
-        return groupItems.length - 1;
-    };
-
     function assign() {
         assignServiceWork(selectLine.value, insertIndex - 1, time, getTotalMinutes(), selectService.value, descriptionOperation, isAddingEmptyLine);
     }
@@ -70,12 +57,12 @@ export function ModalAssignServiceWork({
         if (event != null) {
             setSelectLine(event);
             if (isLastPos) {
-                setInsertIndex(getLastItemIndexInGroup(event.value) + 2)
+                setInsertIndex(getLastItemIndexInGroup(event.value, planByHardware) + 2)
             }
         } else {
             setSelectLine(optLines[1]);
             if (isLastPos) {
-                setInsertIndex(getLastItemIndexInGroup(optLines[1].value) + 2)
+                setInsertIndex(getLastItemIndexInGroup(optLines[1].value, planByHardware) + 2)
             }
         }
     };
@@ -100,7 +87,7 @@ export function ModalAssignServiceWork({
     const handleChangeIsLastPos = (event) => {
         setIsLastPos(event)
         if (event === true) {
-            setInsertIndex(getLastItemIndexInGroup(selectLine.value) + 2)
+            setInsertIndex(getLastItemIndexInGroup(selectLine.value, planByHardware) + 2)
         }
     };
 
