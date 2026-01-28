@@ -1,6 +1,11 @@
-
+//Проверяет или это отдельный фактический элемент
 export function isFactItem(item) {
     return item.id.endsWith("fact_camera")
+}
+
+//Определяет если ли уже факт
+export function isPackagedItem(item) {
+    return item.info.startFact !== null
 }
 
 export const getLastItemIndexInGroup = (groupId, plan) => {

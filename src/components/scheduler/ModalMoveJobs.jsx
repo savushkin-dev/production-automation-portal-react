@@ -2,7 +2,7 @@ import React, {useState} from 'react'
 import {styleInputWithoutRounded} from "../../data/styles";
 import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
-import {getLastItemIndexInGroup} from "../../utils/scheduler/items";
+import {getLastItemIndexInGroup, isFactItem} from "../../utils/scheduler/items";
 
 
 export function ModalMoveJobs({
@@ -14,12 +14,16 @@ export function ModalMoveJobs({
                               }) {
 
     function move() {
-        const groupId = selectedItems[0].group;
-        const sortedSelected = selectedItems
+        //Отсеиваем фактические элементы
+        const filteredItems = selectedItems
+            .filter(item => !isFactItem(item));
+
+        const groupId = filteredItems[0].group;
+        const sortedSelected = filteredItems
             .sort((a, b) => a.start_time - b.start_time);
         const firstItem = sortedSelected[0];
         const firstItemIndex = firstItem.info.groupIndex-1;
-        moveJobs(groupId, selectLine.value, firstItemIndex, selectedItems.length, insertIndex - 1);
+        moveJobs(groupId, selectLine.value, firstItemIndex, filteredItems.length, insertIndex - 1);
     }
 
     const options = lines.map(line => ({

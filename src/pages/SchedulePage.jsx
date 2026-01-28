@@ -25,7 +25,7 @@ import {createTimelineLabelFormatter, formatTimelineLabel, formatTimelineLabelMa
 import {createTimelineRenderers, createTimelineRenderersSheduler} from "../components/scheduler/TimelineItemRenderer";
 import {groupDataByDay} from "../utils/scheduler/pdayParsing";
 import {getNext2DateStr, getNextDateStr, getPredDateStr} from "../utils/date/date";
-import {isFactItem} from "../utils/scheduler/items";
+import {isFactItem, isPackagedItem} from "../utils/scheduler/items";
 
 
 function SchedulerPage() {
@@ -92,6 +92,9 @@ function SchedulerPage() {
     const [currentUnit, setCurrentUnit] = useState('hour');
 
     const location = useLocation();
+
+    const [selectedItems, setSelectedItems] = useState([]);
+    const [lastSelectedItem, setLastSelectedItem] = useState(null);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -550,8 +553,30 @@ function SchedulerPage() {
                 setSelectedItem(clickedItem);
                 setSelectedItems([clickedItem]);
                 setLastSelectedItem(clickedItem);
+
+                linkPlanItemToFactItem(clickedItem)
             }
         }
+    }
+
+    //Добавляет в список выбранных элементов фактические или плановые элементы соответствующие друг другу
+    function linkPlanItemToFactItem(clickedItem) {
+        const itemsArray = planByHardware;
+        let idFact = null;
+        const prefix = "fact_camera";
+
+        if(!isPackagedItem(clickedItem)){
+            return
+        }
+
+        if(!isFactItem(clickedItem)){
+            idFact = clickedItem.id + prefix;
+        } else {
+            idFact = clickedItem.id.slice(0, -prefix.length);
+        }
+
+        const clickedFactItem = itemsArray.find(item => item.id === idFact);
+        setSelectedItems([clickedItem, clickedFactItem]);
     }
 
     // Функция для выделения диапазона по Shift ТОЛЬКО в одной группе
@@ -582,9 +607,6 @@ function SchedulerPage() {
         setSelectedItem(currentItem);
         setLastSelectedItem(currentItem);
     };
-
-    const [selectedItems, setSelectedItems] = useState([]);
-    const [lastSelectedItem, setLastSelectedItem] = useState(null);
 
     async function moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex) {
         try {

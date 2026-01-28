@@ -1,5 +1,5 @@
 import React from 'react'
-import {isFactItem} from "../../utils/scheduler/items";
+import {isFactItem, isPackagedItem} from "../../utils/scheduler/items";
 import {formatIsoToDatetimeRegex} from "../../utils/date/date";
 
 
@@ -8,7 +8,7 @@ export function ModalInfoItem({item, onClose, lines}) {
     const styleLable = "py-1 font-medium w-[25%] ";
     const styleInfo = "py-1 font-medium w-[75%] ";
 
-    const isFact = item.info.startFact !== null;
+    const isFact = isPackagedItem(item);
     const isLinesMatch = item.info.lineIdFact === item.info.lineInfo.id;
     const isFactEl = isFactItem(item);
 

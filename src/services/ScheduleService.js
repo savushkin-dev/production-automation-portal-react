@@ -81,7 +81,7 @@ export default class ScheduleService {
         const filteredData = json.jobs.filter(item => {
             return ((item.cameraEnd !== null) && (item.cameraStart !== null));
         });
-console.log(filteredData)
+
         let factList = [];
         for (let i = 0; i < filteredData.length; i++) {
             if(!filteredData[i].line){
@@ -90,7 +90,7 @@ console.log(filteredData)
             }
 
             factList[i] = Object.assign({}, exampleTask);
-            factList[i].id = i + "fact_camera";
+            factList[i].id = filteredData[i].id + "fact_camera";
             factList[i].start_time = new Date(filteredData[i].cameraStart).getTime();
             factList[i].end_time = new Date(filteredData[i].cameraEnd).getTime();
             factList[i].title = filteredData[i].name;
