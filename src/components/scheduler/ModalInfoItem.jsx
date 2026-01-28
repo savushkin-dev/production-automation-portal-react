@@ -118,7 +118,7 @@ export function ModalInfoItem({item, onClose, lines}) {
                         </div>
                     }
 
-                    {isFactEl &&
+                    {item.info.name !== "Мойка" && !item.info.maintenance && isFact &&
                         <>
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Начало по камере:</span>

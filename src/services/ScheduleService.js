@@ -126,7 +126,6 @@ export default class ScheduleService {
                 maintenanceNote: filteredData[i].maintenanceNote,
                 lineIdFact: filteredData[i].lineIdFact,
                 startFact: filteredData[i].startProductionDateTimeFact,
-
                 startCameraFact: filteredData[i].cameraStart,
                 endCameraFact: filteredData[i].cameraEnd,
             }
@@ -210,17 +209,17 @@ export default class ScheduleService {
                 maintenanceNote: json.jobs[i].maintenanceNote,
                 lineIdFact: json.jobs[i].lineIdFact,
                 startFact: json.jobs[i].startProductionDateTimeFact,
+                startCameraFact: json.jobs[i].cameraStart,
+                endCameraFact: json.jobs[i].cameraEnd,
             }
         }
 
         let factList = await this.parseFactItemsByHardware(json)
-        // console.log(factList)
         let cleaning = await this.parseCleaningByHardware(json)
         let result = [...planByHardware, ...cleaning]
         result = [...result, ...factList]
         result = result.filter(item => item !== undefined);
         result = ScheduleService.defineAssignedJobs(result, json)
-        // console.log(result)
         return result;
     }
 
