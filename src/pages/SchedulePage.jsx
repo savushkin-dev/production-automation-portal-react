@@ -874,7 +874,7 @@ function SchedulerPage() {
                         snapGrid={1}
                         buffer={5}
                         sidebarWidth={150}
-                        lineHeight={150}
+                        lineHeight={164}
 
                     >
                         <TimelineHeaders className="sticky">

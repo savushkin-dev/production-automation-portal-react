@@ -12,14 +12,19 @@ export const createItemRendererScheduler = (selectedItems, selectedItem) => {
         const isSingleSelected = selectedItem?.id === item.id;
         const isFact = item.info?.startFact !== null && !item.id.includes('cleaning');
         const isLinesMatch = item.info?.lineIdFact === item.info?.lineInfo?.id;
+        
+        const factElBg = "#fafafa";
+        // const factBg = "#c9ffd7";
+        const factBg = "#f4e9ff";
+        const selectBg = "#cbff93";
 
         const isFactEl = isFactItem(item);
 
         const itemProps = getItemProps({
             style: {
                 background: isSelected
-                    ? (isSingleSelected ? "#cbff93" : "#cbff93")
-                    : (  isFactEl? "#f1f1f1" : (isFact ? "#c9ffd7" : item.itemProps?.style?.background || '#fff')),
+                    ? (isSingleSelected ? selectBg : selectBg)
+                    : (  isFactEl? factElBg : (isFact ? factBg : item.itemProps?.style?.background || '#fff')),
                 border: '1px solid #aeaeae',
                 textAlign: 'start',
                 color: item.itemProps?.style?.color || 'black',
