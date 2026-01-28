@@ -770,7 +770,7 @@ function SchedulerPage() {
                         <button onClick={() => {
                             setIsModalDateSettings(true)
                         }}
-                                className={"ml-3 rounded border border-slate-300 bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px] font-medium text-[0.950rem]"}>
+                                className={"ml-3 rounded border border-slate-300 bg-gray-600 hover:bg-blue-700 text-white px-2 h-[30px] font-medium text-[0.950rem]"}>
                             Настройка линий
                         </button>
 
@@ -843,7 +843,7 @@ function SchedulerPage() {
                             <button onClick={() => {
                                 fetchAnalyze();
                             }}
-                                    className={" h-full rounded-r px-2 bg-blue-800 hover:bg-blue-700 text-white font-medium text-[0.950rem]"}>
+                                    className={" h-full rounded-r px-2 bg-gray-600 hover:bg-blue-700 text-white font-medium text-[0.950rem]"}>
                                 Подробнее
                             </button>
                         </div>
@@ -880,7 +880,7 @@ function SchedulerPage() {
                         <TimelineHeaders className="sticky">
                             <SidebarHeader>
                                 {({getRootProps}) => (
-                                    <div {...getRootProps()} className="bg-blue-800">
+                                    <div {...getRootProps()} className="bg-gray-600">
                                         {/* Заголовок сайдбара */}
                                         <div
                                             className="text-white font-medium text-3xl text-center h-full content-center">
@@ -893,7 +893,7 @@ function SchedulerPage() {
                             {/* Основной заголовок с датой */}
                             <DateHeader
                                 unit="primaryHeader"
-                                className="bg-blue-800 font-semibold text-sm "
+                                className="bg-gray-600 font-semibold text-sm "
                                 labelFormat={formatTimelineLabelMain}
                             />
 
