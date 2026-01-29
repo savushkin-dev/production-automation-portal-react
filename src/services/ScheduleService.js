@@ -217,9 +217,10 @@ export default class ScheduleService {
         let factList = await this.parseFactItemsByHardware(json)
         let cleaning = await this.parseCleaningByHardware(json)
         let result = [...planByHardware, ...cleaning]
-        result = [...result, ...factList]
         result = result.filter(item => item !== undefined);
         result = ScheduleService.defineAssignedJobs(result, json)
+        result = [...result, ...factList]
+
         return result;
     }
 
