@@ -1,12 +1,12 @@
 // components/scheduler/TimelineRenderers.js
-import React from "react";
+import React, {useEffect} from "react";
 import moment from "moment/moment";
 import {isFactItem} from "../../utils/scheduler/items";
 
 /**
  * Фабрика для создания рендерера элементов таймлайна планировщика
  */
-export const createItemRendererScheduler = (selectedItems, selectedItem) => {
+export const createItemRendererScheduler = (selectedItems, selectedItem, isHiddenFact) => {
     return ({ item, itemContext, getItemProps }) => {
         const isSelected = selectedItems.some(sel => sel.id === item.id);
         const isSingleSelected = selectedItem?.id === item.id;
@@ -14,7 +14,6 @@ export const createItemRendererScheduler = (selectedItems, selectedItem) => {
         const isLinesMatch = item.info?.lineIdFact === item.info?.lineInfo?.id;
         
         const factElBg = "#fafafa";
-        // const factBg = "#c9ffd7";
         const factBg = "#f4e9ff";
         const selectBg = "#cbff93";
 
@@ -34,6 +33,8 @@ export const createItemRendererScheduler = (selectedItems, selectedItem) => {
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 maxWidth: '100%',
+                display: isFactEl && isHiddenFact? 'none': 'block',
+                marginTop: isHiddenFact? '-4px': '-16px',
             },
             onMouseDown: getItemProps().onMouseDown,
             onTouchStart: getItemProps().onTouchStart,
@@ -128,57 +129,63 @@ export const createItemRendererScheduler = (selectedItems, selectedItem) => {
                 ) : (
                     //Фактический элемент
                     <>
-                        <div className="flex px-1 justify-between font-medium text-sm text-black">
-                            {item.info?.pinned && !isFactEl ? (
-                                <>
-                                    {isSelected && selectedItems.length > 1 && (
-                                        <div
-                                            className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                                            {selectedItems.findIndex(el => el.id === item.id) + 1}
-                                        </div>
+                        {!isHiddenFact &&
+                            <>
+                                <div className="flex px-1 justify-between font-medium text-sm text-black">
+                                    {item.info?.pinned && !isFactEl ? (
+                                        <>
+                                            {isSelected && selectedItems.length > 1 && (
+                                                <div
+                                                    className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                                                    {selectedItems.findIndex(el => el.id === item.id) + 1}
+                                                </div>
+                                            )}
+                                            <div className="h-2 absolute p-0">
+                                                <i className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i>
+                                            </div>
+                                            <span className="ml-4">{item.title}</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {isSelected && selectedItems.length > 1 && (
+                                                <div
+                                                    className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                                                    {selectedItems.findIndex(el => el.id === item.id) + 1}
+                                                </div>
+                                            )}
+                                            <span className="">{item.title}</span>
+                                        </>
                                     )}
-                                    <div className="h-2 absolute p-0">
-                                        <i className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i>
-                                    </div>
-                                    <span className="ml-4">{item.title}</span>
-                                </>
-                            ) : (
-                                <>
-                                    {isSelected && selectedItems.length > 1 && (
-                                        <div
-                                            className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                                            {selectedItems.findIndex(el => el.id === item.id) + 1}
-                                        </div>
-                                    )}
-                                    <span className="">{item.title}</span>
-                                </>
-                            )}
-                        </div>
+                                </div>
 
-                        <div className="flex flex-col justify-start text-xs">
-                            {item.info?.name !== "Мойка" && !item.info?.maintenance && item.info?.np && (
-                                <span className="px-1 rounded">
+                                <div className="flex flex-col justify-start text-xs">
+                                    {item.info?.name !== "Мойка" && !item.info?.maintenance && item.info?.np && (
+                                        <span className="px-1 rounded">
                                   <span className="text-blue-500">{item.info.np}</span>
                                   <span className="pl-1">№ партии</span>
                                 </span>
-                            )}
+                                    )}
 
-                            {item.info?.duration && (
-                                <span className="px-1 rounded">
-                                  <span className="text-pink-500">{Number(item.info.durationFactCamera.toFixed(0))} мин.</span>
+                                    {item.info?.duration && (
+                                        <span className="px-1 rounded">
+                                  <span
+                                      className="text-pink-500">{Number(item.info.durationFactCamera.toFixed(0))} мин.</span>
                                   <span className="text-gray-500 px-1">|</span>
                                   <span className="text-green-600">
                                     {moment(item.start_time).format('HH:mm')}
                                   </span>
-                                    {' - '}
-                                    <span className="text-red-500">
-                                    {moment(item.end_time).format('HH:mm')}
-                                  </span>
-                                  <span className="pl-1">Время</span>
-                                </span>
-                            )}
+                                            {' - '}
+                                            <span className="text-red-500">
+                                        {moment(item.end_time).format('HH:mm')}
+                                      </span>
+                                      <span className="pl-1">Время</span>
+                                    </span>
+                                    )}
 
-                        </div>
+                                </div>
+                            </>
+                        }
+
                     </>
                 )}
 
@@ -300,9 +307,9 @@ export const createGroupRenderer = () => {
 /**
  * Функция для создания всех рендереров планировщика
  */
-export const createTimelineRenderersSheduler = (selectedItems, selectedItem) => {
+export const createTimelineRenderersSheduler = (selectedItems, selectedItem, isHiddenFact) => {
     return {
-        itemRenderer: createItemRendererScheduler(selectedItems, selectedItem),
+        itemRenderer: createItemRendererScheduler(selectedItems, selectedItem, isHiddenFact),
         groupRenderer: createGroupRenderer(),
     };
 };

@@ -138,7 +138,7 @@
 
 /* Стиль для стандартного элемента плана */
 .rct-item {
-    margin-top: -16px !important;
+    margin-top: -16px ;
     height: 72px !important;
 }
 

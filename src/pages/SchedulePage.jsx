@@ -96,6 +96,8 @@ function SchedulerPage() {
     const [selectedItems, setSelectedItems] = useState([]);
     const [lastSelectedItem, setLastSelectedItem] = useState(null);
 
+    const [isHiddenFact, setIsHiddenFact] = useState(false);
+
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const dateParam = params.get("date");
@@ -705,9 +707,17 @@ function SchedulerPage() {
     }
 
     const timelineRenderers = useMemo(
-        () => createTimelineRenderersSheduler(selectedItems, selectedItem),
-        [selectedItems, selectedItem]
+        () => {
+            return createTimelineRenderersSheduler(selectedItems, selectedItem, isHiddenFact)},
+        [selectedItems, selectedItem, isHiddenFact]
     );
+
+    function hideOrShowFact(){
+        setIsHiddenFact(!isHiddenFact);
+        setTimelineKey(prev => prev + 1);
+    }
+
+    const heightGroup = isHiddenFact? 100 : 164;
 
     return (
         <>
@@ -761,9 +771,11 @@ function SchedulerPage() {
                         <div
                             className="inline-flex px-2 h-[30px] items-center border rounded-md hover:bg-gray-100 selection:border-0">
                             <span className="py-1 font-medium text-nowrap ">Дата:</span>
-                            <input className={"px-2 font-medium w-32 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:border-transparent"} type="date"
-                                   value={selectDate}
-                                   onChange={(e) => onChangeSelectDate(e.target.value)}
+                            <input
+                                className={"px-2 font-medium w-32 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:border-transparent"}
+                                type="date"
+                                value={selectDate}
+                                onChange={(e) => onChangeSelectDate(e.target.value)}
                             />
                         </div>
 
@@ -772,6 +784,11 @@ function SchedulerPage() {
                         }}
                                 className={"ml-3 rounded border border-slate-300 bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px] font-medium text-[0.950rem]"}>
                             Настройка линий
+                        </button>
+
+                        <button onClick={hideOrShowFact}
+                                className={"ml-3 rounded border border-slate-300 hover:bg-gray-100 px-2 h-[30px] font-medium text-[0.950rem]"}>
+                            Скрыть/показать факт
                         </button>
 
                     </div>
@@ -874,7 +891,7 @@ function SchedulerPage() {
                         snapGrid={1}
                         buffer={5}
                         sidebarWidth={150}
-                        lineHeight={164}
+                        lineHeight={heightGroup}
 
                     >
                         <TimelineHeaders className="sticky">
