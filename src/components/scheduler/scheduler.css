@@ -144,7 +144,7 @@
 
 /* Стиль для фактического элемента плана */
 .rct-item-fact {
-    margin-top: 65px !important;
+    margin-top: 65px ;
     height: 56px !important;
 }
 

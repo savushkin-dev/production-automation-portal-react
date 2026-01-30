@@ -6,24 +6,51 @@ import {isFactItem} from "../../utils/scheduler/items";
 /**
  * Фабрика для создания рендерера элементов таймлайна планировщика
  */
-export const createItemRendererScheduler = (selectedItems, selectedItem, isHiddenFact) => {
-    return ({ item, itemContext, getItemProps }) => {
+export const createItemRendererScheduler = (selectedItems, selectedItem, activeDisplay) => {
+
+    function defineStyle(activeDisplay, isFactEl) {
+        const { plan, fact, planFact } = activeDisplay || {};
+
+        if (plan) {
+            return isFactEl
+                ? { display: 'none', marginTop: '-16px' }
+                : { display: 'block', marginTop: '-4px' };
+        }
+
+        if (fact) {
+            return isFactEl
+                ? { display: 'block', marginTop: '4px' }
+                : { display: 'none', marginTop: '-16px' };
+        }
+
+        if (planFact) {
+            return isFactEl
+                ? { display: 'block', marginTop: '65px' }
+                : { display: 'block', marginTop: '-16px' };
+        }
+
+        return { display: 'block', marginTop: '-16px' };
+    }
+
+    return ({item, itemContext, getItemProps}) => {
         const isSelected = selectedItems.some(sel => sel.id === item.id);
         const isSingleSelected = selectedItem?.id === item.id;
         const isFact = item.info?.startFact !== null && !item.id.includes('cleaning');
         const isLinesMatch = item.info?.lineIdFact === item.info?.lineInfo?.id;
-        
+
         const factElBg = "#fafafa";
         const factBg = "#f4e9ff";
         const selectBg = "#cbff93";
 
         const isFactEl = isFactItem(item);
 
+        let settings = defineStyle(activeDisplay, isFactEl)
+
         const itemProps = getItemProps({
             style: {
                 background: isSelected
                     ? (isSingleSelected ? selectBg : selectBg)
-                    : (  isFactEl? factElBg : (isFact ? factBg : item.itemProps?.style?.background || '#fff')),
+                    : (isFactEl ? factElBg : (isFact ? factBg : item.itemProps?.style?.background || '#fff')),
                 border: '1px solid #aeaeae',
                 textAlign: 'start',
                 color: item.itemProps?.style?.color || 'black',
@@ -33,20 +60,20 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, isHidde
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 maxWidth: '100%',
-                display: isFactEl && isHiddenFact? 'none': 'block',
-                marginTop: isHiddenFact? '-4px': '-16px',
+                display: settings.display,
+                marginTop: settings.marginTop,
             },
             onMouseDown: getItemProps().onMouseDown,
             onTouchStart: getItemProps().onTouchStart,
         });
 
-        const { key, ...safeItemProps } = itemProps;
+        const {key, ...safeItemProps} = itemProps;
 
         return (
             <div
                 key={item.id}
                 {...safeItemProps}
-                className={isFactEl? "rct-item-fact" : "rct-item"}
+                className={isFactEl ? "rct-item-fact" : "rct-item"}
             >
 
                 {!isFactEl ? (
@@ -129,63 +156,57 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, isHidde
                 ) : (
                     //Фактический элемент
                     <>
-                        {!isHiddenFact &&
-                            <>
-                                <div className="flex px-1 justify-between font-medium text-sm text-black">
-                                    {item.info?.pinned && !isFactEl ? (
-                                        <>
-                                            {isSelected && selectedItems.length > 1 && (
-                                                <div
-                                                    className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                                                    {selectedItems.findIndex(el => el.id === item.id) + 1}
-                                                </div>
-                                            )}
-                                            <div className="h-2 absolute p-0">
-                                                <i className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i>
-                                            </div>
-                                            <span className="ml-4">{item.title}</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            {isSelected && selectedItems.length > 1 && (
-                                                <div
-                                                    className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                                                    {selectedItems.findIndex(el => el.id === item.id) + 1}
-                                                </div>
-                                            )}
-                                            <span className="">{item.title}</span>
-                                        </>
+                        <div className="flex px-1 justify-between font-medium text-sm text-black">
+                            {item.info?.pinned && !isFactEl ? (
+                                <>
+                                    {isSelected && selectedItems.length > 1 && (
+                                        <div
+                                            className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                                            {selectedItems.findIndex(el => el.id === item.id) + 1}
+                                        </div>
                                     )}
-                                </div>
+                                    <div className="h-2 absolute p-0">
+                                        <i className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i>
+                                    </div>
+                                    <span className="ml-4">{item.title}</span>
+                                </>
+                            ) : (
+                                <>
+                                    {isSelected && selectedItems.length > 1 && (
+                                        <div
+                                            className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                                            {selectedItems.findIndex(el => el.id === item.id) + 1}
+                                        </div>
+                                    )}
+                                    <span className="">{item.title}</span>
+                                </>
+                            )}
+                        </div>
 
-                                <div className="flex flex-col justify-start text-xs">
-                                    {item.info?.name !== "Мойка" && !item.info?.maintenance && item.info?.np && (
-                                        <span className="px-1 rounded">
+                        <div className="flex flex-col justify-start text-xs">
+                            {item.info?.name !== "Мойка" && !item.info?.maintenance && item.info?.np && (
+                                <span className="px-1 rounded">
                                   <span className="text-blue-500">{item.info.np}</span>
                                   <span className="pl-1">№ партии</span>
                                 </span>
-                                    )}
+                            )}
 
-                                    {item.info?.duration && (
-                                        <span className="px-1 rounded">
+                            {item.info?.duration && (
+                                <span className="px-1 rounded">
                                   <span
                                       className="text-pink-500">{Number(item.info.durationFactCamera.toFixed(0))} мин.</span>
                                   <span className="text-gray-500 px-1">|</span>
                                   <span className="text-green-600">
                                     {moment(item.start_time).format('HH:mm')}
                                   </span>
-                                            {' - '}
-                                            <span className="text-red-500">
+                                    {' - '}
+                                    <span className="text-red-500">
                                         {moment(item.end_time).format('HH:mm')}
                                       </span>
                                       <span className="pl-1">Время</span>
                                     </span>
-                                    )}
-
-                                </div>
-                            </>
-                        }
-
+                            )}
+                        </div>
                     </>
                 )}
 
@@ -307,9 +328,9 @@ export const createGroupRenderer = () => {
 /**
  * Функция для создания всех рендереров планировщика
  */
-export const createTimelineRenderersSheduler = (selectedItems, selectedItem, isHiddenFact) => {
+export const createTimelineRenderersSheduler = (selectedItems, selectedItem, activeDisplay) => {
     return {
-        itemRenderer: createItemRendererScheduler(selectedItems, selectedItem, isHiddenFact),
+        itemRenderer: createItemRendererScheduler(selectedItems, selectedItem, activeDisplay),
         groupRenderer: createGroupRenderer(),
     };
 };

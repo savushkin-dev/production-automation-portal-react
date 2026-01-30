@@ -103,7 +103,8 @@ function SchedulerPage() {
     const [selectedItems, setSelectedItems] = useState([]);
     const [lastSelectedItem, setLastSelectedItem] = useState(null);
 
-    const [isHiddenFact, setIsHiddenFact] = useState(false);
+    const heightGroupScheduler = activeDisplay.fact || activeDisplay.plan? 100 : 164;
+
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -715,16 +716,9 @@ function SchedulerPage() {
 
     const timelineRenderers = useMemo(
         () => {
-            return createTimelineRenderersSheduler(selectedItems, selectedItem, isHiddenFact)},
-        [selectedItems, selectedItem, isHiddenFact]
+            return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay)},
+        [selectedItems, selectedItem, activeDisplay]
     );
-
-    function hideOrShowFact(){
-        setIsHiddenFact(!isHiddenFact);
-        setTimelineKey(prev => prev + 1);
-    }
-
-    const heightGroup = isHiddenFact? 100 : 164;
 
     return (
         <>
@@ -795,12 +789,12 @@ function SchedulerPage() {
                             Настройка линий
                         </button>
 
-                        {/*<button onClick={hideOrShowFact}*/}
-                        {/*        className={"ml-3 rounded border border-slate-300 hover:bg-gray-100 px-2 h-[30px] font-medium text-[0.950rem]"}>*/}
-                        {/*    Скрыть/показать факт*/}
-                        {/*</button>*/}
-
-                        <DisplayButtons activeDisplay={activeDisplay} setActiveDisplay={setActiveDisplay}/>
+                        <DisplayButtons activeDisplay={activeDisplay}
+                                        setActiveDisplay={(newDisplay) => {
+                                            setTimelineKey(prev => prev + 1);
+                                            setActiveDisplay(newDisplay);
+                                        }}
+                            />
 
                     </div>
 
@@ -902,7 +896,7 @@ function SchedulerPage() {
                         snapGrid={1}
                         buffer={5}
                         sidebarWidth={150}
-                        lineHeight={heightGroup}
+                        lineHeight={heightGroupScheduler}
 
                     >
                         <TimelineHeaders className="sticky">
