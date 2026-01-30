@@ -444,6 +444,9 @@ function SchedulerPage() {
     };
 
     const handleCanvasRightClick = (groupId, time, e) => {
+        if(activeDisplay.fact){
+            return
+        }
         setSelectedItems([]);
         setSelectedItem(null);
         setLastSelectedItem(null);
