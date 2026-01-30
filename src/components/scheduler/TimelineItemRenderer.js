@@ -81,7 +81,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                         <div className="flex px-1 justify-between font-medium text-sm text-black">
                             {item.info?.pinned && !isFactEl ? (
                                 <>
-                                    {isSelected && selectedItems.length > 1 && (
+                                    {isSelected && selectedItems.filter(item => !isFactItem(item)).length > 1 && (
                                         <div
                                             className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
                                             {selectedItems.findIndex(el => el.id === item.id) + 1}
@@ -94,7 +94,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                 </>
                             ) : (
                                 <>
-                                    {isSelected && selectedItems.length > 1 && (
+                                    {isSelected && selectedItems.filter(item => !isFactItem(item)).length > 1 && (
                                         <div
                                             className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
                                             {selectedItems.findIndex(el => el.id === item.id) + 1}
@@ -159,7 +159,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                         <div className="flex px-1 justify-between font-medium text-sm text-black">
                             {item.info?.pinned && !isFactEl ? (
                                 <>
-                                    {isSelected && selectedItems.length > 1 && (
+                                    {isSelected && selectedItems.filter(item => !isFactItem(item)).length > 1 && (
                                         <div
                                             className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
                                             {selectedItems.findIndex(el => el.id === item.id) + 1}
@@ -172,7 +172,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                 </>
                             ) : (
                                 <>
-                                    {isSelected && selectedItems.length > 1 && (
+                                    {isSelected && selectedItems.filter(item => !isFactItem(item)).length > 1 && (
                                         <div
                                             className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
                                             {selectedItems.findIndex(el => el.id === item.id) + 1}
