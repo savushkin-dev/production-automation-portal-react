@@ -26,6 +26,7 @@ import {createTimelineRenderers, createTimelineRenderersSheduler} from "../compo
 import {groupDataByDay} from "../utils/scheduler/pdayParsing";
 import {getNext2DateStr, getNextDateStr, getPredDateStr} from "../utils/date/date";
 import {isFactItem, isPackagedItem} from "../utils/scheduler/items";
+import {DisplayButtons} from "../components/scheduler/DisplayButtons";
 
 
 function SchedulerPage() {
@@ -84,6 +85,12 @@ function SchedulerPage() {
         item: null,
         forCanvas: false,
     })
+
+    const [activeDisplay, setActiveDisplay] = useState({
+        planFact: false,
+        plan: true,
+        fact: false
+    });
 
     const [startTimeLines, setStartTimeLines] = useState(undefined);
     const [timelineKey, setTimelineKey] = useState(0);
@@ -762,12 +769,14 @@ function SchedulerPage() {
                             <i className="pl-2 fa-solid fa-cloud-arrow-down"></i>
                         </button>
 
+
+
                     </div>
                 </div>
 
-                <div className="flex flex-row justify-between my-4 px-4 ">
+                <div className="flex flex-row justify-between my-4 px-4">
 
-                    <div className="w-1/3">
+                    <div className="w-1/3 inline-flex">
                         <div
                             className="inline-flex px-2 h-[30px] items-center border rounded-md hover:bg-gray-100 selection:border-0">
                             <span className="py-1 font-medium text-nowrap ">Дата:</span>
@@ -782,14 +791,16 @@ function SchedulerPage() {
                         <button onClick={() => {
                             setIsModalDateSettings(true)
                         }}
-                                className={"ml-3 rounded border border-slate-300 bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px] font-medium text-[0.950rem]"}>
+                                className={"ml-3 mr-3 rounded border border-slate-300 bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px] font-medium text-[0.950rem]"}>
                             Настройка линий
                         </button>
 
-                        <button onClick={hideOrShowFact}
-                                className={"ml-3 rounded border border-slate-300 hover:bg-gray-100 px-2 h-[30px] font-medium text-[0.950rem]"}>
-                            Скрыть/показать факт
-                        </button>
+                        {/*<button onClick={hideOrShowFact}*/}
+                        {/*        className={"ml-3 rounded border border-slate-300 hover:bg-gray-100 px-2 h-[30px] font-medium text-[0.950rem]"}>*/}
+                        {/*    Скрыть/показать факт*/}
+                        {/*</button>*/}
+
+                        <DisplayButtons activeDisplay={activeDisplay} setActiveDisplay={setActiveDisplay}/>
 
                     </div>
 
