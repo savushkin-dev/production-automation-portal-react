@@ -144,7 +144,12 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                   )}
                                     <span className="text-violet-600">
                                          {moment(item.info?.startFact).format('HH:mm')}
+
                                     </span>
+                                     <span className="text-gray-600 ml-1">
+                                         {moment(item.info?.startFact).format('DD.MM.YYYY')}
+                                    </span>
+
                                   <span className="pl-1">Факт. время начала</span>
 
                                   <span className="pl-1 text-violet-600">| {item.info?.groupIndex}</span>
