@@ -316,7 +316,7 @@ export default class ScheduleService {
     }
 
     static async getPlan() {
-        return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule`)
+        return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/frontData`)
     }
 
     static async getLines() {
