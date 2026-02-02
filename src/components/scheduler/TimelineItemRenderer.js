@@ -1,32 +1,32 @@
 // components/scheduler/TimelineRenderers.js
 import React, {useEffect} from "react";
 import moment from "moment/moment";
-import {isFactItem} from "../../utils/scheduler/items";
+import {isFactItem, isMaintenancePackingOrLeveling} from "../../utils/scheduler/items";
 
 /**
  * Фабрика для создания рендерера элементов таймлайна планировщика
  */
 export const createItemRendererScheduler = (selectedItems, selectedItem, activeDisplay) => {
 
-    function defineStyle(activeDisplay, isFactEl) {
+    function defineStyle(activeDisplay, isFactEl, isLeveling) {
         const { plan, fact, planFact } = activeDisplay || {};
 
         if (plan) {
             return isFactEl
-                ? { display: 'none', marginTop: '-16px' }
-                : { display: 'block', marginTop: '-4px' };
+                ? { display: 'none', marginTop: '-16px'}
+                : (isLeveling? { display: 'block', marginTop: '28px'}:{ display: 'block', marginTop: '-4px'});
         }
 
         if (fact) {
             return isFactEl
-                ? { display: 'block', marginTop: '4px' }
+                ? { display: 'block', marginTop: '4px'}
                 : { display: 'none', marginTop: '-16px' };
         }
 
         if (planFact) {
             return isFactEl
-                ? { display: 'block', marginTop: '65px' }
-                : { display: 'block', marginTop: '-16px' };
+                ? { display: 'block', marginTop: '65px'}
+                : (isLeveling? { display: 'block', marginTop: '16px'}:{ display: 'block', marginTop: '-16px'});
         }
 
         return { display: 'block', marginTop: '-16px' };
@@ -43,8 +43,9 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
         const selectBg = "#cbff93";
 
         const isFactEl = isFactItem(item);
+        const isLeveling = isMaintenancePackingOrLeveling(item);
 
-        let settings = defineStyle(activeDisplay, isFactEl)
+        let settings = defineStyle(activeDisplay, isFactEl, isLeveling)
 
         const itemProps = getItemProps({
             style: {
@@ -73,7 +74,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
             <div
                 key={item.id}
                 {...safeItemProps}
-                className={isFactEl ? "rct-item-fact" : "rct-item"}
+                className={isFactEl ? "rct-item-fact" : (isLeveling? "rct-item-alignment" : "rct-item")}
             >
 
                 {!isFactEl ? (

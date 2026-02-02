@@ -20,3 +20,8 @@ export const getLastItemIndexInGroup = (groupId, plan) => {
 
     return groupItems.length - 1;
 };
+
+//Определяет является ли тип сервисной операции "Фасовка" или "Выравнивание"
+export function isMaintenancePackingOrLeveling(item) {
+    return (item.info.maintenanceTypeId === 7) || (item.info.maintenanceTypeId === 8);
+}
