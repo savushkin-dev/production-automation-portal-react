@@ -5,7 +5,7 @@ import {
     convertMinutesToHoursMinutes,
     validateHours,
     validateMinutes
-} from "../../utils/serviceWorkUtils";
+} from "../../utils/scheduler/serviceWork";
 import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
 

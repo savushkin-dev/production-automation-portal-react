@@ -2,6 +2,7 @@ import React, {useState} from 'react'
 import {styleInputWithoutRounded} from "../../data/styles";
 import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
+import {getLastItemIndexInGroup, isFactItem} from "../../utils/scheduler/items";
 
 
 export function ModalMoveJobs({
@@ -12,29 +13,18 @@ export function ModalMoveJobs({
                                   lines
                               }) {
 
-    const getLastItemIndexInGroup = (groupId) => {
-        // Фильтруем элементы по группе и ИСКЛЮЧАЕМ мойки
-        const groupItems = planByHardware
-            .filter(item => item.group === groupId && !item.id.includes('cleaning'))
-            .sort((a, b) => a.start_time - b.start_time);
-
-        if (groupItems.length === 0) {
-            return -1; // Группа пустая
-        }
-
-        // Возвращаем индекс последнего элемента (без учета моек)
-        return groupItems.length - 1;
-    };
-
     function move() {
-        const groupId = selectedItems[0].group;
-        const sortedSelected = selectedItems
+        //Отсеиваем фактические элементы
+        const filteredItems = selectedItems
+            .filter(item => !isFactItem(item));
+
+        const groupId = filteredItems[0].group;
+        const sortedSelected = filteredItems
             .sort((a, b) => a.start_time - b.start_time);
         const firstItem = sortedSelected[0];
         const firstItemIndex = firstItem.info.groupIndex-1;
-        moveJobs(groupId, selectLine.value, firstItemIndex, selectedItems.length, insertIndex - 1);
+        moveJobs(groupId, selectLine.value, firstItemIndex, filteredItems.length, insertIndex - 1);
     }
-
 
     const options = lines.map(line => ({
         value: line.lineId,
@@ -45,17 +35,16 @@ export function ModalMoveJobs({
     const [insertIndex, setInsertIndex] = useState(1);
     const [isLastPos, setIsLastPos] = useState(false);
 
-
     const handleChangeSelect = (event) => {
         if (event != null) {
             setSelectLine(event);
             if (isLastPos) {
-                setInsertIndex(getLastItemIndexInGroup(event.value) + 2)
+                setInsertIndex(getLastItemIndexInGroup(event.value, planByHardware) + 2)
             }
         } else {
             setSelectLine(options[1]);
             if (isLastPos) {
-                setInsertIndex(getLastItemIndexInGroup(options[1].value) + 2)
+                setInsertIndex(getLastItemIndexInGroup(options[1].value, planByHardware) + 2)
             }
         }
     };
@@ -67,7 +56,7 @@ export function ModalMoveJobs({
     const handleChangeIsLastPos = (event) => {
         setIsLastPos(event)
         if (event === true) {
-            setInsertIndex(getLastItemIndexInGroup(selectLine.value) + 2)
+            setInsertIndex(getLastItemIndexInGroup(selectLine.value, planByHardware) + 2)
         }
     };
 
