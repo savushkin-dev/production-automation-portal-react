@@ -20,9 +20,9 @@ import {DataTable} from "../components/scheduler/DataTable";
 import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
 import {ModalUpdateServiceWork} from "../components/scheduler/ModalUpdateServiceWork";
 import {MyTimeline} from "../components/scheduler/MyTimeline";
-import {convertLines, convertLinesWithTimeFields} from "../utils/scheduler/lines";
-import {createTimelineLabelFormatter, formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
-import {createTimelineRenderers, createTimelineRenderersSheduler} from "../components/scheduler/TimelineItemRenderer";
+import {convertLinesWithTimeFields} from "../utils/scheduler/lines";
+import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
+import {createTimelineRenderersSheduler} from "../components/scheduler/TimelineItemRenderer";
 import {groupDataByDay} from "../utils/scheduler/pdayParsing";
 import {getNext2DateStr, getNextDateStr, getPredDateStr} from "../utils/date/date";
 import {isFactItem, isPackagedItem} from "../utils/scheduler/items";
@@ -754,6 +754,20 @@ function SchedulerPage() {
 
                     <div className="w-4/6 py-1 flex justify-end pr-3">
 
+                        <button
+                            className="mr-1 rounded border border-slate-300 hover:bg-gray-100  px-3 h-[30px] font-medium text-[0.950rem]"
+                            onClick={sortSchedule}>
+                            Отсортировать
+                            <i className="pl-2 fa-solid fa-sort"></i>
+                        </button>
+
+                        <button onClick={() => {
+                        }}
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
+                            Выровнять план
+                            <i className="pl-2 fa-solid fa-align-right"></i>
+                        </button>
+
                         <button onClick={clickSavePlan}
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                             Сохранить
@@ -767,15 +781,14 @@ function SchedulerPage() {
                         </button>
 
 
-
                     </div>
                 </div>
 
                 <div className="flex flex-row justify-between my-4 px-4">
 
-                    <div className="w-1/3 inline-flex">
-                        <div
-                            className="inline-flex px-2 h-[30px] items-center border rounded-md hover:bg-gray-100 selection:border-0">
+                    <div className="w-2/5 inline-flex justify-between">
+
+                        <div className="inline-flex px-2 h-[30px] items-center border rounded-md hover:bg-gray-100 selection:border-0">
                             <span className="py-1 font-medium text-nowrap ">Дата:</span>
                             <input
                                 className={"px-2 font-medium w-32 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:border-transparent"}
@@ -797,11 +810,11 @@ function SchedulerPage() {
                                             setTimelineKey(prev => prev + 1);
                                             setActiveDisplay(newDisplay);
                                         }}
-                            />
+                        />
 
                     </div>
 
-                    <div className="flex flex-row w-2/3 justify-between" style={{zIndex: 20}}>
+                    <div className="flex flex-row w-3/5 justify-between" style={{zIndex: 20}}>
 
                         <div className="inline-flex">
                             {!isSolve &&
@@ -831,11 +844,7 @@ function SchedulerPage() {
                                 <i className="pl-2 fa-solid fa-arrows-rotate"></i>
                             </button>
 
-                            <button
-                                className="mr-1 rounded border border-slate-300 hover:bg-gray-100  px-3 h-[30px] font-medium text-[0.950rem]"
-                                onClick={sortSchedule}>
-                                Отсортировать
-                            </button>
+
 
                             <button onClick={() => {
                                 clickSendToWork()
@@ -941,10 +950,7 @@ function SchedulerPage() {
                     </Timeline>
                 </div>
 
-                {isModalDateSettings && <ModalDateSettings onClose={() => {
-                    setIsModalDateSettings(false)
-                }}
-
+                {isModalDateSettings && <ModalDateSettings onClose={() => {setIsModalDateSettings(false)}}
                                                            lines={startTimeLines}
                                                            setLines={setStartTimeLines}
                                                            changeTime={assignLineStart} changeMaxEndTime={assignMaxEndDateTime}
