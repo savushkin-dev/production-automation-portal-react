@@ -1,8 +1,7 @@
-import React, {useMemo, useState, useEffect} from "react";
+import React, {useMemo, useState, useCallback} from "react";
 
 export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
     const [expandedGroups, setExpandedGroups] = useState(new Set());
-
 
     const itemsArray = useMemo(() => {
         if (!Array.isArray(data)) return [];
@@ -17,7 +16,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
             KOLEV: item.quantity,
             UX: item.priority || 0,
             PDTN: item.startProductionDateTime || null,
-            isSelected: selectJobs[item.snpz] || false
+            isSelected: selectJobs[item.snpz].isSelect || false
         }));
     }, [data, selectJobs]);
 
@@ -46,23 +45,25 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
         return itemsArray.filter(item => item.isSelected).length;
     }, [itemsArray]);
 
-    const toggleGroup = (productName) => {
-        const newExpanded = new Set(expandedGroups);
-        if (newExpanded.has(productName)) {
-            newExpanded.delete(productName);
-        } else {
-            newExpanded.add(productName);
-        }
-        setExpandedGroups(newExpanded);
-    };
+    const toggleGroup = useCallback((productName) => {
+        setExpandedGroups(prev => {
+            const newExpanded = new Set(prev);
+            if (newExpanded.has(productName)) {
+                newExpanded.delete(productName);
+            } else {
+                newExpanded.add(productName);
+            }
+            return newExpanded;
+        });
+    }, []);
 
-    const toggleAllGroups = () => {
-        if (expandedGroups.size === groupedData.length) {
-            setExpandedGroups(new Set());
-        } else {
-            setExpandedGroups(new Set(groupedData.map(group => group.productName)));
-        }
-    };
+    const toggleAllGroups = useCallback(() => {
+        setExpandedGroups(prev =>
+            prev.size === groupedData.length
+                ? new Set()
+                : new Set(groupedData.map(group => group.productName))
+        );
+    }, [groupedData]);
 
     const formatDate = (dateString) => {
         if (!dateString || dateString === "" || dateString === null) return "";
@@ -76,9 +77,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
     const expandedGroupsCount = expandedGroups.size;
 
     function updateSelectedItems(items, shouldSelect) {
-        const availableItems = shouldSelect
-            ? items.filter(item => !item.PDTN || item.PDTN === "" || item.PDTN === null)
-            : items.filter(item => item.isSelected);
+        const availableItems = filterAvailableItems(items, shouldSelect)
 
         if (availableItems.length === 0) return;
 
@@ -86,11 +85,39 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
             const updatedSelectJobs = { ...prevSelectJobs };
             availableItems.forEach(item => {
                 if (item.SNPZ) {
-                    updatedSelectJobs[item.SNPZ] = shouldSelect;
+                    updatedSelectJobs[item.SNPZ] = {
+                        ...updatedSelectJobs[item.SNPZ],
+                        isSelect: shouldSelect
+                    };
                 }
             });
             return updatedSelectJobs;
         });
+    }
+
+    function updateLabelingItems(items, shouldSelect) {
+        const availableItems = filterAvailableItems(items, shouldSelect)
+
+        if (availableItems.length === 0) return;
+
+        setSelectJobs(prevSelectJobs => {
+            const updatedSelectJobs = { ...prevSelectJobs };
+            availableItems.forEach(item => {
+                if (item.SNPZ) {
+                    updatedSelectJobs[item.SNPZ] = {
+                        ...updatedSelectJobs[item.SNPZ],
+                        isLabeling: shouldSelect
+                    };
+                }
+            });
+            return updatedSelectJobs;
+        });
+    }
+
+    function filterAvailableItems(items, shouldSelect) {
+        return shouldSelect
+            ? items.filter(item => !item.PDTN || item.PDTN === "" || item.PDTN === null)
+            : items.filter(item => item.isSelected);
     }
 
     function selectAll() {
@@ -109,6 +136,10 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
 
     function select(e, item) {
         updateSelectedItems([item], e.target.checked);
+    }
+
+    function selectLabel(e, item) {
+        updateLabelingItems([item], e.target.checked);
     }
 
     function isItemAvailable(pdtn) {
@@ -246,13 +277,16 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
                                         <th className="w-[25%]"
                                             style={{padding: '6px', textAlign: 'center'}}>Наименование
                                         </th>
-                                        <th className="w-[10%]" style={{padding: '6px', textAlign: 'center'}}>Дата</th>
-                                        <th className="w-[10%]" style={{padding: '6px', textAlign: 'center'}}>№ партии
+                                        <th className="w-[10%]"
+                                            style={{padding: '6px', textAlign: 'center'}}>Ручная стикеровка
                                         </th>
-                                        <th className="w-[10%]" style={{padding: '6px', textAlign: 'center'}}>Масса</th>
-                                        <th className="w-[10%]" style={{padding: '6px', textAlign: 'center'}}>Единиц
+                                        <th className="w-[8%]" style={{padding: '6px', textAlign: 'center'}}>Дата</th>
+                                        <th className="w-[8%]" style={{padding: '6px', textAlign: 'center'}}>№ партии
                                         </th>
-                                        <th className="w-[10%]" style={{padding: '6px', textAlign: 'center'}}>Приоритет
+                                        <th className="w-[8%]" style={{padding: '6px', textAlign: 'center'}}>Масса</th>
+                                        <th className="w-[8%]" style={{padding: '6px', textAlign: 'center'}}>Единиц
+                                        </th>
+                                        <th className="w-[8%]" style={{padding: '6px', textAlign: 'center'}}>Приоритет
                                         </th>
                                         <th className="w-[10%]" style={{padding: '6px', textAlign: 'center'}}>№
                                             задания
@@ -263,13 +297,14 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
                                     {productGroup.items.map((item, index) => {
                                         const isAvailable = isItemAvailable(item.PDTN);
                                         const isSelected = item.isSelected;
+                                        const isLabeling = item.isLabeling;
                                         const isCheckboxEnabled = isAvailable;
 
                                         return (
                                             <tr
                                                 key={item.SNPZ || index}
                                                 className={`
-                                                    ${(isAvailable )
+                                                    ${(isAvailable)
                                                     ? (index % 2 === 0 ? " bg-white " : " bg-gray-50 ")
                                                     : " bg-gray-300 "
                                                 }
@@ -298,21 +333,30 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
                                                 </td>
                                                 <td className="w-[10%]"
                                                     style={{textAlign: 'center', padding: '12px', color: '#666'}}>
+                                                    <input
+                                                        disabled={!isCheckboxEnabled}
+                                                        type={"checkbox"}
+                                                        checked={isLabeling}
+                                                        onChange={(e) => selectLabel(e, item)}
+                                                    />
+                                                </td>
+                                                <td className="w-[8%]"
+                                                    style={{textAlign: 'center', padding: '12px', color: '#666'}}>
                                                     {formatDate(item.DTI)}
                                                 </td>
-                                                <td className="w-[10%]"
+                                                <td className="w-[8%]"
                                                     style={{padding: '12px', textAlign: 'center', color: '#666'}}>
                                                     {item.NP}
                                                 </td>
-                                                <td className="w-[10%]"
+                                                <td className="w-[8%]"
                                                     style={{padding: '12px', textAlign: 'center', color: '#666'}}>
                                                     {item.MASSA ? item.MASSA.toLocaleString('ru-RU') : '-'}
                                                 </td>
-                                                <td className="w-[10%]"
+                                                <td className="w-[8%]"
                                                     style={{padding: '12px', textAlign: 'center', color: '#666'}}>
                                                     {item.KOLEV ? item.KOLEV.toLocaleString('ru-RU') : '-'}
                                                 </td>
-                                                <td className="w-[10%]"
+                                                <td className="w-[8%]"
                                                     style={{padding: '12px', textAlign: 'center', color: '#666'}}>
                                                     {item.UX || 0}
                                                 </td>
