@@ -49,7 +49,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         ]);
         const [currentPage, setCurrentPage] = useState(1); // Активная страница
 
-        const [dataBandsOpt, setDataBandsOpt] = useState([])
+        const [dataBandsOpt, setDataBandsOpt] = useState(["Основной","Дочерний-child"])
 
 
         const [isViewMode, setIsViewMode] = useState(false);
