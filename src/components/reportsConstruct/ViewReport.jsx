@@ -150,7 +150,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
             // Находим все дочерние бэнды для текущего главного
             // const childBands = Array.from(doc.querySelectorAll(`[data-band-child="true"][id^="${bandId}-child"]`));
             const childBands = Array.from(doc.querySelectorAll(`[data-band-child="true"]`));
-            console.log(childBands)
             dataArray.forEach(item => {
                 if (bandId.toLowerCase().startsWith(item.tableName.toLowerCase())) {
                     item.data.forEach(tableData => {
@@ -167,8 +166,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                         // Рендерим дочерние бэнды
                         childBands.forEach(originalChildBand => {
                             const childId = originalChildBand.getAttribute('id');
-                            console.log(childId)
-                            console.log(dataParam)
                             //Если есть логический параметр с таким же id как и у дочернего бэнда или когда параметр вообще отсутствует тогда рендерим дочерний элемент
                             if (dataParam[childId] || dataParam[childId] === undefined) {
                                 const childHtml = originalChildBand.innerHTML;

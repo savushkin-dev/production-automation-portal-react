@@ -28,7 +28,7 @@ const Dropdown = ({options, onSelect, label, onOpen, onClose}) => {
                     <div className="dropdown-menu text-xs font-medium">
                         {options.map((option, index) => (
                             <div key={index} className="dropdown-item" onClick={() => handleSelect(option)}>
-                                {option}
+                                {option === 'Дочерний-child' ? option.slice(0, -6) : option}
                             </div>
                         ))}
                     </div>

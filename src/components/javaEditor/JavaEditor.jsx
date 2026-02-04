@@ -214,7 +214,7 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
                                 <span className="text-sm text-center font-medium w-[5%]"></span>
                             </div>
 
-                            <div className="max-h-[500px] overflow-auto">
+                            <div className="max-h-[680px] overflow-auto">
                                 {parameters.map((param, index) => {
                                     const isChildParameter = param.key === 'Дочерний-child';
 
