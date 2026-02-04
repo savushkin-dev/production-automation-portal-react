@@ -36,15 +36,31 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
         }]);
     };
 
-    const addDataChildParameter = () => {
-        setParameters([...parameters, {
-            id: uuidv4(), // Генерирует уникальный ID
-            order: parameters.length+1,
-            name: 'Дочерний бэнд',
-            key: 'Дочерний-child',
-            type: 'BOOLEAN',
-            default: true
-        }]);
+    const addOrRemoveDataChildParameter = () => {
+        const hasChildParameter = parameters.some(param => param.key === 'Дочерний-child');
+
+        if (hasChildParameter) {
+            setParameters(
+                parameters
+                    .filter(param => param.key !== 'Дочерний-child')
+                    .map((param, index) => ({
+                        ...param,
+                        order: index + 1
+                    }))
+            );
+        } else {
+            setParameters([
+                ...parameters,
+                {
+                    id: uuidv4(),
+                    order: parameters.length + 1,
+                    name: 'Дочерний бэнд',
+                    key: 'Дочерний-child',
+                    type: 'BOOLEAN',
+                    default: true
+                }
+            ]);
+        }
     };
 
 
@@ -198,11 +214,11 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
 
                             </div>
 
-                            {!parameters.some(param => param.key === 'Дочерний-child') &&
-                                <button onClick={addDataChildParameter}
-                                        className="h-7 w-full text-nowrap px-2 text-sm text-white rounded shadow-inner bg-gray-600 mb-2 hover:bg-gray-500">Добавить выбор отображения дочернего бэнда при формировании отчета
-                                </button>
-                            }
+                            <button onClick={addOrRemoveDataChildParameter}
+                                    className="h-7 w-full text-nowrap px-2 text-sm text-white rounded shadow-inner bg-gray-600 mb-2 hover:bg-gray-500">
+                                Добавить/удалить выбор отображения дочернего бэнда при формировании отчета
+                            </button>
+
 
 
                             <div className="flex flex-row mb-1">
