@@ -164,6 +164,17 @@ function SchedulerPage() {
         }
     }, [selectDate])
 
+    async function alignPlan() {
+        try {
+            await SchedulerService.alignPlan();
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка выравнивания плана: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
     async function sendToWork() {
         try {
             await SchedulerService.sendToWork();
@@ -761,8 +772,7 @@ function SchedulerPage() {
                             <i className="pl-2 fa-solid fa-sort"></i>
                         </button>
 
-                        <button onClick={() => {
-                        }}
+                        <button onClick={alignPlan}
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                             Выровнять план
                             <i className="pl-2 fa-solid fa-align-right"></i>
