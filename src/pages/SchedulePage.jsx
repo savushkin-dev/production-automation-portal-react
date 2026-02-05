@@ -772,11 +772,11 @@ function SchedulerPage() {
                             <i className="pl-2 fa-solid fa-sort"></i>
                         </button>
 
-                        <button onClick={alignPlan}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
-                            Выровнять план
-                            <i className="pl-2 fa-solid fa-align-right"></i>
-                        </button>
+                        {/*<button onClick={alignPlan}*/}
+                        {/*        className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">*/}
+                        {/*    Выровнять план*/}
+                        {/*    <i className="pl-2 fa-solid fa-align-right"></i>*/}
+                        {/*</button>*/}
 
                         <button onClick={clickSavePlan}
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
