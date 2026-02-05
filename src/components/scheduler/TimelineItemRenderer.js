@@ -62,7 +62,6 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                maxWidth: '100%',
                 display: settings.display,
                 marginTop: settings.marginTop,
             },
