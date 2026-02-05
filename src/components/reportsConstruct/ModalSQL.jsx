@@ -32,12 +32,12 @@ export function ModalSQL({value, parameters, isValid, onChange, onClose, setPara
     };
 
     const addOrRemoveDataChildParameter = () => {
-        const hasChildParameter = parameters.some(param => param.key === 'Дочерний-child');
+        const hasChildParameter = parameters.some(param => param.key === 'main-child');
 
         if (hasChildParameter) {
             setParameters(
                 parameters
-                    .filter(param => param.key !== 'Дочерний-child')
+                    .filter(param => param.key !== 'main-child')
                     .map((param, index) => ({
                         ...param,
                         order: index + 1
@@ -49,8 +49,8 @@ export function ModalSQL({value, parameters, isValid, onChange, onClose, setPara
                 {
                     id: uuidv4(),
                     order: parameters.length + 1,
-                    name: 'Дочерний бэнд',
-                    key: 'Дочерний-child',
+                    name: 'Дополнительный бэнд',
+                    key: 'main-child',
                     type: 'BOOLEAN',
                     default: true
                 }
@@ -149,7 +149,7 @@ export function ModalSQL({value, parameters, isValid, onChange, onClose, setPara
 
                 <div className="max-h-36 overflow-auto">
                     {parameters.map((param,index) => {
-                        const isChildParameter = param.key === 'Дочерний-child';
+                        const isChildParameter = param.key === 'main-child';
 
                         return (
                             <div key={param.id} className="flex flex-row py-0">

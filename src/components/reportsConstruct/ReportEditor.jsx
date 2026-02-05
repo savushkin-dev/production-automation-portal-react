@@ -49,7 +49,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         ]);
         const [currentPage, setCurrentPage] = useState(1); // Активная страница
 
-        const [dataBandsOpt, setDataBandsOpt] = useState(["Основной","Дочерний-child"])
+        const [dataBandsOpt, setDataBandsOpt] = useState(["main","main-child"])
 
 
         const [isViewMode, setIsViewMode] = useState(false);
@@ -1321,7 +1321,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         }
                     }
                 });
-                setDataBandsOpt(Array.from(foundTables).sort());
+                // setDataBandsOpt(Array.from(foundTables).sort());
                 setIsValidSql(true);
             } catch (e) {
                 setDataBandsOpt([]);

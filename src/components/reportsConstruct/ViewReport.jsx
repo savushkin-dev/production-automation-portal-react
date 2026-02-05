@@ -140,7 +140,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
         // Находим все главные бэнды
         const dataBands = doc.querySelectorAll('[data-band="true"]');
-
         let counterBand = 0;
 
         dataBands.forEach(band => {
@@ -198,7 +197,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         bands.forEach(band => {
             band.innerHTML = replaceFieldsInHtml(band.innerHTML, data.globalVar)
         })
-
 
         // Разбиваем на страницы
         splitIntoA4Pages(doc.body.innerHTML, css, bands);

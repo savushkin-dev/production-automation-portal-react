@@ -37,12 +37,12 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
     };
 
     const addOrRemoveDataChildParameter = () => {
-        const hasChildParameter = parameters.some(param => param.key === 'Дочерний-child');
+        const hasChildParameter = parameters.some(param => param.key === 'main-child');
 
         if (hasChildParameter) {
             setParameters(
                 parameters
-                    .filter(param => param.key !== 'Дочерний-child')
+                    .filter(param => param.key !== 'main-child')
                     .map((param, index) => ({
                         ...param,
                         order: index + 1
@@ -54,8 +54,8 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
                 {
                     id: uuidv4(),
                     order: parameters.length + 1,
-                    name: 'Дочерний бэнд',
-                    key: 'Дочерний-child',
+                    name: 'Дополнительный бэнд',
+                    key: 'main-child',
                     type: 'BOOLEAN',
                     default: true
                 }
@@ -232,7 +232,7 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
 
                             <div className="max-h-[680px] overflow-auto">
                                 {parameters.map((param, index) => {
-                                    const isChildParameter = param.key === 'Дочерний-child';
+                                    const isChildParameter = param.key === 'main-child';
 
                                     return (
                                         <div key={param.id} className="flex flex-row py-0">
