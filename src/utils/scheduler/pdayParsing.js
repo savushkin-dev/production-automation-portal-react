@@ -24,9 +24,10 @@ export function groupDataByDay(data, baseDate) {
             isSelected: false
         };
 
-        // Определяем занятость
+        // Определяем занятость и добавляем признак ручной стикеровки
         if (item.snpz) {
-            result.selectJobs[item.snpz] = item.startProductionDateTime !== "" && item.startProductionDateTime !== null; // Занятые = true, свободные = false
+            let isSelect = item.startProductionDateTime !== "" && item.startProductionDateTime !== null; // Занятые = true, свободные = false
+            result.selectJobs[item.snpz] ={isSelect: isSelect, isLabeling: false}; //Признак ручной стикеровки = false
         }
 
         // Определяем день
