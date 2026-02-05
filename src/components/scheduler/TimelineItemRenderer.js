@@ -118,24 +118,32 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
                             {item.info?.duration && (
                                 <span className="px-1 rounded">
-                          <span className="text-pink-500">{item.info.duration} мин.</span>
-                          <span className="text-gray-500 px-1">|</span>
-                          <span className="text-green-600">
-                            {moment(item.start_time).format('HH:mm')}
-                          </span>
+                                      <span className="text-pink-500">{item.info.duration} мин.</span>
+                                      <span className="text-gray-500 px-1">|</span>
+                                      <span className="text-green-600">
+                                        {moment(item.start_time).format('HH:mm')}
+                                      </span>
                                     {' - '}
                                     <span className="text-red-500">
-                            {moment(item.end_time).format('HH:mm')}
-                          </span>
-                          <span className="pl-1">Время</span>
-                        </span>
+                                            {moment(item.end_time).format('HH:mm')}
+                                        </span>
+                                      <span className="pl-1">Время</span>
+
+                                    {isLeveling &&
+                                        <>
+                                            <span className="text-gray-500 px-1">|</span>
+                                            <span className="text-violet-600">{item.info.groupIndex}</span>
+                                            <span className="pl-1">Позиция на линии</span>
+                                        </>
+                                    }
+                                </span>
                             )}
 
-                            {item.info?.groupIndex && !isFact && (
+                            {item.info?.groupIndex && !isFact && !isLeveling && (
                                 <span className="px-1 rounded">
-                          <span className="text-violet-600">{item.info.groupIndex}</span>
-                          <span className="pl-1">Позиция на линии</span>
-                        </span>
+                                      <span className="text-violet-600">{item.info.groupIndex}</span>
+                                      <span className="pl-1">Позиция на линии</span>
+                                </span>
                             )}
 
                             {isFact && (
