@@ -815,14 +815,11 @@ function SchedulerPage() {
                             Настройка линий
                         </button>
 
-                        <div className="w-60">
-                            {/*<DisplayButtons activeDisplay={activeDisplay}*/}
-                            {/*                setActiveDisplay={(newDisplay) => {*/}
-                            {/*                    setTimelineKey(prev => prev + 1);*/}
-                            {/*                    setActiveDisplay(newDisplay);*/}
-                            {/*                }}*/}
-                            {/*/>*/}
-                        </div>
+                        <DisplayButtons activeDisplay={activeDisplay}
+                                        setActiveDisplay={(newDisplay) => {setTimelineKey(prev => prev + 1);
+                                            setActiveDisplay(newDisplay);
+                                        }}
+                        />
 
 
                     </div>
