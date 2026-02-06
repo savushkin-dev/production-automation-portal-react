@@ -603,7 +603,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             return new Promise((resolve) => {
                 setPages((prevPages) => {
-                    console.log(prevPages)
                     const updatedPages = prevPages.map((page) => page.id === currentPage ? {
                         ...page,
                         content: html,

@@ -36,31 +36,25 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
         }]);
     };
 
-    const addOrRemoveDataChildParameter = () => {
-        const hasChildParameter = parameters.some(param => param.key === 'main-child');
+    const addDataChildParameter = () => {
+        const existingChildParams = parameters.filter(param => param.key.startsWith('main-child'));
+        const nextNumber = existingChildParams.length + 1;
 
-        if (hasChildParameter) {
-            setParameters(
-                parameters
-                    .filter(param => param.key !== 'main-child')
-                    .map((param, index) => ({
-                        ...param,
-                        order: index + 1
-                    }))
-            );
-        } else {
-            setParameters([
-                ...parameters,
-                {
-                    id: uuidv4(),
-                    order: parameters.length + 1,
-                    name: 'Дополнительный бэнд',
-                    key: 'main-child',
-                    type: 'BOOLEAN',
-                    default: true
-                }
-            ]);
-        }
+        // Формируем ключ с номером (если первый - без номера, остальные с номером)
+        const newKey = nextNumber === 1 ? 'main-child' : `main-child-${nextNumber}`;
+        const newName = nextNumber === 1 ? 'Дополнительный бэнд' : `Дополнительный бэнд ${nextNumber}`;
+
+        setParameters([
+            ...parameters,
+            {
+                id: uuidv4(),
+                order: parameters.length + 1,
+                name: newName,
+                key: newKey,
+                type: 'BOOLEAN',
+                default: true
+            }
+        ]);
     };
 
 
@@ -214,11 +208,10 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
 
                             </div>
 
-                            <button onClick={addOrRemoveDataChildParameter}
+                            <button onClick={addDataChildParameter}
                                     className="h-7 w-full text-nowrap px-2 text-sm text-white rounded shadow-inner bg-gray-600 mb-2 hover:bg-gray-500">
-                                Добавить/удалить выбор отображения дочернего бэнда при формировании отчета
+                                Добавить выбор отображения дополнительного бэнда при формировании отчета
                             </button>
-
 
 
                             <div className="flex flex-row mb-1">
@@ -232,7 +225,7 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
 
                             <div className="max-h-[680px] overflow-auto">
                                 {parameters.map((param, index) => {
-                                    const isChildParameter = param.key === 'main-child';
+                                    const isChildParameter = param.key.startsWith('main-child');
 
                                     return (
                                         <div key={param.id} className="flex flex-row py-0">
@@ -335,7 +328,8 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
                                             </div>
 
                                         </div>
-                                )})}
+                                    )
+                                })}
                             </div>
                         </div>
                         {/*<div className=" flex-row px-8 mt-4 h-1/4">*/}
