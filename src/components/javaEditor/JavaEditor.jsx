@@ -71,30 +71,6 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
         );
     }
 
-    const addDataBand = () => {
-        if (dataBandsOpt.length >=1){ //Ограничиваем до одного бэнда
-            return
-        }
-
-        setDataBandsOpt([...dataBandsOpt, ""]);
-    };
-
-    const removeLastDataBand = () => {
-        setDataBandsOpt(prevDataBandsOpt => {
-            if (prevDataBandsOpt.length === 0) return prevDataBandsOpt;
-            return prevDataBandsOpt.slice(0, -1);
-        });
-    };
-
-    const handleDateBandChange = (index, newValue) => {
-        setDataBandsOpt(prevData => {
-            const updatedData = [...prevData];
-            updatedData[index] = newValue;
-            updatedData[index+1] = newValue + "-child";
-            return updatedData;
-        });
-    };
-
     const options = [
         {
             value: 'TEXT',
@@ -332,41 +308,7 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
                                 })}
                             </div>
                         </div>
-                        {/*<div className=" flex-row px-8 mt-4 h-1/4">*/}
 
-                        {/*    <div className="flex justify-between items-center">*/}
-                        {/*        <div className="flex text-2xl font-medium text-start mt-2 mb-3">Бэнды данных</div>*/}
-                        {/*        <div className="flex flex-row justify-end">*/}
-                        {/*            <button onClick={addDataBand}*/}
-                        {/*                    className="h-7 px-2 text-nowrap text-sm text-white rounded shadow-inner bg-blue-800 hover:bg-blue-700">Добавить*/}
-                        {/*                бэнд*/}
-                        {/*            </button>*/}
-                        {/*            <button onClick={removeLastDataBand}*/}
-                        {/*                    className="ml-4 h-7 px-2 text-nowrap text-sm text-white rounded shadow-inner bg-blue-800 hover:bg-blue-700">Удалить*/}
-                        {/*                бэнд*/}
-                        {/*            </button>*/}
-                        {/*        </div>*/}
-
-                        {/*    </div>*/}
-
-
-                        {/*    <div className="flex flex-row mb-1">*/}
-                        {/*        <span className="text-sm text-center text-nowrap font-medium ">Бэнды:</span>*/}
-
-                        {/*    </div>*/}
-
-                        {/*    <div className="max-h-40 overflow-auto">*/}
-                        {/*        {dataBandsOpt.map((param, index) => (*/}
-                        {/*            <div key={index}>*/}
-                        {/*                <input className={styleInputWithoutRounded + " font-medium mr-0 w-full"}*/}
-                        {/*                       value={param}*/}
-                        {/*                       onChange={(e) => handleDateBandChange(index, e.target.value)}*/}
-                        {/*                       placeholder="Названия бэнда с данными"*/}
-                        {/*                />*/}
-                        {/*            </div>*/}
-                        {/*        ))}*/}
-                        {/*    </div>*/}
-                        {/*</div>*/}
                     </div>
 
                 </div>
