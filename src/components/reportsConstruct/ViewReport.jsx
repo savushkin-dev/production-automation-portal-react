@@ -150,7 +150,8 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
             // const childBands = Array.from(doc.querySelectorAll(`[data-band-child="true"][id^="${bandId}-child"]`));
             const childBands = Array.from(doc.querySelectorAll(`[data-band-child="true"]`));
             dataArray.forEach(item => {
-                if (bandId.toLowerCase().startsWith(item.tableName.toLowerCase())) {
+                // if (bandId.toLowerCase().startsWith(item.tableName.toLowerCase())) {
+                // Т.к. теперь будут передаваться только данные для одного бэнда, нету смысла искать данные по названию таблицы или бэнда
                     item.data.forEach(tableData => {
                         // Рендерим главный бэнд
                         let instanceHtml = replaceFieldsInHtml(bandHtml, tableData);
@@ -177,7 +178,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
                         });
                     });
-                }
+                // }
             });
 
             // Удаляем оригинальные бэнды из шаблона
