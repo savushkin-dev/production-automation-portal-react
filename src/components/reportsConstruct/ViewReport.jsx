@@ -10,13 +10,12 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
     const [iframeScale, setIframeScale] = useState(1); // Начальный масштаб 1 (100%)
 
 
-
     const [pages, setPages] = useState([
         {id: 1, content: "", styles: ""}
     ]);
 
-    let heightPage = isBookOrientation? "297mm": "210mm";
-    let size = isBookOrientation? "A4": "A4 landscape"
+    let heightPage = isBookOrientation ? "297mm" : "210mm";
+    let size = isBookOrientation ? "A4" : "A4 landscape"
 
 
     useEffect(() => {
@@ -143,42 +142,36 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         let counterBand = 0;
 
         dataBands.forEach(band => {
-            const bandId = band.getAttribute('id');
             let bandHtml = band.innerHTML;
 
-            // Находим все дочерние бэнды для текущего главного
-            // const childBands = Array.from(doc.querySelectorAll(`[data-band-child="true"][id^="${bandId}-child"]`));
+            // Находим все дочерние бэнды
             const childBands = Array.from(doc.querySelectorAll(`[data-band-child="true"]`));
-            dataArray.forEach(item => {
-                // if (bandId.toLowerCase().startsWith(item.tableName.toLowerCase())) {
-                // Т.к. теперь будут передаваться только данные для одного бэнда, нету смысла искать данные по названию таблицы или бэнда
-                    item.data.forEach(tableData => {
-                        // Рендерим главный бэнд
-                        let instanceHtml = replaceFieldsInHtml(bandHtml, tableData);
-                        let bandCopy = band.cloneNode(true); // Глубокое клонирование
 
-                        counterBand++;
-                        instanceHtml = replaceFieldInHtml(instanceHtml, counterBand, "№")
+            dataArray.forEach(tableData => {
+                // Рендерим главный бэнд
+                let instanceHtml = replaceFieldsInHtml(bandHtml, tableData);
+                let bandCopy = band.cloneNode(true); // Глубокое клонирование
 
-                        bandCopy.innerHTML = instanceHtml;
-                        doc.body.appendChild(bandCopy);
+                counterBand++;
+                instanceHtml = replaceFieldInHtml(instanceHtml, counterBand, "№")
 
-                        // Рендерим дочерние бэнды
-                        childBands.forEach(originalChildBand => {
-                            const childId = originalChildBand.getAttribute('id');
-                            //Если есть логический параметр с таким же id как и у дочернего бэнда или когда параметр вообще отсутствует тогда рендерим дочерний элемент
-                            if (dataParam[childId] || dataParam[childId] === undefined) {
-                                const childHtml = originalChildBand.innerHTML;
-                                const childInstanceHtml = replaceFieldsInHtml(childHtml, tableData);
-                                // Клонируем ОРИГИНАЛЬНЫЙ дочерний бэнд (со всеми атрибутами и классами)
-                                const childBandCopy = originalChildBand.cloneNode(true);
-                                childBandCopy.innerHTML = childInstanceHtml;
-                                doc.body.appendChild(childBandCopy);
-                            }
+                bandCopy.innerHTML = instanceHtml;
+                doc.body.appendChild(bandCopy);
 
-                        });
-                    });
-                // }
+                // Рендерим дочерние бэнды
+                childBands.forEach(originalChildBand => {
+                    const childId = originalChildBand.getAttribute('id');
+                    //Если есть логический параметр с таким же id как и у дочернего бэнда или когда параметр вообще отсутствует тогда рендерим дочерний элемент
+                    if (dataParam[childId] || dataParam[childId] === undefined) {
+                        const childHtml = originalChildBand.innerHTML;
+                        const childInstanceHtml = replaceFieldsInHtml(childHtml, tableData);
+                        // Клонируем ОРИГИНАЛЬНЫЙ дочерний бэнд (со всеми атрибутами и классами)
+                        const childBandCopy = originalChildBand.cloneNode(true);
+                        childBandCopy.innerHTML = childInstanceHtml;
+                        doc.body.appendChild(childBandCopy);
+                    }
+
+                });
             });
 
             // Удаляем оригинальные бэнды из шаблона
@@ -209,7 +202,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         Object.keys(data).forEach(field => {
             let value = data[field];
 
-            if(value === null){
+            if (value === null) {
                 value = "-";
             }
 
@@ -226,7 +219,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         return html;
     }
 
-    function replaceFieldInHtml(html, value, field){
+    function replaceFieldInHtml(html, value, field) {
         html = html.replaceAll(`{{${field}}}`, value);
         return html;
     }
@@ -265,7 +258,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
             try {
                 let maxHeight;
-                if(isBookOrientation){
+                if (isBookOrientation) {
                     maxHeight = 1103; // Высота с padding top bottom, обычная - 1123
                 } else {
                     maxHeight = 774; // Высота с padding top bottom, обычная - 794
@@ -356,9 +349,8 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                     currentPageHeight += totalNodeHeight;
 
 
-
                     // Если это последний узел - добавляем report footer
-                    if (i >= childNodes.length-1) {  //Проверить или починилось
+                    if (i >= childNodes.length - 1) {  //Проверить или починилось
                         insertBand(currentPage.container, bands, false, true);
                         currentPageHeight += bandHeights.reportFooter;
                     }
@@ -514,7 +506,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
     function createTempContainer() {
         const tempDiv = document.createElement("div");
         tempDiv.style.position = 'relative';
-        if(isBookOrientation){
+        if (isBookOrientation) {
             tempDiv.style.height = "297mm"
         } else {
             tempDiv.style.height = "210mm"
@@ -568,7 +560,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         URL.revokeObjectURL(url);
     };
 
-    let iframeSize = isBookOrientation?  "w-[215mm] h-[297mm]" : "w-[302mm] h-[210mm]";
+    let iframeSize = isBookOrientation ? "w-[215mm] h-[297mm]" : "w-[302mm] h-[210mm]";
 
     return (
         <>
