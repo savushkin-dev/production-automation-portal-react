@@ -308,9 +308,7 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
                                 })}
                             </div>
                         </div>
-
                     </div>
-
                 </div>
 
 
