@@ -5,6 +5,9 @@ import App from './App';
 import {BrowserRouter} from "react-router-dom";
 import Store from "./store/store";
 
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
+
 
 const store = new Store();
 

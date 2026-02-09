@@ -29,6 +29,7 @@ import {decryptData, encryptData} from "../../utils/Сrypto";
 import {ModalParameter} from "./ModalParameter";
 import {JavaEditor} from "../javaEditor/JavaEditor";
 import {ViewReport} from "./ViewReport";
+import {DesignerParameter} from "./DesignerParameter";
 
 
 // Добавляем шрифт Roboto в виртуальную файловую систему pdfmake
@@ -63,6 +64,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [isModalSettingDB, setIsModalSettingDB] = useState(false);
         const [isModalSQL, setIsModalSQL] = useState(false);
         const [isJavaEditor, setIsJavaEditor] = useState(false);
+        const [isDesignerParameter, setIsDesignerParameter] = useState(false);
         const [modalMsg, setModalMsg] = useState('');
 
         const [isSqlMode, setIsSqlMode] = useState(false);
@@ -73,6 +75,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [reportName, setReportName] = useState("");
         const [reportCategory, setReportCategory] = useState("");
         const [parameters, setParameters] = useState([]);
+        const [layoutParam, setLayoutParam] = useState(null)
         const [settingDB, setSettingDB] = useState({
             url: '',
             username: '',
@@ -1388,7 +1391,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                                             setDataBandsOpt={setDataBandsOpt}
                 />}
 
-                {!isViewMode && !isLoading && !isJavaEditor &&
+                {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter &&
 
                     <div className=" gjs-two-color gjs-one-bg flex flex-row justify-between py-1 gjs-pn-commands">
                         <div className="flex justify-start text-center ml-2 w-1/3">
@@ -1417,7 +1420,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                     </div>}
 
-                {!isViewMode && !isLoading && !isJavaEditor &&
+                {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter &&
                     <div
                         className="pl-2 gjs-two-color gjs-one-bg flex flex-row justify-between py-1 gjs-pn-commands ">
                         <div className="flex flex-row gap-x-2">
@@ -1468,6 +1471,16 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                         <div className="flex flex-row gap-x-2 pr-2">
 
+                            <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
+                                <button onClick={() => setIsDesignerParameter(true)}
+                                        className="flex flex-col justify-between justify-items-center">
+                                        <span className="gjs-pn-btn hover:bg-gray-200 flex justify-center ">
+                                            <i className="fa-solid fa-arrows-up-down-left-right pt-1"></i>
+                                        </span>
+                                    <span className="text-xs font-medium px-1">Дизайнер параметров</span>
+                                </button>
+                            </div>
+
                             {isSqlMode && <>
                                 <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
                                     <button onClick={showModalSettingDB}
@@ -1515,7 +1528,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                     </div>}
 
-                <div className={!isViewMode && !isLoading && !isJavaEditor ? 'block' : 'hidden'}>
+                <div className={!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter ? 'block' : 'hidden'}>
                     <div id="editor" ref={editorRef}/>
                 </div>
 
@@ -1559,6 +1572,11 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                                                         setIsModalParameter(false)
                                                                     }}
                 />}
+
+                {!isViewMode && isDesignerParameter &&
+                    <DesignerParameter parameters={parameters || []} layout={layoutParam} setLayout={setLayoutParam}
+                                       onClose={()=>setIsDesignerParameter(false)}/>
+                }
 
 
                 {isViewMode &&
