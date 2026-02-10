@@ -30,6 +30,7 @@ import {ModalParameter} from "./ModalParameter";
 import {JavaEditor} from "../javaEditor/JavaEditor";
 import {ViewReport} from "./ViewReport";
 import {DesignerParameter} from "./DesignerParameter";
+import {ModalParameterWithLayout} from "./ModalParameterWithLayout";
 
 
 // Добавляем шрифт Roboto в виртуальную файловую систему pdfmake
@@ -1566,7 +1567,15 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                               onClose={showModalSQL}/>
                 }
 
-                {!isViewMode && isModalParameter && <ModalParameter parameters={parameters || []}
+                {/*{!isViewMode && isModalParameter && <ModalParameter parameters={parameters || []}*/}
+                {/*                                                    onSubmit={enterPreviewMode}*/}
+                {/*                                                    onClose={() => {*/}
+                {/*                                                        setIsModalParameter(false)*/}
+                {/*                                                    }}*/}
+                {/*/>}*/}
+
+                {!isViewMode && isModalParameter && <ModalParameterWithLayout parameters={parameters || []}
+                                                                              layout={layoutParam}
                                                                     onSubmit={enterPreviewMode}
                                                                     onClose={() => {
                                                                         setIsModalParameter(false)

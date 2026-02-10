@@ -1,7 +1,7 @@
 // TestApp.jsx
 import React, { useState } from 'react';
 
-import { TestGridResult } from './TestGridResult';
+
 import {TestGrid} from "./TestGrid";
 
 export function TestApp() {
@@ -34,7 +34,7 @@ export function TestApp() {
 
 
 
-            {mode === 'designer' ? <TestGrid /> : <TestGridResult />}
+            <TestGrid />
             {/*<TestGridResult />*/}
         </div>
     );

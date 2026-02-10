@@ -2,8 +2,9 @@ import React, {useState, useRef, useEffect} from 'react';
 import RGL, {ReactGridLayout, useContainerWidth} from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import {noCompactor} from "react-grid-layout/core";
+import {getCompactor} from "react-grid-layout/core";
 
+const myCompactor = getCompactor(null, false, true);
 
 export function DesignerParameter({parameters, layout, setLayout, onClose}) {
 
@@ -15,11 +16,59 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
     // layoutLocal теперь создается динамически из параметров
     const [layoutLocal, setLayoutLocal] = useState([]);
 
-    useEffect(()=>{
+    useEffect(() => {
         console.log("Параметры пришли:", parameters);
+        console.log("Layout пришел:", layout);
+        console.log("Тип layout:", typeof layout);
 
-        // Создаем начальный layoutLocal на основе пришедших параметров
-        if (parameters && parameters.length > 0) {
+        if (layout) {
+            // Проверяем, является ли layout строкой
+            if (typeof layout === 'string') {
+                try {
+                    const parsedLayout = JSON.parse(layout);
+                    if (Array.isArray(parsedLayout)) {
+                        setLayoutLocal(parsedLayout);
+
+                        // Восстанавливаем текстовые блоки
+                        const newTextBlocks = {};
+                        const newTextBlocksRef = new Set();
+
+                        parsedLayout.forEach(item => {
+                            if (item.isTextBlock && item.text) {
+                                newTextBlocksRef.add(item.key);
+                                newTextBlocks[item.key] = item.text;
+                            }
+                        });
+
+                        textBlocksRef.current = newTextBlocksRef;
+                        setTextBlocks(newTextBlocks);
+                    }
+                } catch (error) {
+                    console.error('Ошибка парсинга layout:', error);
+                }
+            }
+            // Если layout уже массив
+            else if (Array.isArray(layout) && layout.length > 0) {
+                setLayoutLocal(layout);
+
+                // Восстанавливаем текстовые блоки
+                const newTextBlocks = {};
+                const newTextBlocksRef = new Set();
+
+                layout.forEach(item => {
+                    if (item.isTextBlock && item.text) {
+                        newTextBlocksRef.add(item.key);
+                        newTextBlocks[item.key] = item.text;
+                    }
+                });
+
+                textBlocksRef.current = newTextBlocksRef;
+                setTextBlocks(newTextBlocks);
+            }
+        }
+        // Остальной код создания из параметров...
+        else if (parameters && parameters.length > 0) {
+            // Если layout нет - создаем из параметров
             const initialLayoutLocal = parameters.map((param, index) => ({
                 i: param.key, // Используем key из параметров
                 x: index * 3 % 21, // Распределяем по сетке
@@ -38,14 +87,18 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                 initialValues[param.key] = param.default !== undefined ? param.default : '';
             });
             setValues(initialValues);
+        } else {
+            // Если нет ни layout ни parameters
+            setLayoutLocal([]);
+            setValues({});
         }
-    }, [parameters]);
+    }, [parameters, layout]);
 
 
 
-    useEffect(()=>{
-        console.log(layoutLocal)
-    }, [layoutLocal])
+    // useEffect(()=>{
+    //     console.log(layoutLocal)
+    // }, [layoutLocal])
 
     const [textBlockCounter, setTextBlockCounter] = useState(0);
 
@@ -60,9 +113,9 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
         return initialValues;
     });
 
-    useEffect(()=>{
-        console.log("Значения параметров:", values)
-    }, [values])
+    // useEffect(()=>{
+    //     console.log("Значения параметров:", values)
+    // }, [values])
 
     // Текст для текстовых блоков
     const [textBlocks, setTextBlocks] = useState({});
@@ -148,19 +201,20 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
     };
 
     // СОХРАНЕНИЕ
-    const savelayoutLocal = () => {
+    const saveLayout = () => {
         const layoutLocalToSave = layoutLocal.map(item => ({
-            key: item.i,
+            i: item.i,
             x: item.x,
             y: item.y,
             w: item.w,
             h: item.h,
+            minW: item.minW,
+            minH: item.minH,
             isTextBlock: isTextBlock(item.i),
             text: textBlocks[item.i] || ''
         }));
 
-        localStorage.setItem('report_layoutLocal_free', JSON.stringify(layoutLocalToSave));
-        alert('Макет сохранен!');
+        setLayout(layoutLocalToSave)
     };
 
     // СБРОС - возвращаем исходный layoutLocal из параметров
@@ -379,38 +433,39 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                     >
                         ✕ Закрыть
                     </button>
+                    <button
+                        onClick={saveLayout}
+                        className="px-5 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2 font-medium"
+                    >
+                        Применить
+                    </button>
                 </div>
 
-                {/*<div className="flex flex-wrap gap-3 mb-4">*/}
-                {/*    <button*/}
-                {/*        onClick={savelayoutLocal}*/}
-                {/*        className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium"*/}
-                {/*    >*/}
-                {/*        💾 Сохранить макет*/}
-                {/*    </button>*/}
+                <div className="flex flex-wrap gap-3 mb-4">
 
-                {/*    <button*/}
-                {/*        onClick={resetLayoutLocal}*/}
-                {/*        className="px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 font-medium"*/}
-                {/*    >*/}
-                {/*        🔄 Сбросить к исходному*/}
-                {/*    </button>*/}
 
-                {/*    <button*/}
-                {/*        onClick={addTextBlock}*/}
-                {/*        className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 font-medium"*/}
-                {/*    >*/}
-                {/*        📝 Добавить текстовый блок*/}
-                {/*    </button>*/}
+                    <button
+                        onClick={resetLayoutLocal}
+                        className="px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 font-medium"
+                    >
+                        🔄 Сбросить к исходному
+                    </button>
 
-                {/*    <button*/}
-                {/*        onClick={removeAllTextBlocks}*/}
-                {/*        className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"*/}
-                {/*        disabled={textBlockCount === 0}*/}
-                {/*    >*/}
-                {/*        🗑️ Удалить все текстовые блоки ({textBlockCount})*/}
-                {/*    </button>*/}
-                {/*</div>*/}
+                    <button
+                        onClick={addTextBlock}
+                        className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 font-medium"
+                    >
+                        📝 Добавить текстовый блок
+                    </button>
+
+                    <button
+                        onClick={removeAllTextBlocks}
+                        className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={textBlockCount === 0}
+                    >
+                        🗑️ Удалить все текстовые блоки ({textBlockCount})
+                    </button>
+                </div>
 
                 <div className="text-sm text-gray-600">
                     <div className="flex flex-wrap items-center gap-4">
@@ -453,17 +508,16 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                         gridConfig = { {  cols : 22 ,  rowHeight : 20  } }
                         dragConfig={{enabled: true, bounded: false}}
                         resizeConfig={{enabled: true}}
-                        dropConfig={{enabled: false }}
+                        dropConfig={{enabled: true }}
                         width={width}
                         margin={[10, 10]}
                         onLayoutChange={(newLayout) => {
-                            console.log('layoutLocal changed:', newLayout);
+                            // console.log('layoutLocal changed:', newLayout);
                             setLayoutLocal(newLayout);
                         }}
                         draggableHandle=".drag-handle"
 
-                        compactor={noCompactor}
-                        preventCollision={true}
+                        compactor={myCompactor}
                         autoSize={true}
                         isBounded={false}
                         useCSSTransforms={true}
