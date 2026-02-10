@@ -206,6 +206,7 @@ export default class ScheduleService {
                 lineInfo: json.jobs[i].line,
                 maintenance: json.jobs[i].maintenance,
                 maintenanceId: json.jobs[i].fid,
+                maintenanceTypeId: json.jobs[i].maintenanceTypeId,
                 maintenanceNote: json.jobs[i].maintenanceNote,
                 lineIdFact: json.jobs[i].lineIdFact,
                 startFact: json.jobs[i].startProductionDateTimeFact,
@@ -373,6 +374,10 @@ export default class ScheduleService {
 
     static async sendToWork() {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/work`, {})
+    }
+
+    static async alignPlan() {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/alignPlan`, {})
     }
 
     static async reloadPlan(selection) {
