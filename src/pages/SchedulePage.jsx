@@ -659,6 +659,25 @@ function SchedulerPage() {
         }
     }
 
+    async function determineFactPlace(snpz) {
+        try {
+            await SchedulerService.determineFactPlace(snpz);
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка определения количества мест по факту: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
+    //Для обновления в modelInfoItem выбранного элемента
+    useEffect(() => {
+        if (selectedItem && selectedItem.info.snpz) {
+            const updatedItem = items.find(item => item.info.snpz === selectedItem.info.snpz);
+            setSelectedItem(updatedItem);
+        }
+    }, [items]);
+
     async function updateServiceWork(lineId, index, duration, type, description) {
         try {
             await SchedulerService.updateServiceWork(lineId, index, duration, type, description);
@@ -741,7 +760,7 @@ function SchedulerPage() {
                 {isModalInfoItem && selectedItem && <ModalInfoItem item={selectedItem} onClose={() => {
                     setSelectedItem(null);
                     setIsModalInfoItem(false);
-                }} lines={groups}/>}
+                }} lines={groups} determineFactPlace={determineFactPlace}/>}
 
                 {isLoading &&
                     <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>

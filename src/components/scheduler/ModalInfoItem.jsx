@@ -1,9 +1,10 @@
-import React from 'react'
+import React, {useEffect} from 'react'
 import {isFactItem, isPackagedItem} from "../../utils/scheduler/items";
 import {formatIsoToDatetimeRegex} from "../../utils/date/date";
+import SchedulerService from "../../services/ScheduleService";
 
 
-export function ModalInfoItem({item, onClose, lines}) {
+export function ModalInfoItem({item, onClose, lines, determineFactPlace}) {
 
     const styleLable = "py-1 font-medium w-[25%] ";
     const styleInfo = "py-1 font-medium w-[75%] ";
@@ -11,7 +12,6 @@ export function ModalInfoItem({item, onClose, lines}) {
     const isFact = isPackagedItem(item);
     const isLinesMatch = item.info.lineIdFact === item.info.lineInfo.id;
     const isFactEl = isFactItem(item);
-
 
     return (
         <>
@@ -101,7 +101,8 @@ export function ModalInfoItem({item, onClose, lines}) {
                         <div>
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Начало по факту:</span>
-                                <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.startFact) || "-"}</span>
+                                <span
+                                    className={styleInfo}>{formatIsoToDatetimeRegex(item.info.startFact) || "-"}</span>
                             </div>
                         </div>
                     }
@@ -122,14 +123,28 @@ export function ModalInfoItem({item, onClose, lines}) {
                         <>
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Начало по камере:</span>
-                                <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.startCameraFact) || "-"}</span>
+                                <span
+                                    className={styleInfo}>{formatIsoToDatetimeRegex(item.info.startCameraFact) || "-"}</span>
                             </div>
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Конец по камере:</span>
-                                <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.endCameraFact) || "-"}</span>
+                                <span
+                                    className={styleInfo}>{formatIsoToDatetimeRegex(item.info.endCameraFact) || "-"}</span>
                             </div>
                         </>
                     }
+
+
+
+                    <div className="flex flex-row px-4 items-center">
+                        <span className={styleLable}>Мест факт:</span>
+                        {item.info.placeFactInfo &&
+                            <span className={styleInfo}>{item.info.placeFactInfo || "-"}</span>
+                        }
+                        {!item.info.placeFactInfo &&
+                            <button onClick={()=>determineFactPlace(item.info.snpz)} className="h-6 bg-gray-600 rounded text-white px-2">Найти</button>
+                        }
+                    </div>
 
 
                 </div>
