@@ -135,16 +135,17 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace}) {
                     }
 
 
-
-                    <div className="flex flex-row px-4 items-center">
-                        <span className={styleLable}>Мест факт:</span>
-                        {item.info.placeFactInfo &&
-                            <span className={styleInfo}>{item.info.placeFactInfo || "-"}</span>
-                        }
-                        {!item.info.placeFactInfo &&
-                            <button onClick={()=>determineFactPlace(item.info.snpz)} className="h-6 bg-gray-600 rounded text-white px-2">Найти</button>
-                        }
-                    </div>
+                    {item.info.name !== "Мойка" && !item.info.maintenance &&
+                        <div className="flex flex-row px-4 items-center">
+                            <span className={styleLable}>Мест факт:</span>
+                            {item.info.placeFactInfo &&
+                                <span className={styleInfo}>{item.info.placeFactInfo || "-"}</span>
+                            }
+                            {!item.info.placeFactInfo &&
+                                <button onClick={()=>determineFactPlace(item.info.snpz)} className="h-6 bg-gray-600 font-medium  rounded text-white px-2">Найти</button>
+                            }
+                        </div>
+                    }
 
 
                 </div>
