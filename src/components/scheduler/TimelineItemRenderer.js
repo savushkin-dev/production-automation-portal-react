@@ -52,8 +52,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                 background: isSelected
                     ? (isSingleSelected ? selectBg : selectBg)
                     : (isFactEl ? factElBg : (isFact ? factBg : item.itemProps?.style?.background || '#fff')),
-                borderWidth: '1px',
-                border: 'solid #aeaeae',
+                border: '1px solid #aeaeae',
                 textAlign: 'start',
                 color: item.itemProps?.style?.color || 'black',
                 margin: 0,

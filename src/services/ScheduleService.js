@@ -399,7 +399,7 @@ export default class ScheduleService {
     }
 
     static async determineFactPlace(snpz) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/placeFact`, {snpz})
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/findPlaceFact`, {snpz})
     }
 
     static async determineCameraFact(snpz) {
