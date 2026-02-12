@@ -670,6 +670,17 @@ function SchedulerPage() {
         }
     }
 
+    async function determineCameraFact(snpz) {
+        try {
+            await SchedulerService.determineCameraFact(snpz);
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка определения данных по камере: " + e.response.data.error)
+            setIsModalNotify(true);
+        }
+    }
+
     //Для обновления в modelInfoItem выбранного элемента
     useEffect(() => {
         if (selectedItem && selectedItem.info.snpz) {
@@ -760,7 +771,7 @@ function SchedulerPage() {
                 {isModalInfoItem && selectedItem && <ModalInfoItem item={selectedItem} onClose={() => {
                     setSelectedItem(null);
                     setIsModalInfoItem(false);
-                }} lines={groups} determineFactPlace={determineFactPlace}/>}
+                }} lines={groups} determineFactPlace={determineFactPlace} determineCameraFact={determineCameraFact}/>}
 
                 {isLoading &&
                     <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>
