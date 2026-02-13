@@ -1,17 +1,26 @@
-import React from 'react'
+import React, {useEffect} from 'react'
 import {isFactItem, isPackagedItem} from "../../utils/scheduler/items";
 import {formatIsoToDatetimeRegex} from "../../utils/date/date";
 
 
-export function ModalInfoItem({item, onClose, lines}) {
+export function ModalInfoItem({item, onClose, lines, determineFactPlace, determineCameraFact, clickedCameras, setClickedCameras}) {
 
-    const styleLable = "py-1 font-medium w-[25%] ";
-    const styleInfo = "py-1 font-medium w-[75%] ";
+    const styleLable = "py-1 font-medium w-[35%] ";
+    const styleInfo = "py-1 font-medium w-[65%] ";
 
     const isFact = isPackagedItem(item);
     const isLinesMatch = item.info.lineIdFact === item.info.lineInfo.id;
     const isFactEl = isFactItem(item);
 
+    async function clickFindCameraFact(){
+        await determineCameraFact(item.info.snpz);
+
+        // Устанавливаем флаг что кнопка была нажата для этого snpz
+        setClickedCameras(prev => ({
+            ...prev,
+            [item.info.snpz]: true
+        }));
+    }
 
     return (
         <>
@@ -101,7 +110,8 @@ export function ModalInfoItem({item, onClose, lines}) {
                         <div>
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Начало по факту:</span>
-                                <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.startFact) || "-"}</span>
+                                <span
+                                    className={styleInfo}>{formatIsoToDatetimeRegex(item.info.startFact) || "-"}</span>
                             </div>
                         </div>
                     }
@@ -122,13 +132,58 @@ export function ModalInfoItem({item, onClose, lines}) {
                         <>
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Начало по камере:</span>
-                                <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.startCameraFact) || "-"}</span>
+                                <span
+                                    className={styleInfo}>{formatIsoToDatetimeRegex(item.info.startCameraFact) || "-"}</span>
                             </div>
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Конец по камере:</span>
-                                <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.endCameraFact) || "-"}</span>
+                                <span
+                                    className={styleInfo}>{formatIsoToDatetimeRegex(item.info.endCameraFact) || "-"}</span>
                             </div>
                         </>
+                    }
+
+                    {item.info.name !== "Мойка" && !item.info.maintenance && !isFact &&
+                        <>
+                            {!item.info.startCameraFact && !item.info.endCameraFact && !clickedCameras[item.info.snpz] &&
+                                <>
+
+                                    <div className="flex flex-row px-4">
+                                        <span className={styleLable}>Данные по камере:</span>
+                                        <button onClick={() => clickFindCameraFact(item.info.snpz)}
+                                                className="h-6 bg-gray-600 font-medium  rounded text-white px-2">Найти
+                                        </button>
+                                    </div>
+                                </>
+                            }
+                            {clickedCameras[item.info.snpz] &&
+                                <>
+                                    <div className="flex flex-row px-4">
+                                        <span className={styleLable}>Начало по камере:</span>
+                                        <span
+                                            className={styleInfo}>{formatIsoToDatetimeRegex(item.info.startCameraFact) || "-"}</span>
+                                    </div>
+                                    <div className="flex flex-row px-4">
+                                        <span className={styleLable}>Конец по камере:</span>
+                                        <span
+                                            className={styleInfo}>{formatIsoToDatetimeRegex(item.info.endCameraFact) || "-"}</span>
+                                    </div>
+                                </>
+                            }
+                        </>
+                    }
+
+
+                    {item.info.name !== "Мойка" && !item.info.maintenance &&
+                        <div className="flex flex-row px-4 items-center">
+                            <span className={styleLable}>Мест факт:</span>
+                            {item.info.placeFactInfo &&
+                                <span className={styleInfo}>{item.info.placeFactInfo || "-"}</span>
+                            }
+                            {!item.info.placeFactInfo &&
+                                <button onClick={()=>determineFactPlace(item.info.snpz)} className="h-6 bg-gray-600 font-medium  rounded text-white px-2">Найти</button>
+                            }
+                        </div>
                     }
 
 

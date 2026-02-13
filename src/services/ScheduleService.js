@@ -128,6 +128,7 @@ export default class ScheduleService {
                 startFact: filteredData[i].startProductionDateTimeFact,
                 startCameraFact: filteredData[i].cameraStart,
                 endCameraFact: filteredData[i].cameraEnd,
+                placeFactInfo: filteredData[i].placeFactInfo,
             }
         }
         return factList;
@@ -212,6 +213,7 @@ export default class ScheduleService {
                 startFact: json.jobs[i].startProductionDateTimeFact,
                 startCameraFact: json.jobs[i].cameraStart,
                 endCameraFact: json.jobs[i].cameraEnd,
+                placeFactInfo: json.jobs[i].placeFactInfo,
             }
         }
 
@@ -394,6 +396,14 @@ export default class ScheduleService {
 
     static async reloadDirectory() {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/refreshData`, {})
+    }
+
+    static async determineFactPlace(snpz) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/findPlaceFact`, {snpz})
+    }
+
+    static async determineCameraFact(snpz) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/findCameraFact`, {snpz})
     }
 
 }
