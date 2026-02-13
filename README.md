@@ -17,13 +17,13 @@
 ### Установка
 
 #### Клонирование репозитория
-   ```bash
+   ```env
    git clone https://github.com/savushkin-dev/production-automation-portal-react.git
    cd production-automation-portal-react
  ```
 
 #### Установка зависимостей
-   ```
+   ```env
     npm install
    ```
 
@@ -38,7 +38,7 @@ REACT_APP_API_SCHEDULER_URL=http://localhost:0000
 
 ### Сборка для разных сред
 #### Разработка
-```bash
+```env
 npm start
 ```
 #### Сборка для производственных сред
