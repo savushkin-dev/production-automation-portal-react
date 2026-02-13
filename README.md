@@ -16,17 +16,32 @@
 
 ### Установка
 
-1. **Клонирование репозитория**
+#### Клонирование репозитория
    ```bash
    git clone https://github.com/savushkin-dev/production-automation-portal-react.git
    cd production-automation-portal-react
+ ```
+
+#### Установка зависимостей
+   ```
+    npm install
+   ```
 
 ### ⚙️ Конфигурация окружений
 
-### Проект поддерживает несколько конфигурационных профилей для разных сред
+Создайте файл `.env` в корне проекта со следующими переменными:
+
+```
+REACT_APP_API_BASE_URL=http://localhost:0000
+REACT_APP_API_SCHEDULER_URL=http://localhost:0000
+```
+
+### Сборка для разных сред
 #### Разработка
-- npm start
-#### Сборка для разных сред
-- npm run build:production
--  npm run build:brzprod
--  npm run build:baranprod
+```
+npm start
+```
+#### Сборка для производственных сред
+```
+npm run build:prod
+```
