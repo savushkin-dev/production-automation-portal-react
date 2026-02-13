@@ -31,7 +31,7 @@
 
 Создайте файл `.env` в корне проекта со следующими переменными:
 
-```
+```env
 REACT_APP_API_BASE_URL=http://localhost:0000
 REACT_APP_API_SCHEDULER_URL=http://localhost:0000
 ```
