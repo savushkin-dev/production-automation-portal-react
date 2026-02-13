@@ -105,6 +105,8 @@ function SchedulerPage() {
 
     const heightGroupScheduler = activeDisplay.fact || activeDisplay.plan? 100 : 164;
 
+    const [clickedCameras, setClickedCameras] = useState({});
+
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -769,9 +771,10 @@ function SchedulerPage() {
             <div className="w-full">
 
                 {isModalInfoItem && selectedItem && <ModalInfoItem item={selectedItem} onClose={() => {
-                    setSelectedItem(null);
-                    setIsModalInfoItem(false);
-                }} lines={groups} determineFactPlace={determineFactPlace} determineCameraFact={determineCameraFact}/>}
+                        setSelectedItem(null);
+                        setIsModalInfoItem(false);
+                    }} lines={groups} determineFactPlace={determineFactPlace} determineCameraFact={determineCameraFact}
+                    clickedCameras={clickedCameras} setClickedCameras={setClickedCameras}/>}
 
                 {isLoading &&
                     <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>

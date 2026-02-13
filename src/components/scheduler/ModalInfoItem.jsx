@@ -1,10 +1,9 @@
 import React, {useEffect} from 'react'
 import {isFactItem, isPackagedItem} from "../../utils/scheduler/items";
 import {formatIsoToDatetimeRegex} from "../../utils/date/date";
-import SchedulerService from "../../services/ScheduleService";
 
 
-export function ModalInfoItem({item, onClose, lines, determineFactPlace, determineCameraFact}) {
+export function ModalInfoItem({item, onClose, lines, determineFactPlace, determineCameraFact, clickedCameras, setClickedCameras}) {
 
     const styleLable = "py-1 font-medium w-[35%] ";
     const styleInfo = "py-1 font-medium w-[65%] ";
@@ -12,6 +11,16 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
     const isFact = isPackagedItem(item);
     const isLinesMatch = item.info.lineIdFact === item.info.lineInfo.id;
     const isFactEl = isFactItem(item);
+
+    async function clickFindCameraFact(){
+        await determineCameraFact(item.info.snpz);
+
+        // Устанавливаем флаг что кнопка была нажата для этого snpz
+        setClickedCameras(prev => ({
+            ...prev,
+            [item.info.snpz]: true
+        }));
+    }
 
     return (
         <>
@@ -136,18 +145,18 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
 
                     {item.info.name !== "Мойка" && !item.info.maintenance && !isFact &&
                         <>
-                            {!item.info.startCameraFact && !item.info.endCameraFact &&
+                            {!item.info.startCameraFact && !item.info.endCameraFact && !clickedCameras[item.info.snpz] &&
                                 <>
 
                                     <div className="flex flex-row px-4">
                                         <span className={styleLable}>Данные по камере:</span>
-                                        <button onClick={() => determineCameraFact(item.info.snpz)}
+                                        <button onClick={() => clickFindCameraFact(item.info.snpz)}
                                                 className="h-6 bg-gray-600 font-medium  rounded text-white px-2">Найти
                                         </button>
                                     </div>
                                 </>
-                        }
-                            {item.info.startCameraFact && item.info.endCameraFact &&
+                            }
+                            {clickedCameras[item.info.snpz] &&
                                 <>
                                     <div className="flex flex-row px-4">
                                         <span className={styleLable}>Начало по камере:</span>
