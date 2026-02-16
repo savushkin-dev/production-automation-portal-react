@@ -1,25 +1,35 @@
 import React, {useState, useRef, useEffect} from 'react';
-import RGL, {ReactGridLayout, useContainerWidth} from 'react-grid-layout';
+import {ReactGridLayout, useContainerWidth} from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import {getCompactor} from "react-grid-layout/core";
+import {styleInput, styleLabelInput} from "../../data/styles";
+import {
+    COLS,
+    createDefaultLayout,
+    ITEM_HEIGHT,
+    ITEM_WIDTH,
+    renderField,
+    ROW_HEIGHT
+} from "../../utils/report/designerParameter";
 
 const myCompactor = getCompactor(null, false, true);
 
 export function DesignerParameter({parameters, layout, setLayout, onClose}) {
 
-    const  { width , containerRef , mounted , measureWidth }  =  useContainerWidth ( {
+    const { width , containerRef , mounted , measureWidth }  =  useContainerWidth ( {
         measureBeforeMount : false ,  // Установить true для SSR
-        initialWidth : 1600  // Ширина до первого измерения
+        initialWidth : 1200  // Ширина до первого измерения
     } ) ;
+
 
     // layoutLocal теперь создается динамически из параметров
     const [layoutLocal, setLayoutLocal] = useState([]);
 
     useEffect(() => {
-        console.log("Параметры пришли:", parameters);
-        console.log("Layout пришел:", layout);
-        console.log("Тип layout:", typeof layout);
+        // console.log("Параметры пришли:", parameters);
+        // console.log("Layout пришел:", layout);
+        // console.log("Тип layout:", typeof layout);
 
         if (layout) {
             // Проверяем, является ли layout строкой
@@ -68,18 +78,7 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
         }
         // Остальной код создания из параметров...
         else if (parameters && parameters.length > 0) {
-            // Если layout нет - создаем из параметров
-            const initialLayoutLocal = parameters.map((param, index) => ({
-                i: param.key, // Используем key из параметров
-                x: index * 3 % 21, // Распределяем по сетке
-                y: Math.floor(index * 5 / 35) * 5,
-                w: 3,
-                h: 5,
-                minW: 2,
-                minH: 1
-            }));
-
-            setLayoutLocal(initialLayoutLocal);
+            setLayoutLocal(createDefaultLayout(parameters));
 
             // Инициализируем значения параметров
             const initialValues = {};
@@ -88,17 +87,10 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
             });
             setValues(initialValues);
         } else {
-            // Если нет ни layout ни parameters
             setLayoutLocal([]);
             setValues({});
         }
     }, [parameters, layout]);
-
-
-
-    // useEffect(()=>{
-    //     console.log(layoutLocal)
-    // }, [layoutLocal])
 
     const [textBlockCounter, setTextBlockCounter] = useState(0);
 
@@ -113,18 +105,22 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
         return initialValues;
     });
 
-    // useEffect(()=>{
-    //     console.log("Значения параметров:", values)
-    // }, [values])
-
     // Текст для текстовых блоков
     const [textBlocks, setTextBlocks] = useState({});
+
+    // Текст для нового текстового блока
+    const [newTextBlockContent, setNewTextBlockContent] = useState('Текстовый блок');
 
     // Ссылки для хранения типов элементов
     const textBlocksRef = useRef(new Set());
 
     // ДОБАВЛЕНИЕ ТЕКСТОВОГО БЛОКА
     const addTextBlock = () => {
+        if (!newTextBlockContent.trim()) {
+            alert('Введите текст для блока');
+            return;
+        }
+
         const newTextBlockId = `text-${Date.now()}-${textBlockCounter}`;
 
         let maxY = 0;
@@ -138,7 +134,7 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
             i: newTextBlockId,
             x: 0,
             y: maxY + 1,
-            w: 4,
+            w: 16,
             h: 3,
             minW: 2,
             minH: 2
@@ -147,11 +143,11 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
         textBlocksRef.current.add(newTextBlockId);
         setTextBlocks(prev => ({
             ...prev,
-            [newTextBlockId]: 'Текст по умолчанию'
+            [newTextBlockId]: newTextBlockContent
         }));
         setLayoutLocal(prev => [...prev, newTextBlock]);
         setTextBlockCounter(prev => prev + 1);
-        console.log('Текстовый блок добавлен:', newTextBlockId);
+        setNewTextBlockContent(''); // Очищаем поле ввода после добавления
     };
 
     // УДАЛЕНИЕ ТЕКСТОВОГО БЛОКА
@@ -177,14 +173,6 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
         setLayoutLocal(prev => prev.filter(item => !textBlockIds.includes(item.i)));
         textBlocksRef.current.clear();
         setTextBlocks({});
-    };
-
-    // ИЗМЕНЕНИЕ ТЕКСТА В ТЕКСТОВОМ БЛОКЕ
-    const handleTextChange = (blockId, text) => {
-        setTextBlocks(prev => ({
-            ...prev,
-            [blockId]: text
-        }));
     };
 
     // Проверка является ли элемент текстовым блоком
@@ -220,17 +208,17 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
     // СБРОС - возвращаем исходный layoutLocal из параметров
     const resetLayoutLocal = () => {
         if (parameters && parameters.length > 0) {
-            const initiallayoutLocal = parameters.map((param, index) => ({
+            const initialLayoutLocal = parameters.map((param, index) => ({
                 i: param.key,
                 x: index * 3 % 12,
                 y: Math.floor(index * 3 / 12) * 3,
                 w: 3,
                 h: 3,
-                minW: 2,
+                minW: 1,
                 minH: 1
             }));
 
-            setLayoutLocal(initiallayoutLocal);
+            setLayoutLocal(initialLayoutLocal);
             textBlocksRef.current.clear();
             setTextBlocks({});
             setTextBlockCounter(0);
@@ -241,56 +229,27 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
     const renderGridItem = (item) => {
         const textBlock = isTextBlock(item.i);
 
-        // ТЕКСТОВЫЙ БЛОК
+        // ТЕКСТОВЫЙ БЛОК - теперь это просто div с текстом
         if (textBlock) {
             const text = textBlocks[item.i] || '';
 
             return (
-                <div key={item.i} className="relative group bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow border-2 border-green-300">
-                    <div className="drag-handle bg-gradient-to-r from-green-200 to-green-300 px-3 py-2 border-b border-green-400 flex justify-between items-center rounded-t-lg">
-                        <div className="flex items-center gap-2">
-                            <span className="text-green-600 font-bold">T</span>
-                            <span className="text-sm font-bold text-green-800">
-                                Текстовый блок
-                            </span>
-                        </div>
-                        <div className="text-xs px-2 py-1 bg-green-600 text-white rounded">
-                            ТЕКСТ
-                        </div>
-                    </div>
-
-                    <div className="p-4 h-[calc(100%-45px)] flex flex-col">
-                        <textarea
-                            value={text}
-                            onChange={(e) => handleTextChange(item.i, e.target.value)}
-                            className="w-full h-full p-3 border border-green-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 resize-none bg-white/80"
-                            placeholder="Введите текст здесь..."
-                            rows="4"
-                        />
-
-                        <button
-                            onClick={() => removeTextBlock(item.i)}
-                            className="mt-3 px-3 py-1.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors shadow self-end"
-                        >
-                            Удалить
-                        </button>
-                    </div>
+                <div key={item.i} className=" font-bold text-gray-800">
+                    {text || 'Пустой текстовый блок'}
+                    <i onClick={() => removeTextBlock(item.i)} className="p-2 fa-solid fa-xmark text-red-500"></i>
                 </div>
             );
         }
 
         // ОБЫЧНЫЙ ПАРАМЕТР
-        // Ищем параметр по key (а не по статическим именам)
         const param = parameters?.find(p => p.key === item.i);
 
         if (!param) {
-            // Если параметр не найден, возможно это старый элемент из кэша
             return (
                 <div key={item.i} className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="text-sm text-red-700">Параметр не найден: {item.i}</div>
                     <button
                         onClick={() => {
-                            // Удаляем несуществующий параметр
                             setLayoutLocal(prev => prev.filter(layoutLocalItem => layoutLocalItem.i !== item.i));
                         }}
                         className="mt-2 px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
@@ -301,92 +260,10 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
             );
         }
 
-        const value = values[param.key] !== undefined ? values[param.key] : '';
-
-        const renderField = () => {
-            switch (param.type) {
-                case 'DATE':
-                    return (
-                        <input
-                            type="date"
-                            className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            value={value || ''}
-                            onChange={(e) => handleChange(param.key, e.target.value)}
-                        />
-                    );
-                case 'TEXT':
-                    return (
-                        <input
-                            type="text"
-                            className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            value={value || ''}
-                            onChange={(e) => handleChange(param.key, e.target.value)}
-                            placeholder="Введите значение..."
-                        />
-                    );
-                case 'NUMBER':
-                    return (
-                        <input
-                            type="number"
-                            className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            value={value || 0}
-                            onChange={(e) => handleChange(param.key, e.target.value)}
-                        />
-                    );
-                case 'BOOLEAN':
-                    return (
-                        <label className="flex items-center space-x-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                                checked={value || false}
-                                onChange={(e) => handleChange(param.key, e.target.checked)}
-                            />
-                            <span>{value ? 'Включено' : 'Выключено'}</span>
-                        </label>
-                    );
-                case 'SELECT':
-                    return (
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            value={value || ''}
-                            onChange={(e) => handleChange(param.key, e.target.value)}
-                        >
-                            {param.options?.map(option => (
-                                <option key={option} value={option}>{option}</option>
-                            ))}
-                        </select>
-                    );
-                default:
-                    return (
-                        <div className="text-gray-500 text-sm">
-                            Неизвестный тип параметра: {param.type}
-                        </div>
-                    );
-            }
-        };
-
         return (
             <div key={item.i} className="bg-white rounded-lg shadow border border-blue-200 hover:shadow-md transition-shadow">
-                {/*<div className="drag-handle bg-gradient-to-r from-blue-100 to-blue-200 px-3 py-2 border-b border-blue-300 cursor-move flex justify-between items-center rounded-t-lg">*/}
-                {/*    <div className="flex items-center gap-2">*/}
-                {/*        <span className="text-blue-600 font-bold">⋮⋮</span>*/}
-                {/*        <span className="text-sm font-bold text-blue-800">*/}
-                {/*            {param.name}*/}
-                {/*        </span>*/}
-                {/*    </div>*/}
-                {/*    <div className="text-xs px-2 py-1 bg-blue-600 text-white rounded">*/}
-                {/*        {param.type}*/}
-                {/*    </div>*/}
-                {/*</div>*/}
-
-                <div className="p-4">
-                    <div className="mb-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {param.name}
-                        </label>
-                        {renderField()}
-                    </div>
+                <div className="">
+                    {renderField(param, values, handleChange)}
                 </div>
             </div>
         );
@@ -395,78 +272,84 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
     const textBlockCount = layoutLocal.filter(item => isTextBlock(item.i)).length;
     const parameterCount = layoutLocal.filter(item => !isTextBlock(item.i)).length;
 
-    // Если параметры еще не загружены
-    if (!parameters || parameters.length === 0) {
-        return (
-            <div className="p-4 max-w-7xl mx-auto">
-                <div className="mb-6 p-4 bg-white rounded-xl shadow border">
-                    <h2 className="text-lg font-bold text-gray-800 mb-4">Загрузка параметров...</h2>
-                    <button
-                        onClick={onClose}
-                        className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium"
-                    >
-                        Закрыть
-                    </button>
-                </div>
-                <div className="bg-gray-50 rounded-xl border p-8 text-center">
-                    <div className="text-gray-500">Параметры не загружены</div>
-                </div>
-            </div>
-        );
-    }
+    const isEmptyParameters = !parameters || parameters.length === 0;
 
     return (
-        <div className="p-10 mx-auto bg-red-100">
-            {/* ПАНЕЛЬ УПРАВЛЕНИЯ */}
-            <div className="mb-6 p-4 bg-white rounded-xl shadow border">
-                <h2 className="text-lg font-bold text-gray-800 mb-4">Дизайнер параметров отчета</h2>
+        <div className="">
 
+            <div className="flex flex-row py-3 px-8 border-b-2 mb-4">
+                <div className="flex justify-between w-2/6 text-2xl font-medium items-center text-center">
+                    <span className="text-xl font-bold text-gray-800">Дизайнер параметров отчета</span>
+                </div>
+
+                <div className="flex flex-row justify-end w-4/6">
+                    <button
+                        onClick={onClose}
+                        className="min-w-[50px] px-3 mx-2 h-7 rounded text-sm font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
+                        Закрыть
+                    </button>
+                    <button onClick={saveLayout}
+                            className="min-w-[50px] text-sm h-7 font-medium px-3 py-1 rounded text-white bg-blue-800 hover:bg-blue-700">
+                        Применить разметку
+                    </button>
+                </div>
+            </div>
+
+            {/* ПАНЕЛЬ УПРАВЛЕНИЯ */}
+            <div className="m-4 p-4 bg-white rounded-xl shadow border">
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-600">
                             Загружено параметров: {parameters.length}
                         </span>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="px-5 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2 font-medium"
-                    >
-                        ✕ Закрыть
-                    </button>
-                    <button
-                        onClick={saveLayout}
-                        className="px-5 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2 font-medium"
-                    >
-                        Применить
-                    </button>
                 </div>
 
-                <div className="flex flex-wrap gap-3 mb-4">
+                {/* НОВАЯ СЕКЦИЯ ДЛЯ ДОБАВЛЕНИЯ ТЕКСТОВОГО БЛОКА */}
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h3 className="text-md font-semibold text-gray-700 mb-3">Добавление текстового блока</h3>
+                    <div className="flex gap-3 items-start">
+                        <div className="flex-1">
+                            <textarea
+                                value={newTextBlockContent}
+                                onChange={(e) => setNewTextBlockContent(e.target.value)}
+                                placeholder="Введите текст для нового блока..."
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 resize-y min-h-[80px]"
+                                rows="3"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Введите текст, который будет отображаться в блоке
+                            </p>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <button
+                                onClick={addTextBlock}
+                                className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 font-medium whitespace-nowrap"
+                            >
+                                📝 Добавить блок
+                            </button>
+                            <button
+                                onClick={removeAllTextBlocks}
+                                className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 font-medium whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={textBlockCount === 0}
+                            >
+                                🗑️ Удалить все ({textBlockCount})
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-
+                {/* КНОПКА СБРОСА */}
+                <div className="flex justify-end mb-4">
                     <button
                         onClick={resetLayoutLocal}
                         className="px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 font-medium"
                     >
                         🔄 Сбросить к исходному
                     </button>
-
-                    <button
-                        onClick={addTextBlock}
-                        className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 font-medium"
-                    >
-                        📝 Добавить текстовый блок
-                    </button>
-
-                    <button
-                        onClick={removeAllTextBlocks}
-                        className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={textBlockCount === 0}
-                    >
-                        🗑️ Удалить все текстовые блоки ({textBlockCount})
-                    </button>
                 </div>
 
+                {/* СТАТИСТИКА */}
                 <div className="text-sm text-gray-600">
                     <div className="flex flex-wrap items-center gap-4">
                         <div className="flex items-center gap-2">
@@ -486,8 +369,8 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
             </div>
 
             {/* СЕТКА */}
-            <div className="bg-gray-50 rounded-xl border p-2 min-h-[1000px] relative">
-                {layoutLocal.length === 0 ? (
+            <div className="bg-gray-50 rounded-xl border p-2 min-h-[1000px] w-[1200px] mx-auto relative">
+                {isEmptyParameters ? (
                     <div className="flex flex-col items-center justify-center h-[600px] text-gray-500">
                         <div className="text-5xl mb-4">📋</div>
                         <h3 className="text-xl font-medium mb-2">Нет элементов для отображения</h3>
@@ -505,20 +388,24 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                     <ReactGridLayout
                         className="layout"
                         layout={layoutLocal}
-                        gridConfig = { {  cols : 22 ,  rowHeight : 20  } }
+                        gridConfig={{
+                            cols: COLS,
+                            rowHeight: ROW_HEIGHT,
+                            margin: [5, 5],
+                            containerPadding: [10, 10],
+                            maxRows: Infinity
+                        }}
                         dragConfig={{enabled: true, bounded: false}}
                         resizeConfig={{enabled: true}}
-                        dropConfig={{enabled: true }}
+                        dropConfig={{enabled: true}}
                         width={width}
-                        margin={[10, 10]}
                         onLayoutChange={(newLayout) => {
-                            // console.log('layoutLocal changed:', newLayout);
+                            console.log(newLayout)
                             setLayoutLocal(newLayout);
                         }}
                         draggableHandle=".drag-handle"
-
                         compactor={myCompactor}
-                        autoSize={true}
+                        autoSize={false}
                         isBounded={false}
                         useCSSTransforms={true}
                     >

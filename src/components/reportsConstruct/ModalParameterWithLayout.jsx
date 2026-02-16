@@ -1,7 +1,15 @@
 import React, {useEffect, useState} from "react";
-import RGL, {ReactGridLayout} from 'react-grid-layout';
+import RGL, {ReactGridLayout, useContainerWidth} from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import {getCompactor} from "react-grid-layout/core";
+import {
+    COLS,
+    createDefaultLayout,
+    ITEM_HEIGHT,
+    ITEM_WIDTH,
+    renderField,
+    ROW_HEIGHT
+} from "../../utils/report/designerParameter";
 
 const myCompactor = getCompactor(null, false, true);
 
@@ -10,14 +18,19 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
     const [layoutLocal, setLayoutLocal] = useState([]);
     const [textBlocks, setTextBlocks] = useState({});
 
+    const { width , containerRef , mounted , measureWidth }  =  useContainerWidth ( {
+        measureBeforeMount : false ,  // Установить true для SSR
+        initialWidth : 1200  // Ширина до первого измерения
+    } ) ;
+
     useEffect(()=>{
-        console.log(layoutLocal)
+        // console.log(layoutLocal)
     }, [layoutLocal])
 
     // Инициализация layout и значений
     useEffect(() => {
-        console.log("Параметры пришли:", parameters);
-        console.log("Layout пришел:", layout);
+        // console.log("Параметры пришли:", parameters);
+        // console.log("Layout пришел:", layout);
 
         // Инициализируем значения параметров
         const initialValues = {};
@@ -47,8 +60,8 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
                     i: item.key || item.i,
                     x: item.x,
                     y: item.y,
-                    w: item.w || 3,
-                    h: item.h || 3,
+                    w: item.w,
+                    h: item.h,
                     minW: item.minW,
                     minH: item.minH
                 }));
@@ -65,28 +78,36 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
                 });
                 setTextBlocks(newTextBlocks);
             } else {
-                // Если layout пустой, создаем из параметров
-                // createDefaultLayout();
+                setLayoutLocal(createDefaultLayout(parameters));
             }
         } else {
-            // Если нет layout, создаем из параметров
-            // createDefaultLayout();
+            setLayoutLocal(createDefaultLayout(parameters));
         }
     }, [parameters, layout]);
 
-    // Создание layout по умолчанию из параметров
-    const createDefaultLayout = () => {
-        const defaultLayout = parameters.map((param, index) => ({
-            i: param.key,
-            x: index * 3 % 21,
-            y: Math.floor(index * 5 / 35) * 5,
-            w: 3,
-            h: 5,
-            minW: 2,
-            minH: 1
-        }));
-        setLayoutLocal(defaultLayout);
-    };
+
+
+    useEffect(() => {
+        for (let i = 0; i < parameters.length; i++) {
+            if(parameters[i].default !== null){
+                setValues(prev=> ({...prev, [parameters[i].key]: parameters[i].default}))
+            } else if(parameters[i].type === "BOOLEAN") {
+                handleChange(parameters[i].key, false);
+            }
+        }
+    }, [])
+
+    useEffect(() => {
+        const initialValues = {};
+        parameters
+            .filter(param => param.type === "DATE")
+            .forEach(param => {
+                initialValues[param.key] = param.default === true
+                    ? new Date().toISOString().split('T')[0]
+                    : param.default || '';
+            });
+        setValues(prevState => ({...prevState,...initialValues}));
+    }, []);
 
     // Обработчик изменения значений
     const handleChange = (key, value) => {
@@ -174,82 +195,27 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
 
         const value = values[param.key] !== undefined ? values[param.key] : '';
 
-        const renderField = () => {
-            switch (param.type) {
-                case 'DATE':
-                    return (
-                        <input
-                            type="date"
-                            className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            value={value || ''}
-                            onChange={(e) => handleChange(param.key, e.target.value)}
-                        />
-                    );
-                case 'TEXT':
-                    return (
-                        <input
-                            type="text"
-                            className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            value={value || ''}
-                            onChange={(e) => handleChange(param.key, e.target.value)}
-                            placeholder="Введите значение..."
-                        />
-                    );
-                case 'NUMBER':
-                    return (
-                        <input
-                            type="number"
-                            className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            value={value || 0}
-                            onChange={(e) => handleChange(param.key, e.target.value)}
-                        />
-                    );
-                case 'BOOLEAN':
-                    return (
-                        <label className="flex items-center space-x-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                                checked={value || false}
-                                onChange={(e) => handleChange(param.key, e.target.checked)}
-                            />
-                            <span>{value ? 'Включено' : 'Выключено'}</span>
-                        </label>
-                    );
-                case 'SELECT':
-                    return (
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            value={value || ''}
-                            onChange={(e) => handleChange(param.key, e.target.value)}
-                        >
-                            {param.options?.map(option => (
-                                <option key={option} value={option}>{option}</option>
-                            ))}
-                        </select>
-                    );
-                default:
-                    return (
-                        <div className="text-gray-500 text-sm">
-                            Неизвестный тип параметра: {param.type}
-                        </div>
-                    );
-            }
-        };
-
         return (
-            <div key={item.i} className="bg-white rounded-lg shadow border border-blue-200 hover:shadow-md transition-shadow">
+            <div key={item.i} className="bg-white rounded-lg  hover:shadow-md transition-shadow">
 
-                <div className="p-4">
-                    <div className="mb-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {param.name}
-                        </label>
-                        {renderField()}
-                    </div>
+                <div className="">
+                    {/*<div className="mb-2">*/}
+                        {/*<label className="block text-sm font-medium text-gray-700 mb-1">*/}
+                        {/*    {param.name}*/}
+                        {/*</label>*/}
+                        {renderField(param, values, handleChange)}
+                    {/*</div>*/}
                 </div>
             </div>
         );
+    };
+
+    const calculateGridWidth = () => {
+        if (layoutLocal.length === 0) return 600;
+        const maxRight = Math.max(...layoutLocal.map(item => item.x + item.w));
+        // Переводим в пиксели (1 колонка = 10px)
+        const widthInPixels = maxRight * 10 ;
+        return Math.min(widthInPixels, 1200) + 80;
     };
 
     return (
@@ -259,9 +225,9 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
                 onClick={onClose}
             />
 
-            <div className="min-w-2xl p-5 z-30 rounded bg-white absolute top-20 left-1/2 -translate-x-1/2 px-8 max-w-7xl w-full max-h-[80vh] overflow-y-auto">
+            <div className=" p-5 z-30 rounded bg-white absolute top-20 left-1/2 -translate-x-1/2 px-8  max-h-[80vh] overflow-y-auto" style={{ width: calculateGridWidth() }}>
                 <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-medium text-start">Параметры отчета: {reportName}</h1>
+                    <h1 className="text-2xl font-medium text-start">Параметры отчета</h1>
                     <button
                         onClick={onClose}
                         className="text-gray-500 hover:text-gray-700"
@@ -270,50 +236,50 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
                     </button>
                 </div>
 
-                {parameters.length === 0 ? (
-                    <div className="text-center py-8">
-                        <h4 className="text-lg text-gray-600">Отчет не содержит параметров</h4>
-                    </div>
-                ) : layoutLocal.length === 0 ? (
-                    <div className="text-center py-8">
-                        <div className="text-gray-500 mb-4">Загрузка параметров...</div>
-                    </div>
-                ) : (
-                    <div className="bg-gray-50 h-[700px] rounded-xl border p-4 mb-6">
-                        <ReactGridLayout
-                            className="layout"
-                            layout={layoutLocal}
-                            gridConfig = { {  cols : 22 ,  rowHeight : 20  } }
-                            dragConfig={{enabled: false, bounded: false}}
-                            resizeConfig={{enabled: false}}
-                            dropConfig={{enabled: true}}
-                            width={1200}
-                            margin={[10, 10]}
-                            draggableHandle=".drag-handle"
-                            compactor={myCompactor}
-                            preventCollision={true}
-                            useCSSTransforms={true}
-                        >
-                            {layoutLocal.map(item => (renderGridItem(item)))}
-                        </ReactGridLayout>
-                    </div>
-                )}
+                <div className="overflow-y-auto max-h-[60vh]">
+                    {parameters.length === 0 ? (
+                        <div className="text-center py-8">
+                            <h4 className=" text-gray-600">Отчет не содержит параметров</h4>
+                        </div>
+                    ) : layoutLocal.length === 0 ? (
+                        <div className="text-center py-8">
+                            <div className="text-gray-500 mb-4">layoutLocal.length === 0 </div>
+                        </div>
+                    ) : (
+                        <div className="">
+                            <ReactGridLayout
+                                className="layout"
+                                layout={layoutLocal}
+                                gridConfig = { { cols : COLS, rowHeight : ROW_HEIGHT, margin: [5,5], containerPadding: [10,10], maxRows: Infinity } }
+                                dragConfig={{enabled: false, bounded: false}}
+                                resizeConfig={{enabled: false}}
+                                dropConfig={{enabled: true}}
+                                width={width}
+
+                                draggableHandle=".drag-handle"
+                                compactor={myCompactor}
+                                preventCollision={true}
+                                useCSSTransforms={true}
+                            >
+                                {layoutLocal.map(item => (renderGridItem(item)))}
+                            </ReactGridLayout>
+                        </div>
+                    )}
+                </div>
+
 
                 <div className="flex justify-between items-center border-t pt-4">
                     <div className="text-sm text-gray-600">
                         Параметров: {parameters.length}
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex flex-row justify-end items-center bg-white my-2 ">
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 rounded text-sm font-medium shadow-sm border border-gray-300 hover:bg-gray-100"
-                        >
+                            className="min-w-[50px] px-2 mx-2 h-7 rounded text-xs font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
                             Закрыть
                         </button>
-                        <button
-                            onClick={handleSubmit}
-                            className="px-4 py-2 rounded text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                        >
+                        <button onClick={handleSubmit}
+                                className="min-w-[50px] text-xs h-7 font-medium px-2 py-1 rounded text-white bg-blue-800 hover:bg-blue-700">
                             Сформировать отчет
                         </button>
                     </div>
