@@ -45,8 +45,8 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
 
                         parsedLayout.forEach(item => {
                             if (item.isTextBlock && item.text) {
-                                newTextBlocksRef.add(item.key);
-                                newTextBlocks[item.key] = item.text;
+                                newTextBlocksRef.add(item.i);
+                                newTextBlocks[item.i] = item.text;
                             }
                         });
 
@@ -67,8 +67,8 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
 
                 layout.forEach(item => {
                     if (item.isTextBlock && item.text) {
-                        newTextBlocksRef.add(item.key);
-                        newTextBlocks[item.key] = item.text;
+                        newTextBlocksRef.add(item.i);
+                        newTextBlocks[item.i] = item.text;
                     }
                 });
 
@@ -400,7 +400,6 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                         dropConfig={{enabled: true}}
                         width={width}
                         onLayoutChange={(newLayout) => {
-                            console.log(newLayout)
                             setLayoutLocal(newLayout);
                         }}
                         draggableHandle=".drag-handle"

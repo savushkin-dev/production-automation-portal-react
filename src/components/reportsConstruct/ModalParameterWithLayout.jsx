@@ -57,7 +57,7 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
             if (Array.isArray(layoutArray) && layoutArray.length > 0) {
                 // Конвертируем из формата с key в формат с i
                 const convertedLayout = layoutArray.map(item => ({
-                    i: item.key || item.i,
+                    i: item.i || item.key,  // сначала i, потом key
                     x: item.x,
                     y: item.y,
                     w: item.w,
@@ -72,7 +72,7 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
                 const newTextBlocks = {};
                 layoutArray.forEach(item => {
                     if (item.isTextBlock && item.text) {
-                        const itemId = item.key || item.i;
+                        const itemId = item.i || item.key;  // сначала i, потом key
                         newTextBlocks[itemId] = item.text;
                     }
                 });
@@ -85,8 +85,6 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
         }
     }, [parameters, layout]);
 
-
-
     useEffect(() => {
         for (let i = 0; i < parameters.length; i++) {
             if(parameters[i].default !== null){
@@ -95,7 +93,7 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
                 handleChange(parameters[i].key, false);
             }
         }
-    }, [])
+    }, []);
 
     useEffect(() => {
         const initialValues = {};
@@ -170,9 +168,19 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
     }
 
     const renderGridItem = (item) => {
+        // Проверяем, является ли элемент текстовым блоком
+        const isTextBlock = textBlocks[item.i] !== undefined;
+
+        // ТЕКСТОВЫЙ БЛОК
+        if (isTextBlock) {
+            return (
+                <div key={item.i} className="font-bold text-gray-800">
+                    {textBlocks[item.i] || 'Пустой текстовый блок'}
+                </div>
+            );
+        }
 
         // ОБЫЧНЫЙ ПАРАМЕТР
-        // Ищем параметр по key (а не по статическим именам)
         const param = parameters?.find(p => p.key === item.i);
 
         if (!param) {
@@ -180,31 +188,14 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
             return (
                 <div key={item.i} className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="text-sm text-red-700">Параметр не найден: {item.i}</div>
-                    <button
-                        onClick={() => {
-                            // Удаляем несуществующий параметр
-                            setLayoutLocal(prev => prev.filter(layoutLocalItem => layoutLocalItem.i !== item.i));
-                        }}
-                        className="mt-2 px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
-                    >
-                        Удалить
-                    </button>
                 </div>
             );
         }
 
-        const value = values[param.key] !== undefined ? values[param.key] : '';
-
         return (
-            <div key={item.i} className="bg-white rounded-lg  hover:shadow-md transition-shadow">
-
+            <div key={item.i} className="bg-white rounded-lg hover:shadow-md transition-shadow">
                 <div className="">
-                    {/*<div className="mb-2">*/}
-                        {/*<label className="block text-sm font-medium text-gray-700 mb-1">*/}
-                        {/*    {param.name}*/}
-                        {/*</label>*/}
-                        {renderField(param, values, handleChange)}
-                    {/*</div>*/}
+                    {renderField(param, values, handleChange)}
                 </div>
             </div>
         );
@@ -214,7 +205,7 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
         if (layoutLocal.length === 0) return 600;
         const maxRight = Math.max(...layoutLocal.map(item => item.x + item.w));
         // Переводим в пиксели (1 колонка = 10px)
-        const widthInPixels = maxRight * 10 ;
+        const widthInPixels = maxRight * 10;
         return Math.min(widthInPixels, 1200) + 80;
     };
 
@@ -225,7 +216,7 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
                 onClick={onClose}
             />
 
-            <div className=" p-5 z-30 rounded bg-white absolute top-20 left-1/2 -translate-x-1/2 px-8  max-h-[80vh] overflow-y-auto" style={{ width: calculateGridWidth() }}>
+            <div className="p-5 z-30 rounded bg-white absolute top-20 left-1/2 -translate-x-1/2 px-8 max-h-[80vh] overflow-y-auto" style={{ width: calculateGridWidth() }}>
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-medium text-start">Параметры отчета</h1>
                     <button
@@ -239,40 +230,44 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
                 <div className="overflow-y-auto max-h-[60vh]">
                     {parameters.length === 0 ? (
                         <div className="text-center py-8">
-                            <h4 className=" text-gray-600">Отчет не содержит параметров</h4>
+                            <h4 className="text-gray-600">Отчет не содержит параметров</h4>
                         </div>
                     ) : layoutLocal.length === 0 ? (
                         <div className="text-center py-8">
-                            <div className="text-gray-500 mb-4">layoutLocal.length === 0 </div>
+                            <div className="text-gray-500 mb-4">Загрузка параметров...</div>
                         </div>
                     ) : (
                         <div className="">
                             <ReactGridLayout
                                 className="layout"
                                 layout={layoutLocal}
-                                gridConfig = { { cols : COLS, rowHeight : ROW_HEIGHT, margin: [5,5], containerPadding: [10,10], maxRows: Infinity } }
+                                gridConfig={{
+                                    cols: COLS,
+                                    rowHeight: ROW_HEIGHT,
+                                    margin: [5,5],
+                                    containerPadding: [10,10],
+                                    maxRows: Infinity
+                                }}
                                 dragConfig={{enabled: false, bounded: false}}
                                 resizeConfig={{enabled: false}}
                                 dropConfig={{enabled: true}}
                                 width={width}
-
                                 draggableHandle=".drag-handle"
                                 compactor={myCompactor}
                                 preventCollision={true}
                                 useCSSTransforms={true}
                             >
-                                {layoutLocal.map(item => (renderGridItem(item)))}
+                                {layoutLocal.map(item => renderGridItem(item))}
                             </ReactGridLayout>
                         </div>
                     )}
                 </div>
 
-
                 <div className="flex justify-between items-center border-t pt-4">
                     <div className="text-sm text-gray-600">
                         Параметров: {parameters.length}
                     </div>
-                    <div className="flex flex-row justify-end items-center bg-white my-2 ">
+                    <div className="flex flex-row justify-end items-center bg-white my-2">
                         <button
                             onClick={onClose}
                             className="min-w-[50px] px-2 mx-2 h-7 rounded text-xs font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
