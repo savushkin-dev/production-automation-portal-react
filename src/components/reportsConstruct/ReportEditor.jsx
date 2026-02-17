@@ -1199,7 +1199,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         settingDB.url, settingDB.username, encryptData(settingDB.password), settingDB.driverClassName, sql,
                         parameters,
                         updatedPages[0].content, css,
-                        script, isSqlMode, dataBandsOpt, isBookOrientation);
+                        script, isSqlMode, dataBandsOpt, isBookOrientation, "", layoutParam);
                     setModalMsg("Документ успешно отправлен!");
 
                 } catch (error) {
@@ -1230,6 +1230,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 defineBands(response.data.content);
                 setDataBandsOpt(JSON.parse(response.data.dataBands));
                 setIsBookOrientation(response.data.bookOrientation);
+
+                setLayoutParam(JSON.parse(response.data.layoutParams))
             } catch (error) {
                 console.error(error)
                 setModalMsg("Ошибка загрузки отчета с сервера! Попробуйте еще раз.")
