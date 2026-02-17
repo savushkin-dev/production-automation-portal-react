@@ -31,6 +31,7 @@ import {JavaEditor} from "../javaEditor/JavaEditor";
 import {ViewReport} from "./ViewReport";
 import {DesignerParameter} from "./DesignerParameter";
 import {ModalParameterWithLayout} from "./ModalParameterWithLayout";
+import DropdownObj from "../dropdown/DropdownObj";
 
 
 // Добавляем шрифт Roboto в виртуальную файловую систему pdfmake
@@ -51,7 +52,11 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         ]);
         const [currentPage, setCurrentPage] = useState(1); // Активная страница
 
-        const [dataBandsOpt, setDataBandsOpt] = useState([])
+        const [dataBandsOpt, setDataBandsOpt] = useState(["main","main-child"])
+        const [dataBandsOptDropDown, setDataDropDown] = useState([
+            { label: 'Основной бэнд', value: 'main' },
+            { label: 'Дополнительный бэнд', value: 'main-child' },
+        ])
 
 
         const [isViewMode, setIsViewMode] = useState(false);
@@ -602,7 +607,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             return new Promise((resolve) => {
                 setPages((prevPages) => {
-                    console.log(prevPages)
                     const updatedPages = prevPages.map((page) => page.id === currentPage ? {
                         ...page,
                         content: html,
@@ -827,7 +831,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                    font-weight: bolder;
                                    font-size: 14px;
                                    pointer-events: none;
-                              ">Главные данные: ${tableName}</div>
+                              ">Главные данные</div>
                               <div data-band="true" id="${tableName}" data-gjs-type="locked-band" style="height: 100px; width: ${widthPage}px; background: #f6f6f6; position: relative; border: 0px dashed #f4f4f4; padding: 0px 0px 0px 0px; overflow: visible;">
                                  <p data-field="true"  style="position: absolute; top: 60px; left: 20px; margin: 0px">Укажите поле из запроса в двойных скобках: {{field_1}}</p>
                               </div>
@@ -876,7 +880,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                font-weight: bold;
                                font-size: 14px;
                                pointer-events: none;
-                          ">Второстепенные данные: ${childName}</div>
+                          ">Второстепенные данные</div>
                           <div data-band-child="true" id="${childName}" data-gjs-type="locked-band" draggable="false" style="height: 100px; width: ${widthPage}px; background: #f6f6f6; position: relative; border: 0px dashed #f4f4f4; padding: 0px 0px 0px 0px; overflow: visible;">
                              <p data-field="true"  style="position: absolute; top: 60px; left: 20px; margin: 0px; z-index: 9999">Дочерний бэнд: {{field_1}}</p>
                           </div>
@@ -1327,7 +1331,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         }
                     }
                 });
-                setDataBandsOpt(Array.from(foundTables).sort());
+                // setDataBandsOpt(Array.from(foundTables).sort());
                 setIsValidSql(true);
             } catch (e) {
                 setDataBandsOpt([]);
@@ -1461,7 +1465,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                             </div>
                             <div className="p-1 hover:bg-gray-200 flex-col justify-center justify-items-center">
                                 <img src="/icons/DataBand.png" className="icon-band" alt="Data band" draggable="false"/>
-                                <Dropdown options={dataBandsOpt} onSelect={handleSelectTableBand} label={"Бэнды"}/>
+                                <DropdownObj options={dataBandsOptDropDown} onSelect={handleSelectTableBand} label={"Бэнды"}/>
                             </div>
                             <div className=" hover:bg-gray-200 flex flex-col justify-center justify-items-center">
 

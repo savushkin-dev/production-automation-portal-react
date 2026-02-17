@@ -14,7 +14,8 @@
 .dropdown-menu {
     position: absolute;
     top: 100%;
-    width: 100px;
+    width: auto;
+    text-wrap: nowrap;
     left: 0;
     max-height: 200px; /* Максимальная высота выпадающего списка */
     overflow-y: auto; /* Прокрутка по вертикали */

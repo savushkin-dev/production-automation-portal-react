@@ -36,6 +36,27 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
         }]);
     };
 
+    const addDataChildParameter = () => {
+        const existingChildParams = parameters.filter(param => param.key.startsWith('main-child'));
+        const nextNumber = existingChildParams.length + 1;
+
+        // Формируем ключ с номером (если первый - без номера, остальные с номером)
+        const newKey = nextNumber === 1 ? 'main-child' : `main-child-${nextNumber}`;
+        const newName = nextNumber === 1 ? 'Дополнительный бэнд' : `Дополнительный бэнд ${nextNumber}`;
+
+        setParameters([
+            ...parameters,
+            {
+                id: uuidv4(),
+                order: parameters.length + 1,
+                name: newName,
+                key: newKey,
+                type: 'BOOLEAN',
+                default: true
+            }
+        ]);
+    };
+
 
     const removeLastParameter = () => {
         setParameters(prevParameters => {
@@ -49,30 +70,6 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
             prevParameters.filter(param => param.id !== id)
         );
     }
-
-    const addDataBand = () => {
-        if (dataBandsOpt.length >=1){ //Ограничиваем до одного бэнда
-            return
-        }
-
-        setDataBandsOpt([...dataBandsOpt, ""]);
-    };
-
-    const removeLastDataBand = () => {
-        setDataBandsOpt(prevDataBandsOpt => {
-            if (prevDataBandsOpt.length === 0) return prevDataBandsOpt;
-            return prevDataBandsOpt.slice(0, -1);
-        });
-    };
-
-    const handleDateBandChange = (index, newValue) => {
-        setDataBandsOpt(prevData => {
-            const updatedData = [...prevData];
-            updatedData[index] = newValue;
-            updatedData[index+1] = newValue + "-child";
-            return updatedData;
-        });
-    };
 
     const options = [
         {
@@ -132,7 +129,7 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
 
             <div className="flex flex-col">
                 <div className="flex flex-row py-3 px-8">
-                    <div className="flex justify-between w-4/6 text-2xl font-medium items-center text-center">
+                    <div className="flex justify-between w-3/5 text-2xl font-medium items-center text-center">
                         <span>Редактор скрипта</span>
                         <button onClick={importFile}
                                 className="px-2  h-7 rounded text-sm font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
@@ -140,7 +137,7 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
                         </button>
                     </div>
 
-                    <div className="flex flex-row justify-end w-2/6">
+                    <div className="flex flex-row justify-end w-2/5">
                         <button onClick={onClose}
                                 className="px-2  h-7 rounded text-sm font-medium shadow-sm border border-slate-400 hover:bg-gray-200">Конструктор
                         </button>
@@ -167,10 +164,11 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
                         />
                     </div>
                     <div className="flex flex-col w-2/5">
-                        <div className=" flex-row px-8 h-3/4">
+                        <div className=" flex-row px-8 h-full">
 
                             <div className="flex justify-between items-center">
-                                <div className="flex text-2xl text-nowrap font-medium text-start mt-2 mb-3">Параметры</div>
+                                <div className="flex text-2xl text-nowrap font-medium text-start mt-2 mb-3">Параметры
+                                </div>
                                 <div className="flex flex-row justify-end">
                                     <button onClick={addParameter}
                                             className="h-7 text-nowrap px-2 text-sm text-white rounded shadow-inner bg-blue-800 hover:bg-blue-700">Добавить
@@ -180,9 +178,16 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
                                             className="ml-4 h-7 text-nowrap  px-2 text-sm text-white rounded shadow-inner bg-blue-800 hover:bg-blue-700">Удалить
                                         параметр
                                     </button>
+
                                 </div>
 
+
                             </div>
+
+                            <button onClick={addDataChildParameter}
+                                    className="h-7 w-full text-nowrap px-2 text-sm text-white rounded shadow-inner bg-gray-600 mb-2 hover:bg-gray-500">
+                                Добавить выбор отображения дополнительного бэнда при формировании отчета
+                            </button>
 
 
                             <div className="flex flex-row mb-1">
@@ -194,145 +199,116 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
                                 <span className="text-sm text-center font-medium w-[5%]"></span>
                             </div>
 
-                            <div className="max-h-[500px] overflow-auto">
-                                {parameters.map((param, index) => (
-                                    <div key={param.id} className="flex flex-row py-0">
-                                        <input
-                                            className={styleInputWithoutRounded + " font-medium w-[10%]"}
-                                            type="number" min={1}
-                                            value={param.order}
-                                            onChange={(e) => updateParameter(param.id, 'order', e.target.value)}
-                                        />
-                                        <input className={styleInputWithoutRounded + " font-medium mr-0 w-[20%]"}
-                                               value={param.name}
-                                               onChange={(e) => {
-                                                   updateParameter(param.id, 'name', e.target.value);
-                                               }}
-                                               placeholder="Название параметра"
-                                        />
-                                        <input className={styleInputWithoutRounded + " font-medium mr-0 w-[15%]"}
-                                               value={param.key}
-                                               onChange={(e) => updateParameter(param.id, 'key', e.target.value)}
-                                               placeholder="Параметр (:param)"
-                                        />
+                            <div className="max-h-[680px] overflow-auto">
+                                {parameters.map((param, index) => {
+                                    const isChildParameter = param.key.startsWith('main-child');
 
-                                        <Select className="text-sm font-medium w-[20%] mr-0"
-                                                placeholder={"Тип параметра"}
-                                                value={{
-                                                    value: param.type,
-                                                    label: options.find(option => option.value === param.type)?.label || null
-                                                }}
-                                                onChange={(e) => updateParameter(param.id, 'type', e)}
-                                                styles={CustomStyleWithoutRounded}
-                                                options={options}
-                                                menuPortalTarget={document.body}
-                                                isClearable={false} isSearchable={false}/>
-
-
-                                        {param.type === "TEXT" &&
+                                    return (
+                                        <div key={param.id} className="flex flex-row py-0">
                                             <input
-                                                className={styleInputWithoutRounded + " font-medium w-[30%]"}
-                                                type="text"
-                                                value={param.default}
-                                                onChange={(e) => updateParameter(param.id, 'default', e.target.value)}
+                                                className={styleInputWithoutRounded + " font-medium w-[10%]"}
+                                                type="number" min={1}
+                                                value={param.order}
+                                                onChange={(e) => updateParameter(param.id, 'order', e.target.value)}
                                             />
-                                        }
-
-                                        {param.type === "NUMBER" &&
-                                            <input
-                                                className={styleInputWithoutRounded + " font-medium w-[30%]"}
-                                                type="number"
-                                                value={param.default}
-                                                onChange={(e) => updateParameter(param.id, 'default', e.target.value)}
+                                            <input className={styleInputWithoutRounded + " font-medium mr-0 w-[20%]"}
+                                                   value={param.name}
+                                                   onChange={(e) => {
+                                                       updateParameter(param.id, 'name', e.target.value);
+                                                   }}
+                                                   placeholder="Название параметра"
                                             />
-                                        }
+                                            <input className={styleInputWithoutRounded + " font-medium mr-0 w-[15%]"}
+                                                   value={param.key}
+                                                   onChange={(e) => updateParameter(param.id, 'key', e.target.value)}
+                                                   placeholder="Параметр (:param)"
+                                                   disabled={isChildParameter}
+                                            />
 
-                                        {param.type === "DATE" &&
-                                            <div style={{display: 'flex', alignItems: 'center'}}
-                                                 className="font-medium w-[30%]">
-                                                <input className={styleInputWithoutRounded + " w-[100%]"}
-                                                       type="date"
-                                                       value={param.default === true ? "" : param.default || ""}
-                                                       onChange={(e) => updateParameter(param.id, 'default', e.target.value || "")}
-                                                       style={{
-                                                           paddingRight: '50%',
-                                                       }}
-                                                />
-                                                <span className="text-xs" style={{
-                                                    marginLeft: '-70px',
-                                                    cursor: 'pointer',
-                                                }}>
-                                        Текущая
-                                    </span>
-                                                <input className={styleInputWithoutRounded}
-                                                       type="checkbox"
-                                                       checked={param.default === true}
-                                                       onChange={(e) => updateParameter(param.id, 'default', e.target.checked || "")}
-                                                       style={{
-                                                           marginLeft: '5px',
-                                                           cursor: 'pointer',
-                                                       }}
-                                                />
+                                            <Select className="text-sm font-medium w-[20%] mr-0"
+                                                    placeholder={"Тип параметра"}
+                                                    value={{
+                                                        value: param.type,
+                                                        label: options.find(option => option.value === param.type)?.label || null
+                                                    }}
+                                                    onChange={(e) => updateParameter(param.id, 'type', e)}
+                                                    styles={CustomStyleWithoutRounded}
+                                                    options={options}
+                                                    menuPortalTarget={document.body}
+                                                    isClearable={false} isSearchable={false}
+                                                    isDisabled={isChildParameter}
+                                            />
 
-                                            </div>
-                                        }
-
-                                        {param.type === "BOOLEAN" &&
-                                            <div className=" w-[30%] text-center border border-slate-400">
+                                            {param.type === "TEXT" &&
                                                 <input
-                                                    className="h-full w-[16px] cursor-pointer"
-                                                    type="checkbox"
-                                                    checked={param.default}
-                                                    onChange={(e) => updateParameter(param.id, 'default', e.target.checked)}
+                                                    className={styleInputWithoutRounded + " font-medium w-[30%]"}
+                                                    type="text"
+                                                    value={param.default}
+                                                    onChange={(e) => updateParameter(param.id, 'default', e.target.value)}
                                                 />
+                                            }
+
+                                            {param.type === "NUMBER" &&
+                                                <input
+                                                    className={styleInputWithoutRounded + " font-medium w-[30%]"}
+                                                    type="number"
+                                                    value={param.default}
+                                                    onChange={(e) => updateParameter(param.id, 'default', e.target.value)}
+                                                />
+                                            }
+
+                                            {param.type === "DATE" &&
+                                                <div style={{display: 'flex', alignItems: 'center'}}
+                                                     className="font-medium w-[30%]">
+                                                    <input className={styleInputWithoutRounded + " w-[100%]"}
+                                                           type="date"
+                                                           value={param.default === true ? "" : param.default || ""}
+                                                           onChange={(e) => updateParameter(param.id, 'default', e.target.value || "")}
+                                                           style={{
+                                                               paddingRight: '50%',
+                                                           }}
+                                                    />
+                                                    <span className="text-xs" style={{
+                                                        marginLeft: '-70px',
+                                                        cursor: 'pointer',
+                                                    }}>
+                                            Текущая
+                                        </span>
+                                                    <input className={styleInputWithoutRounded}
+                                                           type="checkbox"
+                                                           checked={param.default === true}
+                                                           onChange={(e) => updateParameter(param.id, 'default', e.target.checked || "")}
+                                                           style={{
+                                                               marginLeft: '5px',
+                                                               cursor: 'pointer',
+                                                           }}
+                                                    />
+
+                                                </div>
+                                            }
+
+                                            {param.type === "BOOLEAN" &&
+                                                <div className=" w-[30%] text-center border border-slate-400">
+                                                    <input
+                                                        className="h-full w-[16px] cursor-pointer"
+                                                        type="checkbox"
+                                                        checked={param.default}
+                                                        onChange={(e) => updateParameter(param.id, 'default', e.target.checked)}
+                                                    />
+                                                </div>
+                                            }
+
+                                            <div className="w-[5%] text-center border border-slate-400 ">
+                                                <i className="fa-regular fa-trash-can text-red-600 hover:scale-125"
+                                                   onClick={() => removeParamById(param.id)}></i>
                                             </div>
-                                        }
 
-                                        <div className="w-[5%] text-center border border-slate-400 ">
-                                            <i className="fa-regular fa-trash-can text-red-600 hover:scale-125" onClick={()=> removeParamById(param.id)}></i>
                                         </div>
-
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className=" flex-row px-8 mt-4 h-1/4">
-
-                            <div className="flex justify-between items-center">
-                                <div className="flex text-2xl font-medium text-start mt-2 mb-3">Бэнды данных</div>
-                                <div className="flex flex-row justify-end">
-                                    <button onClick={addDataBand}
-                                            className="h-7 px-2 text-nowrap text-sm text-white rounded shadow-inner bg-blue-800 hover:bg-blue-700">Добавить
-                                        бэнд
-                                    </button>
-                                    <button onClick={removeLastDataBand}
-                                            className="ml-4 h-7 px-2 text-nowrap text-sm text-white rounded shadow-inner bg-blue-800 hover:bg-blue-700">Удалить
-                                        бэнд
-                                    </button>
-                                </div>
-
-                            </div>
-
-
-                            <div className="flex flex-row mb-1">
-                                <span className="text-sm text-center text-nowrap font-medium ">Бэнды:</span>
-
-                            </div>
-
-                            <div className="max-h-40 overflow-auto">
-                                {dataBandsOpt.map((param, index) => (
-                                    <div key={index}>
-                                        <input className={styleInputWithoutRounded + " font-medium mr-0 w-full"}
-                                               value={param}
-                                               onChange={(e) => handleDateBandChange(index, e.target.value)}
-                                               placeholder="Названия бэнда с данными"
-                                        />
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         </div>
                     </div>
-
                 </div>
 
 

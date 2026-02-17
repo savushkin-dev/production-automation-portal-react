@@ -65,8 +65,6 @@ export function ModalParameter({parameters, reportName, onSubmit, onClose}) {
     }
 
     useEffect(() => {
-        // console.log(parameters)
-        // console.log(values)
         for (let i = 0; i < parameters.length; i++) {
             if(parameters[i].default !== null){
                 setValues(prev=> ({...prev, [parameters[i].key]: parameters[i].default}))
@@ -77,9 +75,8 @@ export function ModalParameter({parameters, reportName, onSubmit, onClose}) {
     }, [])
 
     useEffect(() => {
-
         const initialValues = {};
-       parameters
+        parameters
             .filter(param => param.type === "DATE")
             .forEach(param => {
                 initialValues[param.key] = param.default === true
@@ -87,8 +84,6 @@ export function ModalParameter({parameters, reportName, onSubmit, onClose}) {
                     : param.default || '';
             });
         setValues(prevState => ({...prevState,...initialValues}));
-
-        console.log(parameters)
     }, []);
 
 
