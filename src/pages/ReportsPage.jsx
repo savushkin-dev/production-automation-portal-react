@@ -4,10 +4,10 @@ import React, {useEffect, useState} from "react";
 import ReportService from "../services/ReportService";
 import Loading from "../components/loading/Loading";
 import {ModalNotify} from "../components/modal/ModalNotify";
-import {ModalParameter} from "../components/reportsConstruct/ModalParameter";
 import {useNavigate} from "react-router-dom";
 import RoleGuard from "../components/RoleGuard";
 import {ReportSetting} from "../components/report/ReportSetting";
+import {ModalParameterWithLayout} from "../components/reportsConstruct/ModalParameterWithLayout";
 
 
 function ReportsPage() {
@@ -24,6 +24,7 @@ function ReportsPage() {
     const [reportsName, setReportsName] = useState([]);
     const [selectName, setSelectName] = useState("unknown")
     const [parametersMeta, setParametersMeta] = useState([]);
+    const [paramLayout, setParamLayout] = useState([]);
 
 
     async function fetchReportsName() {
@@ -42,7 +43,8 @@ function ReportsPage() {
     async function fetchParametersMeta(reportName) {
         try {
             const response = await ReportService.getParametersMetaByReportName(reportName);
-            setParametersMeta(response.data);
+            setParametersMeta(JSON.parse(response.data.parameters));
+            setParamLayout(JSON.parse(response.data.layoutParams));
         } catch (e) {
             setIsModalError(true);
             setError(e.response.data.message);
@@ -138,9 +140,9 @@ function ReportsPage() {
 
 
                 {isModalParameter &&
-                    <ModalParameter parameters={parametersMeta || []} onSubmit={onSubmitParameters} onClose={() => {
-                        setIsModalParameter(false)
-                    }}/>}
+                    <ModalParameterWithLayout parameters={parametersMeta || []} layout={paramLayout} onSubmit={onSubmitParameters}
+                                              onClose={() => {setIsModalParameter(false)}}/>
+                }
 
                 {isModalSettings &&
                     <ReportSetting reportName={selectName} onClose={closeReportSettings}/>}

@@ -29,6 +29,8 @@ import {decryptData, encryptData} from "../../utils/Сrypto";
 import {ModalParameter} from "./ModalParameter";
 import {JavaEditor} from "../javaEditor/JavaEditor";
 import {ViewReport} from "./ViewReport";
+import {DesignerParameter} from "./DesignerParameter";
+import {ModalParameterWithLayout} from "./ModalParameterWithLayout";
 import DropdownObj from "../dropdown/DropdownObj";
 
 
@@ -68,6 +70,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [isModalSettingDB, setIsModalSettingDB] = useState(false);
         const [isModalSQL, setIsModalSQL] = useState(false);
         const [isJavaEditor, setIsJavaEditor] = useState(false);
+        const [isDesignerParameter, setIsDesignerParameter] = useState(false);
         const [modalMsg, setModalMsg] = useState('');
 
         const [isSqlMode, setIsSqlMode] = useState(false);
@@ -78,6 +81,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [reportName, setReportName] = useState("");
         const [reportCategory, setReportCategory] = useState("");
         const [parameters, setParameters] = useState([]);
+        const [layoutParam, setLayoutParam] = useState(null)
         const [settingDB, setSettingDB] = useState({
             url: '',
             username: '',
@@ -827,7 +831,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                    font-weight: bolder;
                                    font-size: 14px;
                                    pointer-events: none;
-                              ">Главные данные: ${tableName}</div>
+                              ">Главные данные</div>
                               <div data-band="true" id="${tableName}" data-gjs-type="locked-band" style="height: 100px; width: ${widthPage}px; background: #f6f6f6; position: relative; border: 0px dashed #f4f4f4; padding: 0px 0px 0px 0px; overflow: visible;">
                                  <p data-field="true"  style="position: absolute; top: 60px; left: 20px; margin: 0px">Укажите поле из запроса в двойных скобках: {{field_1}}</p>
                               </div>
@@ -876,7 +880,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                font-weight: bold;
                                font-size: 14px;
                                pointer-events: none;
-                          ">Второстепенные данные: ${childName}</div>
+                          ">Второстепенные данные</div>
                           <div data-band-child="true" id="${childName}" data-gjs-type="locked-band" draggable="false" style="height: 100px; width: ${widthPage}px; background: #f6f6f6; position: relative; border: 0px dashed #f4f4f4; padding: 0px 0px 0px 0px; overflow: visible;">
                              <p data-field="true"  style="position: absolute; top: 60px; left: 20px; margin: 0px; z-index: 9999">Дочерний бэнд: {{field_1}}</p>
                           </div>
@@ -1199,7 +1203,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         settingDB.url, settingDB.username, encryptData(settingDB.password), settingDB.driverClassName, sql,
                         parameters,
                         updatedPages[0].content, css,
-                        script, isSqlMode, dataBandsOpt, isBookOrientation);
+                        script, isSqlMode, dataBandsOpt, isBookOrientation, "", layoutParam);
                     setModalMsg("Документ успешно отправлен!");
 
                 } catch (error) {
@@ -1230,6 +1234,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 defineBands(response.data.content);
                 setDataBandsOpt(JSON.parse(response.data.dataBands));
                 setIsBookOrientation(response.data.bookOrientation);
+
+                setLayoutParam(JSON.parse(response.data.layoutParams))
             } catch (error) {
                 console.error(error)
                 setModalMsg("Ошибка загрузки отчета с сервера! Попробуйте еще раз.")
@@ -1392,7 +1398,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                                             setDataBandsOpt={setDataBandsOpt}
                 />}
 
-                {!isViewMode && !isLoading && !isJavaEditor &&
+                {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter &&
 
                     <div className=" gjs-two-color gjs-one-bg flex flex-row justify-between py-1 gjs-pn-commands">
                         <div className="flex justify-start text-center ml-2 w-1/3">
@@ -1421,7 +1427,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                     </div>}
 
-                {!isViewMode && !isLoading && !isJavaEditor &&
+                {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter &&
                     <div
                         className="pl-2 gjs-two-color gjs-one-bg flex flex-row justify-between py-1 gjs-pn-commands ">
                         <div className="flex flex-row gap-x-2">
@@ -1472,6 +1478,16 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                         <div className="flex flex-row gap-x-2 pr-2">
 
+                            <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
+                                <button onClick={() => setIsDesignerParameter(true)}
+                                        className="flex flex-col justify-between justify-items-center">
+                                        <span className="gjs-pn-btn hover:bg-gray-200 flex justify-center ">
+                                            <i className="fa-solid fa-arrows-up-down-left-right pt-1"></i>
+                                        </span>
+                                    <span className="text-xs font-medium px-1">Дизайнер параметров</span>
+                                </button>
+                            </div>
+
                             {isSqlMode && <>
                                 <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
                                     <button onClick={showModalSettingDB}
@@ -1519,7 +1535,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                     </div>}
 
-                <div className={!isViewMode && !isLoading && !isJavaEditor ? 'block' : 'hidden'}>
+                <div className={!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter ? 'block' : 'hidden'}>
                     <div id="editor" ref={editorRef}/>
                 </div>
 
@@ -1557,12 +1573,25 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                               onClose={showModalSQL}/>
                 }
 
-                {!isViewMode && isModalParameter && <ModalParameter parameters={parameters || []}
+                {/*{!isViewMode && isModalParameter && <ModalParameter parameters={parameters || []}*/}
+                {/*                                                    onSubmit={enterPreviewMode}*/}
+                {/*                                                    onClose={() => {*/}
+                {/*                                                        setIsModalParameter(false)*/}
+                {/*                                                    }}*/}
+                {/*/>}*/}
+
+                {!isViewMode && isModalParameter && <ModalParameterWithLayout parameters={parameters || []}
+                                                                              layout={layoutParam}
                                                                     onSubmit={enterPreviewMode}
                                                                     onClose={() => {
                                                                         setIsModalParameter(false)
                                                                     }}
                 />}
+
+                {!isViewMode && isDesignerParameter &&
+                    <DesignerParameter parameters={parameters || []} layout={layoutParam} setLayout={setLayoutParam}
+                                       onClose={()=>setIsDesignerParameter(false)}/>
+                }
 
 
                 {isViewMode &&
