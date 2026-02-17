@@ -29,6 +29,7 @@ import {decryptData, encryptData} from "../../utils/Сrypto";
 import {ModalParameter} from "./ModalParameter";
 import {JavaEditor} from "../javaEditor/JavaEditor";
 import {ViewReport} from "./ViewReport";
+import DropdownObj from "../dropdown/DropdownObj";
 
 
 // Добавляем шрифт Roboto в виртуальную файловую систему pdfmake
@@ -49,7 +50,11 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         ]);
         const [currentPage, setCurrentPage] = useState(1); // Активная страница
 
-        const [dataBandsOpt, setDataBandsOpt] = useState([])
+        const [dataBandsOpt, setDataBandsOpt] = useState(["main","main-child"])
+        const [dataBandsOptDropDown, setDataDropDown] = useState([
+            { label: 'Основной бэнд', value: 'main' },
+            { label: 'Дополнительный бэнд', value: 'main-child' },
+        ])
 
 
         const [isViewMode, setIsViewMode] = useState(false);
@@ -598,7 +603,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             return new Promise((resolve) => {
                 setPages((prevPages) => {
-                    console.log(prevPages)
                     const updatedPages = prevPages.map((page) => page.id === currentPage ? {
                         ...page,
                         content: html,
@@ -1321,7 +1325,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         }
                     }
                 });
-                setDataBandsOpt(Array.from(foundTables).sort());
+                // setDataBandsOpt(Array.from(foundTables).sort());
                 setIsValidSql(true);
             } catch (e) {
                 setDataBandsOpt([]);
@@ -1455,7 +1459,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                             </div>
                             <div className="p-1 hover:bg-gray-200 flex-col justify-center justify-items-center">
                                 <img src="/icons/DataBand.png" className="icon-band" alt="Data band" draggable="false"/>
-                                <Dropdown options={dataBandsOpt} onSelect={handleSelectTableBand} label={"Бэнды"}/>
+                                <DropdownObj options={dataBandsOptDropDown} onSelect={handleSelectTableBand} label={"Бэнды"}/>
                             </div>
                             <div className=" hover:bg-gray-200 flex flex-col justify-center justify-items-center">
 

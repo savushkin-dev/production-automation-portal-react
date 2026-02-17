@@ -140,7 +140,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
         // Находим все главные бэнды
         const dataBands = doc.querySelectorAll('[data-band="true"]');
-
         let counterBand = 0;
 
         dataBands.forEach(band => {
@@ -148,10 +147,11 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
             let bandHtml = band.innerHTML;
 
             // Находим все дочерние бэнды для текущего главного
-            const childBands = Array.from(doc.querySelectorAll(`[data-band-child="true"][id^="${bandId}-child"]`));
-
+            // const childBands = Array.from(doc.querySelectorAll(`[data-band-child="true"][id^="${bandId}-child"]`));
+            const childBands = Array.from(doc.querySelectorAll(`[data-band-child="true"]`));
             dataArray.forEach(item => {
-                if (bandId.toLowerCase().startsWith(item.tableName.toLowerCase())) {
+                // if (bandId.toLowerCase().startsWith(item.tableName.toLowerCase())) {
+                // Т.к. теперь будут передаваться только данные для одного бэнда, нету смысла искать данные по названию таблицы или бэнда
                     item.data.forEach(tableData => {
                         // Рендерим главный бэнд
                         let instanceHtml = replaceFieldsInHtml(bandHtml, tableData);
@@ -178,7 +178,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
                         });
                     });
-                }
+                // }
             });
 
             // Удаляем оригинальные бэнды из шаблона
@@ -198,7 +198,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         bands.forEach(band => {
             band.innerHTML = replaceFieldsInHtml(band.innerHTML, data.globalVar)
         })
-
 
         // Разбиваем на страницы
         splitIntoA4Pages(doc.body.innerHTML, css, bands);
