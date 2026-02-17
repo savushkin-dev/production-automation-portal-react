@@ -9,6 +9,7 @@ import {
     renderField,
     ROW_HEIGHT
 } from "../../utils/report/designerParameter";
+import {ModalNotify} from "../modal/ModalNotify";
 
 const myCompactor = getCompactor(null, false, true);
 
@@ -27,6 +28,9 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
 
     // Ссылки для хранения типов элементов
     const textBlocksRef = useRef(new Set());
+
+    const [msg, setMsg] = useState("");
+    const [isModalNotify, setIsModalNotify] = useState(false);
 
 
     useEffect(() => {
@@ -173,6 +177,8 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
         }));
 
         setLayout(layoutLocalToSave)
+        setMsg("Изменения успешно применены.")
+        setIsModalNotify(true);
     };
 
     const resetLayoutLocal = () => {
@@ -394,6 +400,10 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                     </ReactGridLayout>
                 )}
             </div>
+
+            {isModalNotify &&
+                <ModalNotify title={"Результат операции"} message={msg} onClose={() => setIsModalNotify(false)}/>}
+
         </div>
     );
 }
