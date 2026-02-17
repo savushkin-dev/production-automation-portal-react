@@ -5,8 +5,6 @@ import {getCompactor} from "react-grid-layout/core";
 import {
     COLS,
     createDefaultLayout,
-    ITEM_HEIGHT,
-    ITEM_WIDTH,
     renderField,
     ROW_HEIGHT
 } from "../../utils/report/designerParameter";
@@ -23,23 +21,13 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
         initialWidth : 1200  // Ширина до первого измерения
     } ) ;
 
-    useEffect(()=>{
-        // console.log(layoutLocal)
-    }, [layoutLocal])
-
-    // Инициализация layout и значений
     useEffect(() => {
-        // console.log("Параметры пришли:", parameters);
-        // console.log("Layout пришел:", layout);
-
-        // Инициализируем значения параметров
         const initialValues = {};
         parameters.forEach(param => {
             initialValues[param.key] = param.default !== undefined ? param.default : '';
         });
         setValues(initialValues);
 
-        // Обрабатываем layout если он есть
         if (layout) {
             let layoutArray;
 
@@ -55,9 +43,8 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
             }
 
             if (Array.isArray(layoutArray) && layoutArray.length > 0) {
-                // Конвертируем из формата с key в формат с i
                 const convertedLayout = layoutArray.map(item => ({
-                    i: item.i || item.key,  // сначала i, потом key
+                    i: item.i || item.key,
                     x: item.x,
                     y: item.y,
                     w: item.w,
@@ -72,7 +59,7 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
                 const newTextBlocks = {};
                 layoutArray.forEach(item => {
                     if (item.isTextBlock && item.text) {
-                        const itemId = item.i || item.key;  // сначала i, потом key
+                        const itemId = item.i || item.key;
                         newTextBlocks[itemId] = item.text;
                     }
                 });
@@ -107,12 +94,10 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
         setValues(prevState => ({...prevState,...initialValues}));
     }, []);
 
-    // Обработчик изменения значений
     const handleChange = (key, value) => {
         setValues(prev => ({...prev, [key]: value}));
     };
 
-    // Отправка формы
     const handleSubmit = () => {
         onSubmit(identifyNonDefault(values, parameters));
     };
@@ -168,10 +153,8 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
     }
 
     const renderGridItem = (item) => {
-        // Проверяем, является ли элемент текстовым блоком
         const isTextBlock = textBlocks[item.i] !== undefined;
 
-        // ТЕКСТОВЫЙ БЛОК
         if (isTextBlock) {
             return (
                 <div key={item.i} className="font-bold text-gray-800">
@@ -205,8 +188,9 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
         if (layoutLocal.length === 0) return 600;
         const maxRight = Math.max(...layoutLocal.map(item => item.x + item.w));
         // Переводим в пиксели (1 колонка = 10px)
-        const widthInPixels = maxRight * 10;
-        return Math.min(widthInPixels, 1200) + 80;
+        let widthInPixels = maxRight * 10;
+        widthInPixels = Math.min(widthInPixels, 1200) + 80;
+        return widthInPixels < 500? 500 : widthInPixels;
     };
 
     return (
@@ -216,7 +200,7 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
                 onClick={onClose}
             />
 
-            <div className="p-5 z-30 rounded bg-white absolute top-20 left-1/2 -translate-x-1/2 px-8 max-h-[80vh] overflow-y-auto" style={{ width: calculateGridWidth() }}>
+            <div className="p-5 z-30 rounded bg-white fixed top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 px-8 max-h-[80vh] overflow-y-auto" style={{ width: calculateGridWidth() }}>
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-medium text-start">Параметры отчета</h1>
                     <button
