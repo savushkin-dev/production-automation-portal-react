@@ -273,7 +273,7 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                 <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 w-3/4">
-                            <div className="w-1 h-12 bg-blue-600 rounded-full"></div>
+                            <div className="w-[4px] h-12 bg-blue-600 rounded-full flex-shrink-0"></div>
                             <div>
                                 <p className="text-sm text-gray-600 leading-relaxed">
                                     Перетаскивайте
