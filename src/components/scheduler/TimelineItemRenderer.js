@@ -1,32 +1,32 @@
 // components/scheduler/TimelineRenderers.js
 import React, {useEffect} from "react";
 import moment from "moment/moment";
-import {isFactItem} from "../../utils/scheduler/items";
+import {isFactItem, isMaintenancePackingOrLeveling} from "../../utils/scheduler/items";
 
 /**
  * Фабрика для создания рендерера элементов таймлайна планировщика
  */
 export const createItemRendererScheduler = (selectedItems, selectedItem, activeDisplay) => {
 
-    function defineStyle(activeDisplay, isFactEl) {
+    function defineStyle(activeDisplay, isFactEl, isLeveling) {
         const { plan, fact, planFact } = activeDisplay || {};
 
         if (plan) {
             return isFactEl
-                ? { display: 'none', marginTop: '-16px' }
-                : { display: 'block', marginTop: '-4px' };
+                ? { display: 'none', marginTop: '-16px'}
+                : (isLeveling? { display: 'block', marginTop: '28px'}:{ display: 'block', marginTop: '-4px'});
         }
 
         if (fact) {
             return isFactEl
-                ? { display: 'block', marginTop: '4px' }
+                ? { display: 'block', marginTop: '4px'}
                 : { display: 'none', marginTop: '-16px' };
         }
 
         if (planFact) {
             return isFactEl
-                ? { display: 'block', marginTop: '65px' }
-                : { display: 'block', marginTop: '-16px' };
+                ? { display: 'block', marginTop: '65px'}
+                : (isLeveling? { display: 'block', marginTop: '16px'}:{ display: 'block', marginTop: '-16px'});
         }
 
         return { display: 'block', marginTop: '-16px' };
@@ -43,15 +43,18 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
         const selectBg = "#cbff93";
 
         const isFactEl = isFactItem(item);
+        const isLeveling = isMaintenancePackingOrLeveling(item);
 
-        let settings = defineStyle(activeDisplay, isFactEl)
+        let settings = defineStyle(activeDisplay, isFactEl, isLeveling)
 
         const itemProps = getItemProps({
             style: {
                 background: isSelected
                     ? (isSingleSelected ? selectBg : selectBg)
                     : (isFactEl ? factElBg : (isFact ? factBg : item.itemProps?.style?.background || '#fff')),
-                border: '1px solid #aeaeae',
+                borderWidth: '1px',
+                borderStyle: 'solid',
+                borderColor: '#aeaeae',
                 textAlign: 'start',
                 color: item.itemProps?.style?.color || 'black',
                 margin: 0,
@@ -59,7 +62,6 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                maxWidth: '100%',
                 display: settings.display,
                 marginTop: settings.marginTop,
             },
@@ -73,7 +75,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
             <div
                 key={item.id}
                 {...safeItemProps}
-                className={isFactEl ? "rct-item-fact" : "rct-item"}
+                className={isFactEl ? "rct-item-fact" : (isLeveling? "rct-item-alignment" : "rct-item")}
             >
 
                 {!isFactEl ? (
@@ -115,24 +117,32 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
                             {item.info?.duration && (
                                 <span className="px-1 rounded">
-                          <span className="text-pink-500">{item.info.duration} мин.</span>
-                          <span className="text-gray-500 px-1">|</span>
-                          <span className="text-green-600">
-                            {moment(item.start_time).format('HH:mm')}
-                          </span>
+                                      <span className="text-pink-500">{item.info.duration} мин.</span>
+                                      <span className="text-gray-500 px-1">|</span>
+                                      <span className="text-green-600">
+                                        {moment(item.start_time).format('HH:mm')}
+                                      </span>
                                     {' - '}
                                     <span className="text-red-500">
-                            {moment(item.end_time).format('HH:mm')}
-                          </span>
-                          <span className="pl-1">Время</span>
-                        </span>
+                                            {moment(item.end_time).format('HH:mm')}
+                                        </span>
+                                      <span className="pl-1">Время</span>
+
+                                    {isLeveling &&
+                                        <>
+                                            <span className="text-gray-500 px-1">|</span>
+                                            <span className="text-violet-600">{item.info.groupIndex}</span>
+                                            <span className="pl-1">Позиция на линии</span>
+                                        </>
+                                    }
+                                </span>
                             )}
 
-                            {item.info?.groupIndex && !isFact && (
+                            {item.info?.groupIndex && !isFact && !isLeveling && (
                                 <span className="px-1 rounded">
-                          <span className="text-violet-600">{item.info.groupIndex}</span>
-                          <span className="pl-1">Позиция на линии</span>
-                        </span>
+                                      <span className="text-violet-600">{item.info.groupIndex}</span>
+                                      <span className="pl-1">Позиция на линии</span>
+                                </span>
                             )}
 
                             {isFact && (
