@@ -81,7 +81,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [reportName, setReportName] = useState("");
         const [reportCategory, setReportCategory] = useState("");
         const [parameters, setParameters] = useState([]);
-        const [layoutParam, setLayoutParam] = useState(null)
+        const [layoutParam, setLayoutParam] = useState("");
+        const [layoutParamSettings, setLayoutParamSettings] = useState("");
         const [settingDB, setSettingDB] = useState({
             url: '',
             username: '',
@@ -637,7 +638,9 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     sqlMode: isSqlMode,
                     script: script,
                     dataBands: JSON.stringify(dataBandsOpt),
-                    bookOrientation: isBookOrientation
+                    bookOrientation: isBookOrientation,
+                    layoutParamSettings: layoutParamSettings,
+                    layoutParam: layoutParam
                 }
 
                 try {
@@ -697,6 +700,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         setScript(importedPages.script)
                         setDataBandsOpt(JSON.parse(importedPages.dataBands))
                         setIsBookOrientation(importedPages.bookOrientation);
+                        setLayoutParam(importedPages.layoutParam);
+                        setLayoutParamSettings(importedPages.layoutParamSettings);
                         defineBands(importedPages.content);
                     };
                 } catch (error) {
@@ -1203,7 +1208,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         settingDB.url, settingDB.username, encryptData(settingDB.password), settingDB.driverClassName, sql,
                         parameters,
                         updatedPages[0].content, css,
-                        script, isSqlMode, dataBandsOpt, isBookOrientation, "", layoutParam);
+                        script, isSqlMode, dataBandsOpt, isBookOrientation, layoutParamSettings, layoutParam);
                     setModalMsg("Документ успешно отправлен!");
 
                 } catch (error) {
@@ -1234,15 +1239,14 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 defineBands(response.data.content);
                 setDataBandsOpt(JSON.parse(response.data.dataBands));
                 setIsBookOrientation(response.data.bookOrientation);
-
-                setLayoutParam(JSON.parse(response.data.layoutParams))
+                setLayoutParam(JSON.parse(response.data.layoutParams));
+                setLayoutParamSettings(JSON.parse(response.data.layoutSettingsParams));
             } catch (error) {
                 console.error(error)
                 setModalMsg("Ошибка загрузки отчета с сервера! Попробуйте еще раз.")
                 showModalNotif();
             } finally {
                 showModalDownloadReport();
-
             }
         }
 
@@ -1394,8 +1398,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                 {!isViewMode && isJavaEditor && <JavaEditor onClose={() => setIsJavaEditor(false)} parameters={parameters}
                                                             setParameters={setParameters} setScript={(e) => setScript(e)}
-                                                            script={script} dataBandsOpt={dataBandsOpt}
-                                                            setDataBandsOpt={setDataBandsOpt}
+                                                            script={script} layout={layoutParamSettings} setLayout={setLayoutParamSettings}
                 />}
 
                 {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter &&
@@ -1572,13 +1575,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                               onChange={(e) => setSql(e.target.value)}
                               onClose={showModalSQL}/>
                 }
-
-                {/*{!isViewMode && isModalParameter && <ModalParameter parameters={parameters || []}*/}
-                {/*                                                    onSubmit={enterPreviewMode}*/}
-                {/*                                                    onClose={() => {*/}
-                {/*                                                        setIsModalParameter(false)*/}
-                {/*                                                    }}*/}
-                {/*/>}*/}
 
                 {!isViewMode && isModalParameter && <ModalParameterWithLayout parameters={parameters || []}
                                                                               layout={layoutParam}
