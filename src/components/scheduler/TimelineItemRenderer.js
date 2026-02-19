@@ -52,9 +52,10 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                 background: isSelected
                     ? (isSingleSelected ? selectBg : selectBg)
                     : (isFactEl ? factElBg : (isFact ? factBg : item.itemProps?.style?.background || '#fff')),
-                borderWidth: '1px',
-                borderStyle: 'solid',
-                borderColor: '#aeaeae',
+                borderWidth: '1px', //для новой версии
+                borderStyle: 'solid', //для новой версии
+                borderColor: '#aeaeae', //для новой версии
+                // border: '1px solid #aeaeae',
                 textAlign: 'start',
                 color: item.itemProps?.style?.color || 'black',
                 margin: 0,
