@@ -27,6 +27,7 @@ import {groupDataByDay} from "../utils/scheduler/pdayParsing";
 import {getNext2DateStr, getNextDateStr, getPredDateStr} from "../utils/date/date";
 import {isFactItem, isPackagedItem} from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
+import {ModalNotifyError} from "../components/modal/ModalNotifyError";
 
 
 function SchedulerPage() {
@@ -53,6 +54,7 @@ function SchedulerPage() {
     const [isLoadingSolve, setIsLoadingSolve] = useState(false);
     const [msg, setMsg] = useState("");
     const [isModalNotify, setIsModalNotify] = useState(false);
+    const [isModalNotifyError, setIsModalNotifyError] = useState(false);
     const [isModalInfoItem, setIsModalInfoItem] = useState(false);
     const [isModalMoveJobs, setIsModalMoveJobs] = useState(false);
     const [isModalAssignServiceWork, setIsModalAssignServiceWork] = useState(false);
@@ -144,8 +146,8 @@ function SchedulerPage() {
             setSelectJobs(groupedData.selectJobs);
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка инициализации: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка инициализации: " + e.response.data.message)
+            setIsModalNotifyError(true);
             setItems([])
             setScore({hard: 0, medium: 0, soft: 0})
             setPdayData({
@@ -170,8 +172,8 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка выравнивания плана: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка выравнивания плана: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -182,8 +184,8 @@ function SchedulerPage() {
             setIsModalNotify(true);
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка отправки плана в работу: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка отправки плана в работу: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -220,8 +222,8 @@ function SchedulerPage() {
             setIsModalNotify(true);
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка сохранения отчета: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка сохранения отчета: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -239,8 +241,8 @@ function SchedulerPage() {
             setServiceTypes(res)
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка загрузки типов сервисных операций: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка загрузки типов сервисных операций: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -250,8 +252,8 @@ function SchedulerPage() {
             setStartTimeLines(convertLinesWithTimeFields(response.data))
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка загрузки линий отчета: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка загрузки линий отчета: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -262,8 +264,8 @@ function SchedulerPage() {
             setIsSolve(true);
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка начала планирования: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка начала планирования: " + e.response.data.message)
+            setIsModalNotifyError(true);
         } finally {
             setIsLoadingSolve(false)
         }
@@ -275,8 +277,8 @@ function SchedulerPage() {
             await SchedulerService.stopSolving();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка остановки планирования: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка остановки планирования: " + e.response.data.message)
+            setIsModalNotifyError(true);
         } finally {
             setIsLoadingSolve(false)
         }
@@ -293,8 +295,8 @@ function SchedulerPage() {
             setDownloadedPlan(null)
             setScore({hard: 0, medium: 0, soft: 0})
             setIsSolve(false)
-            setMsg("Ошибка получения плана: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка получения плана: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -305,8 +307,8 @@ function SchedulerPage() {
             setIsModalAnalyze(true);
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка получения подробного анализа: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка получения подробного анализа: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -318,8 +320,8 @@ function SchedulerPage() {
             setIsModalNotify(true)
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка обновления справочных данных: " + e.response.data.error)
-            setIsModalNotify(true)
+            setMsg("Ошибка обновления справочных данных: " + e.response.data.message)
+            setIsModalNotifyError(true)
         }
     }
 
@@ -502,8 +504,8 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка прикрепления: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка прикрепления: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -513,8 +515,8 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка открепления: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка открепления: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -639,8 +641,8 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка перемещения job-ов: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка перемещения job-ов: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -654,8 +656,8 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка назначения сервисной операции: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка назначения сервисной операции: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -665,8 +667,8 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка обновления сервисной операции: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка обновления сервисной операции: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -676,8 +678,8 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка удаления сервисной операции: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка удаления сервисной операции: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -688,8 +690,8 @@ function SchedulerPage() {
             setModalSortConfig(prev => ({...prev, isSort: true}))
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка сортировки: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка сортировки: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -701,8 +703,8 @@ function SchedulerPage() {
             setIsModalNotify(true);
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка дозагрузки: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка дозагрузки: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -712,8 +714,8 @@ function SchedulerPage() {
             await fetchPlan()
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка назначения времени: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка назначения времени: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -723,8 +725,8 @@ function SchedulerPage() {
             await fetchPlan()
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка назначения времени: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка назначения времени: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -972,6 +974,9 @@ function SchedulerPage() {
 
                 {isModalNotify &&
                     <ModalNotify title={"Результат операции"} message={msg} onClose={() => setIsModalNotify(false)}/>}
+
+                {isModalNotifyError &&
+                    <ModalNotifyError title={"Ошибка операции"} message={msg} onClose={() => setIsModalNotifyError(false)}/>}
 
                 {isModalSendToWork &&
                     <ModalConfirmation title={"Подтверждение действия"} message={msg}
