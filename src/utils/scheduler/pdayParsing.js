@@ -73,6 +73,7 @@ export function groupDataByDay(data, baseDate) {
 // Функции для получения дат (добавьте их, если еще нет)
 export const getDateMinus2 = (date) => moment(date).subtract(2, 'days').format('DD.MM.YYYY');
 export const getDateMinus1 = (date) => moment(date).subtract(1, 'day').format('DD.MM.YYYY');
+export const getDateCurrent = (date) => moment(date).format('DD.MM.YYYY');
 export const getDatePlus1 = (date) => moment(date).add(1, 'day').format('DD.MM.YYYY');
 export const getDatePlus2 = (date) => moment(date).add(2, 'days').format('DD.MM.YYYY');
 export const getDatePlus3 = (date) => moment(date).add(3, 'days').format('DD.MM.YYYY');

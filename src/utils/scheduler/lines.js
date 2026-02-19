@@ -32,3 +32,8 @@ export function addTimeFields(linesArray, startTime = "08:00", endTime = "08:00"
         maxEndDateTime: endTime
     }));
 }
+
+// Функция поиска имени линии по id линии
+export const getLineNameById = (lineId, lines) => {
+    return lines?.find(line => line.lineId === lineId)?.name || '';
+};

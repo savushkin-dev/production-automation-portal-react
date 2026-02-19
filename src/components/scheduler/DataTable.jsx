@@ -1,6 +1,8 @@
-import React, {useMemo, useState, useCallback} from "react";
+import React, {useMemo, useState, useCallback, useEffect} from "react";
+import {formatIsoToDateOnly, formatIsoToDatetimeRegex, formatIsoToDatetimeWithoutSeconds} from "../../utils/date/date";
+import {getLineNameById} from "../../utils/scheduler/lines";
 
-export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
+export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
     const [expandedGroups, setExpandedGroups] = useState(new Set());
 
     const itemsArray = useMemo(() => {
@@ -16,7 +18,10 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
             KOLEV: item.quantity,
             UX: item.priority || 0,
             PDTN: item.startProductionDateTime || null,
-            isSelected: selectJobs[item.snpz].isSelect || false
+            isSelected: selectJobs[item.snpz].isSelect || false,
+
+            startPlan: item.startProductionDateTime,
+            line: item.lineId
         }));
     }, [data, selectJobs]);
 
@@ -273,20 +278,22 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
                                     <tr style={{backgroundColor: '#34495e', color: 'white'}}>
                                         <th className="w-[5%]" style={{padding: '8px', textAlign: 'center'}}>
                                         </th>
-                                        <th className="w-[10%]" style={{padding: '6px', textAlign: 'center'}}>Товар</th>
-                                        <th className="w-[25%]"
+                                        <th className="w-[5%]" style={{padding: '6px', textAlign: 'center'}}>Товар</th>
+                                        <th className="w-[20%]"
                                             style={{padding: '6px', textAlign: 'center'}}>Наименование
                                         </th>
                                         <th className="w-[10%]"
                                             style={{padding: '6px', textAlign: 'center'}}>Ручная стикеровка
                                         </th>
                                         <th className="w-[8%]" style={{padding: '6px', textAlign: 'center'}}>Дата</th>
+                                        <th className="w-[12%]" style={{padding: '6px', textAlign: 'center'}}>Дата по плану</th>
+                                        <th className="w-[8%]" style={{padding: '6px', textAlign: 'center'}}>Линия</th>
                                         <th className="w-[8%]" style={{padding: '6px', textAlign: 'center'}}>№ партии
                                         </th>
-                                        <th className="w-[8%]" style={{padding: '6px', textAlign: 'center'}}>Масса</th>
-                                        <th className="w-[8%]" style={{padding: '6px', textAlign: 'center'}}>Единиц
+                                        <th className="w-[4%]" style={{padding: '6px', textAlign: 'center'}}>Масса</th>
+                                        <th className="w-[6%]" style={{padding: '6px', textAlign: 'center'}}>Единиц
                                         </th>
-                                        <th className="w-[8%]" style={{padding: '6px', textAlign: 'center'}}>Приоритет
+                                        <th className="w-[6%]" style={{padding: '6px', textAlign: 'center'}}>Приоритет
                                         </th>
                                         <th className="w-[10%]" style={{padding: '6px', textAlign: 'center'}}>№
                                             задания
@@ -323,11 +330,11 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
                                                         onChange={(e) => select(e, item)}
                                                     />
                                                 </td>
-                                                <td className="w-[10%]"
+                                                <td className="w-[5%]"
                                                     style={{textAlign: 'center', padding: '12px', color: '#666'}}>
                                                     {item.KMC}
                                                 </td>
-                                                <td className="w-[25%]"
+                                                <td className="w-[20%]"
                                                     style={{textAlign: 'center', padding: '12px', color: '#666'}}>
                                                     {item.SNM}
                                                 </td>
@@ -342,21 +349,31 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
                                                 </td>
                                                 <td className="w-[8%]"
                                                     style={{textAlign: 'center', padding: '12px', color: '#666'}}>
-                                                    {formatDate(item.DTI)}
+                                                    {formatIsoToDateOnly(item.DTI)}
                                                 </td>
-                                                <td className="w-[8%]"
+
+                                                <td className="w-[6%]"
+                                                    style={{textAlign: 'center', padding: '12px', color: '#666'}}>
+                                                    {formatIsoToDatetimeWithoutSeconds(item.startPlan) || "-"}
+                                                </td>
+                                                <td className="w-[4%]"
+                                                    style={{textAlign: 'center', padding: '12px', color: '#666'}}>
+                                                    {getLineNameById(item.line, lines) || "-"}
+                                                </td>
+
+                                                <td className="w-[6%]"
                                                     style={{padding: '12px', textAlign: 'center', color: '#666'}}>
                                                     {item.NP}
                                                 </td>
-                                                <td className="w-[8%]"
+                                                <td className="w-[6%]"
                                                     style={{padding: '12px', textAlign: 'center', color: '#666'}}>
                                                     {item.MASSA ? item.MASSA.toLocaleString('ru-RU') : '-'}
                                                 </td>
-                                                <td className="w-[8%]"
+                                                <td className="w-[6%]"
                                                     style={{padding: '12px', textAlign: 'center', color: '#666'}}>
                                                     {item.KOLEV ? item.KOLEV.toLocaleString('ru-RU') : '-'}
                                                 </td>
-                                                <td className="w-[8%]"
+                                                <td className="w-[6%]"
                                                     style={{padding: '12px', textAlign: 'center', color: '#666'}}>
                                                     {item.UX || 0}
                                                 </td>

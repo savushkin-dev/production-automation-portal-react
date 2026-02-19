@@ -24,6 +24,7 @@ import {convertLinesWithTimeFields} from "../utils/scheduler/lines";
 import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
 import {createTimelineRenderersSheduler} from "../components/scheduler/TimelineItemRenderer";
 import {
+    getDateCurrent,
     getDateMinus1,
     getDateMinus2,
     getDatePlus1,
@@ -1072,71 +1073,52 @@ function SchedulerPage() {
                                             serviceTypes={serviceTypes}
                     />
                 }
-
-                {/*<DataTable data={pdayData.previousDay} setData={(newData) => setPdayData(prev => ({*/}
-                {/*    ...prev,*/}
-                {/*    previousDay: newData*/}
-                {/*}))} dateData={getPredDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>*/}
-
-                {/*<DataTable data={pdayData.currentDay} setData={(newData) => setPdayData(prev => ({*/}
-                {/*    ...prev,*/}
-                {/*    currentDay: newData*/}
-                {/*}))} dateData={selectDate} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>*/}
-
-                {/*<DataTable data={pdayData.nextDay} setData={(newData) => setPdayData(prev => ({*/}
-                {/*    ...prev,*/}
-                {/*    nextDay: newData*/}
-                {/*}))} dateData={getNextDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>*/}
-
-                {/*<DataTable data={pdayData.next2Day} setData={(newData) => setPdayData(prev => ({*/}
-                {/*    ...prev,*/}
-                {/*    next2Day: newData*/}
-                {/*}))}  dateData={getNext2DateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>*/}
+                
 
                 <DataTable data={pdayData.dayMinus2} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayMinus2: newData
-                }))} dateData={getDateMinus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                }))} dateData={getDateMinus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} /> 
 
                 <DataTable data={pdayData.dayMinus1} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayMinus1: newData
-                }))} dateData={getDateMinus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                }))} dateData={getDateMinus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
                 <DataTable data={pdayData.currentDay} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     currentDay: newData
-                }))} dateData={selectDate} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                }))} dateData={getDateCurrent(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
                 <DataTable data={pdayData.dayPlus1} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayPlus1: newData
-                }))} dateData={getDatePlus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                }))} dateData={getDatePlus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
                 <DataTable data={pdayData.dayPlus2} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayPlus2: newData
-                }))} dateData={getDatePlus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                }))} dateData={getDatePlus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
                 <DataTable data={pdayData.dayPlus3} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayPlus3: newData
-                }))} dateData={getDatePlus3(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                }))} dateData={getDatePlus3(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
                 <DataTable data={pdayData.dayPlus4} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayPlus4: newData
-                }))} dateData={getDatePlus4(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                }))} dateData={getDatePlus4(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
                 <DataTable data={pdayData.dayPlus5} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayPlus5: newData
-                }))} dateData={getDatePlus5(selectDate)}selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                }))} dateData={getDatePlus5(selectDate)}selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
                 <DataTable data={pdayData.dayPlus6} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayPlus6: newData
-                }))} dateData={getDatePlus6(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                }))} dateData={getDatePlus6(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
 
 
