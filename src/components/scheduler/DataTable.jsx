@@ -173,7 +173,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
     return (
         <div className="p-4">
             <div className="px-3 py-2 rounded flex flex-row justify-between align-middle text-black mb-2">
-                <div style={{fontSize: '16px'}}>
+                <div className="w-1/3" style={{fontSize: '16px'}}>
                     <button
                         className="bg-blue-800 hover:bg-blue-700 text-white px-3 py-1 w-36 rounded font-medium text-[0.950rem]"
                         onClick={toggleAllGroups}
@@ -194,12 +194,12 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs}) {
                         }
                     </button>
                 </div>
-                <div>
+                <div className="w-1/3 text-center">
                     <span className="text-xl font-medium">
                          Задание {dateData}
                     </span>
                 </div>
-                <div className="py-1" style={{fontSize: '14px'}}>
+                <div className="w-1/3 py-1 text-end" style={{fontSize: '14px'}}>
                     Групп: {groupedData.length} | Развернуто: {expandedGroupsCount} | Всего
                     записей: {totalRecords} | Выбрано в таблице: {selectedInThisComponent}
                 </div>

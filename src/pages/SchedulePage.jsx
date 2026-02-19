@@ -23,7 +23,14 @@ import {MyTimeline} from "../components/scheduler/MyTimeline";
 import {convertLinesWithTimeFields} from "../utils/scheduler/lines";
 import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
 import {createTimelineRenderersSheduler} from "../components/scheduler/TimelineItemRenderer";
-import {groupDataByDay} from "../utils/scheduler/pdayParsing";
+import {
+    getDateMinus1,
+    getDateMinus2,
+    getDatePlus1,
+    getDatePlus2,
+    getDatePlus3, getDatePlus4, getDatePlus5, getDatePlus6,
+    groupDataByDay
+} from "../utils/scheduler/pdayParsing";
 import {getNext2DateStr, getNextDateStr, getPredDateStr} from "../utils/date/date";
 import {isFactItem, isPackagedItem} from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
@@ -43,10 +50,16 @@ function SchedulerPage() {
     const [groups, setGroups] = useState([]);
     const [items, setItems] = useState([]);
     const [pdayData, setPdayData] = useState({
-        previousDay: [],
+        dayMinus2: [],
+        dayMinus1: [],
         currentDay: [],
-        nextDay: [],
-        next2Day: []
+        dayPlus1: [],
+        dayPlus2: [],
+        dayPlus3: [],
+        dayPlus4: [],
+        dayPlus5: [],
+        dayPlus6: [],
+        selectJobs: {}
     });
     const [selectJobs, setSelectJobs] = useState([])
 
@@ -138,12 +151,7 @@ function SchedulerPage() {
 
             const groupedData = groupDataByDay(response.data, baseDate);
 
-            setPdayData({
-                previousDay: groupedData.previousDay,
-                currentDay: groupedData.currentDay,
-                nextDay: groupedData.nextDay,
-                next2Day: groupedData.next2Day
-            });
+            setPdayData(groupedData);
 
             setSelectJobs(groupedData.selectJobs);
         } catch (e) {
@@ -153,10 +161,17 @@ function SchedulerPage() {
             setItems([])
             setScore({hard: 0, medium: 0, soft: 0})
             setPdayData({
-                previousDay: [],
+                dayMinus2: [],
+                dayMinus1: [],
                 currentDay: [],
-                nextDay: [],
-                next2Day: []
+                dayPlus1: [],
+                dayPlus2: [],
+                dayPlus3: [],
+                dayPlus4: [],
+                dayPlus5: [],
+                dayPlus6: [],
+                dayPlus7: [],
+                // selectJobs: []
             });
         }
     }
@@ -1058,25 +1073,72 @@ function SchedulerPage() {
                     />
                 }
 
-                <DataTable data={pdayData.previousDay} setData={(newData) => setPdayData(prev => ({
+                {/*<DataTable data={pdayData.previousDay} setData={(newData) => setPdayData(prev => ({*/}
+                {/*    ...prev,*/}
+                {/*    previousDay: newData*/}
+                {/*}))} dateData={getPredDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>*/}
+
+                {/*<DataTable data={pdayData.currentDay} setData={(newData) => setPdayData(prev => ({*/}
+                {/*    ...prev,*/}
+                {/*    currentDay: newData*/}
+                {/*}))} dateData={selectDate} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>*/}
+
+                {/*<DataTable data={pdayData.nextDay} setData={(newData) => setPdayData(prev => ({*/}
+                {/*    ...prev,*/}
+                {/*    nextDay: newData*/}
+                {/*}))} dateData={getNextDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>*/}
+
+                {/*<DataTable data={pdayData.next2Day} setData={(newData) => setPdayData(prev => ({*/}
+                {/*    ...prev,*/}
+                {/*    next2Day: newData*/}
+                {/*}))}  dateData={getNext2DateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>*/}
+
+                <DataTable data={pdayData.dayMinus2} setData={(newData) => setPdayData(prev => ({
                     ...prev,
-                    previousDay: newData
-                }))} dateData={getPredDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                    dayMinus2: newData
+                }))} dateData={getDateMinus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+
+                <DataTable data={pdayData.dayMinus1} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayMinus1: newData
+                }))} dateData={getDateMinus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
                 <DataTable data={pdayData.currentDay} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     currentDay: newData
                 }))} dateData={selectDate} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
-                <DataTable data={pdayData.nextDay} setData={(newData) => setPdayData(prev => ({
+                <DataTable data={pdayData.dayPlus1} setData={(newData) => setPdayData(prev => ({
                     ...prev,
-                    nextDay: newData
-                }))} dateData={getNextDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                    dayPlus1: newData
+                }))} dateData={getDatePlus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
 
-                <DataTable data={pdayData.next2Day} setData={(newData) => setPdayData(prev => ({
+                <DataTable data={pdayData.dayPlus2} setData={(newData) => setPdayData(prev => ({
                     ...prev,
-                    next2Day: newData
-                }))}  dateData={getNext2DateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                    dayPlus2: newData
+                }))} dateData={getDatePlus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+
+                <DataTable data={pdayData.dayPlus3} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus3: newData
+                }))} dateData={getDatePlus3(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+
+                <DataTable data={pdayData.dayPlus4} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus4: newData
+                }))} dateData={getDatePlus4(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+
+                <DataTable data={pdayData.dayPlus5} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus5: newData
+                }))} dateData={getDatePlus5(selectDate)}selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+
+                <DataTable data={pdayData.dayPlus6} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus6: newData
+                }))} dateData={getDatePlus6(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+
+
 
 
             </div>
