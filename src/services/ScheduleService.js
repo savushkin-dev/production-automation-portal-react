@@ -129,6 +129,7 @@ export default class ScheduleService {
                 startCameraFact: filteredData[i].cameraStart,
                 endCameraFact: filteredData[i].cameraEnd,
                 placeFactInfo: filteredData[i].placeFactInfo,
+                dti: filteredData[i].dti,
             }
         }
         return factList;
@@ -214,6 +215,7 @@ export default class ScheduleService {
                 startCameraFact: json.jobs[i].cameraStart,
                 endCameraFact: json.jobs[i].cameraEnd,
                 placeFactInfo: json.jobs[i].placeFactInfo,
+                dti: json.jobs[i].dti,
             }
         }
 
