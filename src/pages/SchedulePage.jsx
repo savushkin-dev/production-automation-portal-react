@@ -29,7 +29,7 @@ import {
     getDateMinus2,
     getDatePlus1,
     getDatePlus2,
-    getDatePlus3, getDatePlus4, getDatePlus5, getDatePlus6,
+    getDatePlus3, getDatePlus4, getDatePlus5, getDatePlus6, getDatePlus7,
     groupDataByDay
 } from "../utils/scheduler/pdayParsing";
 import {isFactItem, isPackagedItem} from "../utils/scheduler/items";
@@ -59,6 +59,7 @@ function SchedulerPage() {
         dayPlus4: [],
         dayPlus5: [],
         dayPlus6: [],
+        dayPlus7: [],
         selectJobs: {}
     });
     const [selectJobs, setSelectJobs] = useState([])
@@ -1140,12 +1141,16 @@ function SchedulerPage() {
                     dayPlus6: newData
                 }))} dateData={getDatePlus6(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
-
+                <DataTable data={pdayData.dayPlus7} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus7: newData
+                }))} dateData={getDatePlus7(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
 
             </div>
         </>
     )
+
 }
 
 export default observer(SchedulerPage)
