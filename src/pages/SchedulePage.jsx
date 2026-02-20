@@ -20,7 +20,7 @@ import {DataTable} from "../components/scheduler/DataTable";
 import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
 import {ModalUpdateServiceWork} from "../components/scheduler/ModalUpdateServiceWork";
 import {MyTimeline} from "../components/scheduler/MyTimeline";
-import {convertLinesWithTimeFields} from "../utils/scheduler/lines";
+import {convertLinesWithTimeFields, isValidLinesDate} from "../utils/scheduler/lines";
 import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
 import {createTimelineRenderersSheduler} from "../components/scheduler/TimelineItemRenderer";
 import {
@@ -122,7 +122,6 @@ function SchedulerPage() {
     const heightGroupScheduler = activeDisplay.fact || activeDisplay.plan? 100 : 164;
 
     const [clickedCameras, setClickedCameras] = useState({});
-
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -383,7 +382,12 @@ function SchedulerPage() {
     }, [downloadedPlan]);
 
     async function solve() {
-        await fetchSolve();
+        (isValidLinesDate(startTimeLines))? await fetchSolve() : setLinesDateError();
+    }
+
+    function setLinesDateError(){
+        setMsg("Перед началом планирования или дозагрузки требуется настроить время начала и максимальное время линий в разделе \"Настройка линий\")")
+        setIsModalNotifyError(true);
     }
 
     useEffect(() => {
@@ -746,6 +750,10 @@ function SchedulerPage() {
         }
     }
 
+    async function ClickReloadPlan(){
+        (isValidLinesDate(startTimeLines))? await reloadPlan() : setLinesDateError();
+    }
+
     async function reloadPlan() {
         try {
             await SchedulerService.reloadPlan(selectJobs);
@@ -902,7 +910,7 @@ function SchedulerPage() {
                             }
 
                             <button onClick={() => {
-                                reloadPlan();
+                                ClickReloadPlan();
                             }}
                                     className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                                 Догрузить план
