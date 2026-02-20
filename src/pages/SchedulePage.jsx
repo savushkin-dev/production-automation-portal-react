@@ -32,7 +32,6 @@ import {
     getDatePlus3, getDatePlus4, getDatePlus5, getDatePlus6,
     groupDataByDay
 } from "../utils/scheduler/pdayParsing";
-import {getNext2DateStr, getNextDateStr, getPredDateStr} from "../utils/date/date";
 import {isFactItem, isPackagedItem} from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
@@ -89,7 +88,7 @@ function SchedulerPage() {
 
     const [modalSortConfig, setModalSortConfig] = useState({
         isOpen: false,
-        isSort: false,
+        isSort: true,
         message: '',
         onConfirm: null
     });
@@ -378,7 +377,6 @@ function SchedulerPage() {
     }, [downloadedPlan]);
 
     async function solve() {
-        setModalSortConfig(prev => ({...prev, isSort: false}))
         await fetchSolve();
     }
 
@@ -655,7 +653,6 @@ function SchedulerPage() {
     async function moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex) {
         try {
             await SchedulerService.moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex);
-            setModalSortConfig(prev => ({...prev, isSort: false}));
             await fetchPlan();
         } catch (e) {
             console.error(e)
@@ -749,6 +746,7 @@ function SchedulerPage() {
             setMsg("Дозагрузка прошла успешно, можете продолжить планирование.")
             await fetchPlan();
             setIsModalNotify(true);
+            setModalSortConfig(prev => ({...prev, isSort: false}));
         } catch (e) {
             console.error(e)
             setMsg("Ошибка дозагрузки: " + e.response.data.message)
