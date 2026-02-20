@@ -221,7 +221,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
 
                     let bgGroupName = "";
                     if (!hasAvailableItems(productGroup)) {
-                        bgGroupName = "bg-gray-300";
+                        bgGroupName = "bg-gray-200";
                     } else if (isExpanded) {
                         bgGroupName = "bg-blue-800 text-white";
                     }
@@ -313,7 +313,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
                                                 className={`
                                                     ${(isAvailable)
                                                     ? (index % 2 === 0 ? " bg-white " : " bg-gray-50 ")
-                                                    : " bg-gray-300 "
+                                                    : " bg-gray-200 "
                                                 }
                                                     ${!isAvailable && !isSelected ? "text-gray-500" : ""}
                                                 `}
