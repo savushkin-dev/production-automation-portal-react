@@ -72,7 +72,8 @@ function SchedulerPage() {
     const [isModalMoveJobs, setIsModalMoveJobs] = useState(false);
     const [isModalAssignServiceWork, setIsModalAssignServiceWork] = useState(false);
     const [isModalUpdateServiceWork, setIsModalUpdateServiceWork] = useState(false);
-    const [isModalSendToWork, setIsModalSendToWrk] = useState(false);
+    const [isModalSendToWork, setIsModalSendToWork] = useState(false);
+    const [isModalSavePlan, setIsModalSavePlan] = useState(false);
 
     const [isSolve, setIsSolve] = useState(false);
     const [score, setScore] = useState({hard: 0, medium: 0, soft: 0});
@@ -219,7 +220,12 @@ function SchedulerPage() {
 
     function openModalSendToWork(){
         setMsg("Вы уверены что хотите отправить план в работу?")
-        setIsModalSendToWrk(true);
+        setIsModalSendToWork(true);
+    }
+
+    function openModalSavePlan(){
+        setMsg("Вы уверены что хотите сохранить план?")
+        setIsModalSavePlan(true);
     }
 
     function clickSendToWork() {
@@ -229,7 +235,7 @@ function SchedulerPage() {
 
     function clickSavePlan(){
         setMsg("Вы хотите отсортировать план перед сохранением?")
-        modalSortConfig.isSort? savePlan() : setModalSortConfig(prevState => ({...prevState, isOpen: true, onConfirm: ()=> savePlan()}));
+        modalSortConfig.isSort? openModalSavePlan() : setModalSortConfig(prevState => ({...prevState, isOpen: true, onConfirm: ()=> openModalSavePlan()}));
     }
 
     async function savePlan() {
@@ -1027,11 +1033,19 @@ function SchedulerPage() {
 
                 {isModalSendToWork &&
                     <ModalConfirmation title={"Подтверждение действия"} message={msg}
-                                       onClose={() => setIsModalSendToWrk(false)}
+                                       onClose={() => setIsModalSendToWork(false)}
                                        onAgree={() => {
-                                           setIsModalSendToWrk(false);
+                                           setIsModalSendToWork(false);
                                            sendToWork();
-                                       }} onDisagree={() => setIsModalSendToWrk(false)}/>}
+                                       }} onDisagree={() => setIsModalSendToWork(false)}/>}
+
+                {isModalSavePlan &&
+                    <ModalConfirmation title={"Подтверждение действия"} message={msg}
+                                       onClose={() => setIsModalSavePlan(false)}
+                                       onAgree={() => {
+                                           setIsModalSavePlan(false);
+                                           savePlan();
+                                       }} onDisagree={() => setIsModalSavePlan(false)}/>}
 
                 {modalSortConfig.isOpen &&
                     <ModalConfirmation title={"Подтверждение действия"} message={msg}
