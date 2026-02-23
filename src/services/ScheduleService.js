@@ -128,6 +128,8 @@ export default class ScheduleService {
                 startFact: filteredData[i].startProductionDateTimeFact,
                 startCameraFact: filteredData[i].cameraStart,
                 endCameraFact: filteredData[i].cameraEnd,
+                placeFactInfo: filteredData[i].placeFactInfo,
+                dti: filteredData[i].dti,
             }
         }
         return factList;
@@ -206,11 +208,14 @@ export default class ScheduleService {
                 lineInfo: json.jobs[i].line,
                 maintenance: json.jobs[i].maintenance,
                 maintenanceId: json.jobs[i].fid,
+                maintenanceTypeId: json.jobs[i].maintenanceTypeId,
                 maintenanceNote: json.jobs[i].maintenanceNote,
                 lineIdFact: json.jobs[i].lineIdFact,
                 startFact: json.jobs[i].startProductionDateTimeFact,
                 startCameraFact: json.jobs[i].cameraStart,
                 endCameraFact: json.jobs[i].cameraEnd,
+                placeFactInfo: json.jobs[i].placeFactInfo,
+                dti: json.jobs[i].dti,
             }
         }
 
@@ -375,6 +380,10 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/work`, {})
     }
 
+    static async alignPlan() {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/alignPlan`, {})
+    }
+
     static async reloadPlan(selection) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/selection`, {selection})
     }
@@ -389,6 +398,14 @@ export default class ScheduleService {
 
     static async reloadDirectory() {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/refreshData`, {})
+    }
+
+    static async determineFactPlace(snpz) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/findPlaceFact`, {snpz})
+    }
+
+    static async determineCameraFact(snpz) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/findCameraFact`, {snpz})
     }
 
 }
