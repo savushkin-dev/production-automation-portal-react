@@ -301,21 +301,21 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                         <h3 className="text-sm font-medium text-gray-700">Добавить текстовый блок</h3>
                     </div>
 
-                    <div className="space-y-4">
-                        <div className="relative">
+                    <div className=" flex flex-row">
+                        <div className="relative w-3/4">
                             <textarea
                                 value={newTextBlockContent}
                                 onChange={(e) => setNewTextBlockContent(e.target.value)}
                                 placeholder="Введите текст для нового блока..."
                                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:bg-white focus:border-green-300 focus:ring-4 focus:ring-green-50 transition-all duration-200 resize-none"
-                                rows="3"
+                                rows="1"
                             />
                             <div className="absolute right-3 bottom-3">
                                 <span className="text-xs text-gray-400">{newTextBlockContent.length} симв.</span>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center ml-2 gap-3">
                             <button
                                 onClick={addTextBlock}
                                 disabled={!newTextBlockContent.trim()}
