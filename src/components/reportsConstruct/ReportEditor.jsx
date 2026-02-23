@@ -26,9 +26,11 @@ import {ModalSettingDB} from "./ModalSettingDB";
 import {ModalSQL} from "./ModalSQL";
 import Loading from "../loading/Loading";
 import {decryptData, encryptData} from "../../utils/Сrypto";
-import {ModalParameter} from "./ModalParameter";
 import {JavaEditor} from "../javaEditor/JavaEditor";
 import {ViewReport} from "./ViewReport";
+import {DesignerParameter} from "./DesignerParameter";
+import {ModalParameterWithLayout} from "./ModalParameterWithLayout";
+import DropdownObj from "../dropdown/DropdownObj";
 
 
 // Добавляем шрифт Roboto в виртуальную файловую систему pdfmake
@@ -49,7 +51,11 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         ]);
         const [currentPage, setCurrentPage] = useState(1); // Активная страница
 
-        const [dataBandsOpt, setDataBandsOpt] = useState([])
+        const [dataBandsOpt, setDataBandsOpt] = useState(["main","main-child"])
+        const [dataBandsOptDropDown, setDataDropDown] = useState([
+            { label: 'Основной бэнд', value: 'main' },
+            { label: 'Дополнительный бэнд', value: 'main-child' },
+        ])
 
 
         const [isViewMode, setIsViewMode] = useState(false);
@@ -63,6 +69,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [isModalSettingDB, setIsModalSettingDB] = useState(false);
         const [isModalSQL, setIsModalSQL] = useState(false);
         const [isJavaEditor, setIsJavaEditor] = useState(false);
+        const [isDesignerParameter, setIsDesignerParameter] = useState(false);
         const [modalMsg, setModalMsg] = useState('');
 
         const [isSqlMode, setIsSqlMode] = useState(false);
@@ -73,6 +80,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [reportName, setReportName] = useState("");
         const [reportCategory, setReportCategory] = useState("");
         const [parameters, setParameters] = useState([]);
+        const [layoutParam, setLayoutParam] = useState("");
+        const [layoutParamSettings, setLayoutParamSettings] = useState("");
         const [settingDB, setSettingDB] = useState({
             url: '',
             username: '',
@@ -598,7 +607,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             return new Promise((resolve) => {
                 setPages((prevPages) => {
-                    console.log(prevPages)
                     const updatedPages = prevPages.map((page) => page.id === currentPage ? {
                         ...page,
                         content: html,
@@ -629,7 +637,9 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     sqlMode: isSqlMode,
                     script: script,
                     dataBands: JSON.stringify(dataBandsOpt),
-                    bookOrientation: isBookOrientation
+                    bookOrientation: isBookOrientation,
+                    layoutParamSettings: layoutParamSettings,
+                    layoutParam: layoutParam
                 }
 
                 try {
@@ -689,6 +699,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         setScript(importedPages.script)
                         setDataBandsOpt(JSON.parse(importedPages.dataBands))
                         setIsBookOrientation(importedPages.bookOrientation);
+                        setLayoutParam(importedPages.layoutParam);
+                        setLayoutParamSettings(importedPages.layoutParamSettings);
                         defineBands(importedPages.content);
                     };
                 } catch (error) {
@@ -823,7 +835,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                    font-weight: bolder;
                                    font-size: 14px;
                                    pointer-events: none;
-                              ">Главные данные: ${tableName}</div>
+                              ">Главные данные</div>
                               <div data-band="true" id="${tableName}" data-gjs-type="locked-band" style="height: 100px; width: ${widthPage}px; background: #f6f6f6; position: relative; border: 0px dashed #f4f4f4; padding: 0px 0px 0px 0px; overflow: visible;">
                                  <p data-field="true"  style="position: absolute; top: 60px; left: 20px; margin: 0px">Укажите поле из запроса в двойных скобках: {{field_1}}</p>
                               </div>
@@ -872,7 +884,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                font-weight: bold;
                                font-size: 14px;
                                pointer-events: none;
-                          ">Второстепенные данные: ${childName}</div>
+                          ">Второстепенные данные</div>
                           <div data-band-child="true" id="${childName}" data-gjs-type="locked-band" draggable="false" style="height: 100px; width: ${widthPage}px; background: #f6f6f6; position: relative; border: 0px dashed #f4f4f4; padding: 0px 0px 0px 0px; overflow: visible;">
                              <p data-field="true"  style="position: absolute; top: 60px; left: 20px; margin: 0px; z-index: 9999">Дочерний бэнд: {{field_1}}</p>
                           </div>
@@ -1195,7 +1207,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         settingDB.url, settingDB.username, encryptData(settingDB.password), settingDB.driverClassName, sql,
                         parameters,
                         updatedPages[0].content, css,
-                        script, isSqlMode, dataBandsOpt, isBookOrientation);
+                        script, isSqlMode, dataBandsOpt, isBookOrientation, layoutParamSettings, layoutParam);
                     setModalMsg("Документ успешно отправлен!");
 
                 } catch (error) {
@@ -1226,13 +1238,14 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 defineBands(response.data.content);
                 setDataBandsOpt(JSON.parse(response.data.dataBands));
                 setIsBookOrientation(response.data.bookOrientation);
+                setLayoutParam(JSON.parse(response.data.layoutParams));
+                setLayoutParamSettings(JSON.parse(response.data.layoutSettingsParams));
             } catch (error) {
                 console.error(error)
                 setModalMsg("Ошибка загрузки отчета с сервера! Попробуйте еще раз.")
                 showModalNotif();
             } finally {
                 showModalDownloadReport();
-
             }
         }
 
@@ -1321,7 +1334,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         }
                     }
                 });
-                setDataBandsOpt(Array.from(foundTables).sort());
+                // setDataBandsOpt(Array.from(foundTables).sort());
                 setIsValidSql(true);
             } catch (e) {
                 setDataBandsOpt([]);
@@ -1384,11 +1397,10 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                 {!isViewMode && isJavaEditor && <JavaEditor onClose={() => setIsJavaEditor(false)} parameters={parameters}
                                                             setParameters={setParameters} setScript={(e) => setScript(e)}
-                                                            script={script} dataBandsOpt={dataBandsOpt}
-                                                            setDataBandsOpt={setDataBandsOpt}
+                                                            script={script} layout={layoutParamSettings} setLayout={setLayoutParamSettings}
                 />}
 
-                {!isViewMode && !isLoading && !isJavaEditor &&
+                {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter &&
 
                     <div className=" gjs-two-color gjs-one-bg flex flex-row justify-between py-1 gjs-pn-commands">
                         <div className="flex justify-start text-center ml-2 w-1/3">
@@ -1417,7 +1429,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                     </div>}
 
-                {!isViewMode && !isLoading && !isJavaEditor &&
+                {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter &&
                     <div
                         className="pl-2 gjs-two-color gjs-one-bg flex flex-row justify-between py-1 gjs-pn-commands ">
                         <div className="flex flex-row gap-x-2">
@@ -1455,7 +1467,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                             </div>
                             <div className="p-1 hover:bg-gray-200 flex-col justify-center justify-items-center">
                                 <img src="/icons/DataBand.png" className="icon-band" alt="Data band" draggable="false"/>
-                                <Dropdown options={dataBandsOpt} onSelect={handleSelectTableBand} label={"Бэнды"}/>
+                                <DropdownObj options={dataBandsOptDropDown} onSelect={handleSelectTableBand} label={"Бэнды"}/>
                             </div>
                             <div className=" hover:bg-gray-200 flex flex-col justify-center justify-items-center">
 
@@ -1467,6 +1479,16 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                             </div>
                         </div>
                         <div className="flex flex-row gap-x-2 pr-2">
+
+                            <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
+                                <button onClick={() => setIsDesignerParameter(true)}
+                                        className="flex flex-col justify-between justify-items-center">
+                                        <span className="gjs-pn-btn hover:bg-gray-200 flex justify-center ">
+                                            <i className="fa-solid fa-arrows-up-down-left-right pt-1"></i>
+                                        </span>
+                                    <span className="text-xs font-medium px-1">Дизайнер параметров</span>
+                                </button>
+                            </div>
 
                             {isSqlMode && <>
                                 <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
@@ -1515,7 +1537,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                     </div>}
 
-                <div className={!isViewMode && !isLoading && !isJavaEditor ? 'block' : 'hidden'}>
+                <div className={!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter ? 'block' : 'hidden'}>
                     <div id="editor" ref={editorRef}/>
                 </div>
 
@@ -1553,12 +1575,18 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                               onClose={showModalSQL}/>
                 }
 
-                {!isViewMode && isModalParameter && <ModalParameter parameters={parameters || []}
+                {!isViewMode && isModalParameter && <ModalParameterWithLayout parameters={parameters || []}
+                                                                              layout={layoutParam}
                                                                     onSubmit={enterPreviewMode}
                                                                     onClose={() => {
                                                                         setIsModalParameter(false)
                                                                     }}
                 />}
+
+                {!isViewMode && isDesignerParameter &&
+                    <DesignerParameter parameters={parameters || []} layout={layoutParam} setLayout={setLayoutParam}
+                                       onClose={()=>setIsDesignerParameter(false)}/>
+                }
 
 
                 {isViewMode &&

@@ -11,6 +11,8 @@ import SchedulePage from "./pages/SchedulePage";
 import AdminPanelPage from "./pages/AdminPanelPage";
 import TrackTracePage from "./pages/TrackTracePage";
 import {configureMomentLocale} from "./utils/date/momentConfig";
+import {TestGrid} from "./components/reportsConstruct/TestGrid";
+import {TestApp} from "./components/reportsConstruct/TestApp";
 
 
 function App() {
@@ -39,6 +41,9 @@ function App() {
                     <Route path="/report" element={<ViewReportPage/>}/>
                     <Route path="/scheduler" element={<SchedulePage/>}/>
                     <Route path="/tracktrace" element={<TrackTracePage/>}/>
+
+                    <Route path="/testparam" element={<TestGrid/>}/>
+                    <Route path="/test-layout" element={<TestApp />} />
 
 
 
