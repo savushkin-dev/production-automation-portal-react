@@ -26,7 +26,6 @@ import {ModalSettingDB} from "./ModalSettingDB";
 import {ModalSQL} from "./ModalSQL";
 import Loading from "../loading/Loading";
 import {decryptData, encryptData} from "../../utils/Сrypto";
-import {ModalParameter} from "./ModalParameter";
 import {JavaEditor} from "../javaEditor/JavaEditor";
 import {ViewReport} from "./ViewReport";
 import {DesignerParameter} from "./DesignerParameter";
