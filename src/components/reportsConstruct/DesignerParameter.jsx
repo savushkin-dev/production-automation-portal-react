@@ -273,7 +273,7 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                 <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 w-3/4">
-                            <div className="w-1 h-12 bg-blue-600 rounded-full"></div>
+                            <div className="w-[4px] h-12 bg-blue-600 rounded-full flex-shrink-0"></div>
                             <div>
                                 <p className="text-sm text-gray-600 leading-relaxed">
                                     Перетаскивайте
@@ -301,21 +301,21 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                         <h3 className="text-sm font-medium text-gray-700">Добавить текстовый блок</h3>
                     </div>
 
-                    <div className="space-y-4">
-                        <div className="relative">
+                    <div className=" flex flex-row">
+                        <div className="relative w-3/4">
                             <textarea
                                 value={newTextBlockContent}
                                 onChange={(e) => setNewTextBlockContent(e.target.value)}
                                 placeholder="Введите текст для нового блока..."
                                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:bg-white focus:border-green-300 focus:ring-4 focus:ring-green-50 transition-all duration-200 resize-none"
-                                rows="3"
+                                rows="1"
                             />
                             <div className="absolute right-3 bottom-3">
                                 <span className="text-xs text-gray-400">{newTextBlockContent.length} симв.</span>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center ml-2 gap-3">
                             <button
                                 onClick={addTextBlock}
                                 disabled={!newTextBlockContent.trim()}
