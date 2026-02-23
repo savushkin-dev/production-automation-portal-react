@@ -33,3 +33,39 @@ export function formatIsoToDatetimeRegex(isoDate) {
 
     return '';
 }
+
+/**
+ * Преобразует ISO дату в формат YYYY-MM-DD HH:mm
+ * Убирает T, миллисекунды и секунды (если они есть)
+ * @param {string} isoDate - дата в ISO формате (2026-01-26T17:58:04.653 или 2026-01-26T17:58:04)
+ * @returns {string} дата в формате YYYY-MM-DD HH:mm или пустая строка при ошибке
+ */
+export function formatIsoToDatetimeWithoutSeconds(isoDate) {
+    if (!isoDate) return '';
+
+    const match = isoDate.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+
+    if (match) {
+        return `${match[1]} ${match[2]}`;
+    }
+
+    return '';
+}
+
+/**
+ * Преобразует ISO дату в формат YYYY-MM-DD
+ * Убирает T и всё что после неё
+ * @param {string} isoDate - дата в ISO формате (2026-01-26T17:58:04.653 или 2026-01-26T17:58:04)
+ * @returns {string} дата в формате YYYY-MM-DD или пустая строка при ошибке
+ */
+export function formatIsoToDateOnly(isoDate) {
+    if (!isoDate) return '';
+
+    const match = isoDate.match(/^(\d{4}-\d{2}-\d{2})/);
+
+    if (match) {
+        return match[1];
+    }
+
+    return '';
+}

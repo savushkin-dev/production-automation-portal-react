@@ -1,6 +1,6 @@
 import React, {useEffect} from 'react'
 import {isFactItem, isPackagedItem} from "../../utils/scheduler/items";
-import {formatIsoToDatetimeRegex} from "../../utils/date/date";
+import {formatIsoToDateOnly, formatIsoToDatetimeRegex} from "../../utils/date/date";
 
 
 export function ModalInfoItem({item, onClose, lines, determineFactPlace, determineCameraFact, clickedCameras, setClickedCameras}) {
@@ -65,6 +65,11 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Snpz:</span>
                                 <span className={styleInfo}>{item.info.snpz || "-"}</span>
+                            </div>
+
+                            <div className="flex flex-row px-4">
+                                <span className={styleLable}>Дата потребности:</span>
+                                <span className={styleInfo}>{formatIsoToDateOnly(item.info.dti) || "-"}</span>
                             </div>
 
                             <div className="flex flex-row px-4">

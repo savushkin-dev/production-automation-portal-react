@@ -20,11 +20,18 @@ import {DataTable} from "../components/scheduler/DataTable";
 import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
 import {ModalUpdateServiceWork} from "../components/scheduler/ModalUpdateServiceWork";
 import {MyTimeline} from "../components/scheduler/MyTimeline";
-import {convertLinesWithTimeFields} from "../utils/scheduler/lines";
+import {convertLinesWithTimeFields, isValidLinesDate} from "../utils/scheduler/lines";
 import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
 import {createTimelineRenderersSheduler} from "../components/scheduler/TimelineItemRenderer";
-import {groupDataByDay} from "../utils/scheduler/pdayParsing";
-import {getNext2DateStr, getNextDateStr, getPredDateStr} from "../utils/date/date";
+import {
+    getDateCurrent,
+    getDateMinus1,
+    getDateMinus2,
+    getDatePlus1,
+    getDatePlus2,
+    getDatePlus3, getDatePlus4, getDatePlus5, getDatePlus6, getDatePlus7,
+    groupDataByDay
+} from "../utils/scheduler/pdayParsing";
 import {isFactItem, isPackagedItem} from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
@@ -43,10 +50,17 @@ function SchedulerPage() {
     const [groups, setGroups] = useState([]);
     const [items, setItems] = useState([]);
     const [pdayData, setPdayData] = useState({
-        previousDay: [],
+        dayMinus2: [],
+        dayMinus1: [],
         currentDay: [],
-        nextDay: [],
-        next2Day: []
+        dayPlus1: [],
+        dayPlus2: [],
+        dayPlus3: [],
+        dayPlus4: [],
+        dayPlus5: [],
+        dayPlus6: [],
+        dayPlus7: [],
+        selectJobs: {}
     });
     const [selectJobs, setSelectJobs] = useState([])
 
@@ -59,7 +73,8 @@ function SchedulerPage() {
     const [isModalMoveJobs, setIsModalMoveJobs] = useState(false);
     const [isModalAssignServiceWork, setIsModalAssignServiceWork] = useState(false);
     const [isModalUpdateServiceWork, setIsModalUpdateServiceWork] = useState(false);
-    const [isModalSendToWork, setIsModalSendToWrk] = useState(false);
+    const [isModalSendToWork, setIsModalSendToWork] = useState(false);
+    const [isModalSavePlan, setIsModalSavePlan] = useState(false);
 
     const [isSolve, setIsSolve] = useState(false);
     const [score, setScore] = useState({hard: 0, medium: 0, soft: 0});
@@ -75,7 +90,7 @@ function SchedulerPage() {
 
     const [modalSortConfig, setModalSortConfig] = useState({
         isOpen: false,
-        isSort: false,
+        isSort: true,
         message: '',
         onConfirm: null
     });
@@ -109,7 +124,6 @@ function SchedulerPage() {
 
     const [clickedCameras, setClickedCameras] = useState({});
 
-
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const dateParam = params.get("date");
@@ -138,12 +152,7 @@ function SchedulerPage() {
 
             const groupedData = groupDataByDay(response.data, baseDate);
 
-            setPdayData({
-                previousDay: groupedData.previousDay,
-                currentDay: groupedData.currentDay,
-                nextDay: groupedData.nextDay,
-                next2Day: groupedData.next2Day
-            });
+            setPdayData(groupedData);
 
             setSelectJobs(groupedData.selectJobs);
         } catch (e) {
@@ -153,10 +162,17 @@ function SchedulerPage() {
             setItems([])
             setScore({hard: 0, medium: 0, soft: 0})
             setPdayData({
-                previousDay: [],
+                dayMinus2: [],
+                dayMinus1: [],
                 currentDay: [],
-                nextDay: [],
-                next2Day: []
+                dayPlus1: [],
+                dayPlus2: [],
+                dayPlus3: [],
+                dayPlus4: [],
+                dayPlus5: [],
+                dayPlus6: [],
+                dayPlus7: [],
+                // selectJobs: []
             });
         }
     }
@@ -204,7 +220,12 @@ function SchedulerPage() {
 
     function openModalSendToWork(){
         setMsg("Вы уверены что хотите отправить план в работу?")
-        setIsModalSendToWrk(true);
+        setIsModalSendToWork(true);
+    }
+
+    function openModalSavePlan(){
+        setMsg("Вы уверены что хотите сохранить план?")
+        setIsModalSavePlan(true);
     }
 
     function clickSendToWork() {
@@ -214,7 +235,7 @@ function SchedulerPage() {
 
     function clickSavePlan(){
         setMsg("Вы хотите отсортировать план перед сохранением?")
-        modalSortConfig.isSort? savePlan() : setModalSortConfig(prevState => ({...prevState, isOpen: true, onConfirm: ()=> savePlan()}));
+        modalSortConfig.isSort? openModalSavePlan() : setModalSortConfig(prevState => ({...prevState, isOpen: true, onConfirm: ()=> openModalSavePlan()}));
     }
 
     async function savePlan() {
@@ -362,8 +383,12 @@ function SchedulerPage() {
     }, [downloadedPlan]);
 
     async function solve() {
-        setModalSortConfig(prev => ({...prev, isSort: false}))
-        await fetchSolve();
+        (isValidLinesDate(startTimeLines))? await fetchSolve() : setLinesDateError();
+    }
+
+    function setLinesDateError(){
+        setMsg("Перед началом планирования или дозагрузки требуется настроить время начала и максимальное время линий в разделе \"Настройка линий\")")
+        setIsModalNotifyError(true);
     }
 
     useEffect(() => {
@@ -639,7 +664,6 @@ function SchedulerPage() {
     async function moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex) {
         try {
             await SchedulerService.moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex);
-            setModalSortConfig(prev => ({...prev, isSort: false}));
             await fetchPlan();
         } catch (e) {
             console.error(e)
@@ -727,12 +751,17 @@ function SchedulerPage() {
         }
     }
 
+    async function ClickReloadPlan(){
+        (isValidLinesDate(startTimeLines))? await reloadPlan() : setLinesDateError();
+    }
+
     async function reloadPlan() {
         try {
             await SchedulerService.reloadPlan(selectJobs);
             setMsg("Дозагрузка прошла успешно, можете продолжить планирование.")
             await fetchPlan();
             setIsModalNotify(true);
+            setModalSortConfig(prev => ({...prev, isSort: false}));
         } catch (e) {
             console.error(e)
             setMsg("Ошибка дозагрузки: " + e.response.data.message)
@@ -882,7 +911,7 @@ function SchedulerPage() {
                             }
 
                             <button onClick={() => {
-                                reloadPlan();
+                                ClickReloadPlan();
                             }}
                                     className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                                 Догрузить план
@@ -1013,11 +1042,19 @@ function SchedulerPage() {
 
                 {isModalSendToWork &&
                     <ModalConfirmation title={"Подтверждение действия"} message={msg}
-                                       onClose={() => setIsModalSendToWrk(false)}
+                                       onClose={() => setIsModalSendToWork(false)}
                                        onAgree={() => {
-                                           setIsModalSendToWrk(false);
+                                           setIsModalSendToWork(false);
                                            sendToWork();
-                                       }} onDisagree={() => setIsModalSendToWrk(false)}/>}
+                                       }} onDisagree={() => setIsModalSendToWork(false)}/>}
+
+                {isModalSavePlan &&
+                    <ModalConfirmation title={"Подтверждение действия"} message={msg}
+                                       onClose={() => setIsModalSavePlan(false)}
+                                       onAgree={() => {
+                                           setIsModalSavePlan(false);
+                                           savePlan();
+                                       }} onDisagree={() => setIsModalSavePlan(false)}/>}
 
                 {modalSortConfig.isOpen &&
                     <ModalConfirmation title={"Подтверждение действия"} message={msg}
@@ -1057,31 +1094,63 @@ function SchedulerPage() {
                                             serviceTypes={serviceTypes}
                     />
                 }
+                
 
-                <DataTable data={pdayData.previousDay} setData={(newData) => setPdayData(prev => ({
+                <DataTable data={pdayData.dayMinus2} setData={(newData) => setPdayData(prev => ({
                     ...prev,
-                    previousDay: newData
-                }))} dateData={getPredDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                    dayMinus2: newData
+                }))} dateData={getDateMinus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} /> 
+
+                <DataTable data={pdayData.dayMinus1} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayMinus1: newData
+                }))} dateData={getDateMinus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
                 <DataTable data={pdayData.currentDay} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     currentDay: newData
-                }))} dateData={selectDate} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                }))} dateData={getDateCurrent(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
-                <DataTable data={pdayData.nextDay} setData={(newData) => setPdayData(prev => ({
+                <DataTable data={pdayData.dayPlus1} setData={(newData) => setPdayData(prev => ({
                     ...prev,
-                    nextDay: newData
-                }))} dateData={getNextDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                    dayPlus1: newData
+                }))} dateData={getDatePlus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
-                <DataTable data={pdayData.next2Day} setData={(newData) => setPdayData(prev => ({
+                <DataTable data={pdayData.dayPlus2} setData={(newData) => setPdayData(prev => ({
                     ...prev,
-                    next2Day: newData
-                }))}  dateData={getNext2DateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                    dayPlus2: newData
+                }))} dateData={getDatePlus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+
+                <DataTable data={pdayData.dayPlus3} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus3: newData
+                }))} dateData={getDatePlus3(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+
+                <DataTable data={pdayData.dayPlus4} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus4: newData
+                }))} dateData={getDatePlus4(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+
+                <DataTable data={pdayData.dayPlus5} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus5: newData
+                }))} dateData={getDatePlus5(selectDate)}selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+
+                <DataTable data={pdayData.dayPlus6} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus6: newData
+                }))} dateData={getDatePlus6(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+
+                <DataTable data={pdayData.dayPlus7} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus7: newData
+                }))} dateData={getDatePlus7(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
 
             </div>
         </>
     )
+
 }
 
 export default observer(SchedulerPage)
