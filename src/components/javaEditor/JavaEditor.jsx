@@ -263,8 +263,8 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
 
                             <div
                                 ref={containerRef}
-                                className="max-h-[600px] overflow-x-hidden overflow-y-scroll"  с максимальной высотой разобраться!!!!
-                                style={{position: 'relative'}}
+                                className="overflow-x-hidden overflow-y-scroll"
+                                style={{position: 'relative', maxHeight: 'calc(100vh - 300px)'}}
                             >
                                 {parameters.length > 0 ? (
                                     <RGL
