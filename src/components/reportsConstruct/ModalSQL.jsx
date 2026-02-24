@@ -1,7 +1,7 @@
 import {styleInput, styleInputWithoutRounded, styleLabelInput} from "../../data/styles";
 import Select from "react-select";
-import {CustomStyle, CustomStyleWithoutRounded} from "../../data/styleForSelect";
-import React, {useEffect, useState} from "react";
+import {CustomStyleWithoutRounded} from "../../data/styleForSelect";
+import React from "react";
 import { v4 as uuidv4 } from 'uuid';
 
 export function ModalSQL({value, parameters, isValid, onChange, onClose, setParameters}) {
@@ -23,7 +23,6 @@ export function ModalSQL({value, parameters, isValid, onChange, onClose, setPara
     const addParameter = (key) => {
         setParameters([...parameters, {
             id: uuidv4(), // Генерирует уникальный ID
-            order: parameters.length,
             name: '',
             key: key,
             type: 'TEXT',
@@ -36,19 +35,13 @@ export function ModalSQL({value, parameters, isValid, onChange, onClose, setPara
 
         if (hasChildParameter) {
             setParameters(
-                parameters
-                    .filter(param => param.key !== 'main-child')
-                    .map((param, index) => ({
-                        ...param,
-                        order: index + 1
-                    }))
+                parameters.filter(param => param.key !== 'main-child')
             );
         } else {
             setParameters([
                 ...parameters,
                 {
                     id: uuidv4(),
-                    order: parameters.length + 1,
                     name: 'Дополнительный бэнд',
                     key: 'main-child',
                     type: 'BOOLEAN',
@@ -140,7 +133,6 @@ export function ModalSQL({value, parameters, isValid, onChange, onClose, setPara
 
 
                 <div className="flex flex-row mb-1">
-                    <span className="text-sm text-center font-medium w-[10%]">Пор.№</span>
                     <span className="text-sm text-center font-medium w-1/4">Название параметра</span>
                     <span className="text-sm text-center font-medium w-1/4">Параметр</span>
                     <span className="text-sm text-center font-medium w-1/4">Тип</span>
@@ -148,17 +140,11 @@ export function ModalSQL({value, parameters, isValid, onChange, onClose, setPara
                 </div>
 
                 <div className="max-h-36 overflow-auto">
-                    {parameters.map((param,index) => {
+                    {parameters.map((param) => {
                         const isChildParameter = param.key === 'main-child';
 
                         return (
                             <div key={param.id} className="flex flex-row py-0">
-                                <input
-                                    className={styleInputWithoutRounded + " font-medium w-[10%]"}
-                                    type="number" min={1}
-                                    value={param.order}
-                                    onChange={(e) => updateParameter(param.id, 'order', e.target.value)}
-                                />
                                 <input className={styleInputWithoutRounded + " font-medium mr-0 w-1/4"}
                                        value={param.name}
                                        onChange={(e) => {
@@ -247,7 +233,7 @@ export function ModalSQL({value, parameters, isValid, onChange, onClose, setPara
                                 }
 
                             </div>
-                    )})}
+                        )})}
                 </div>
 
                 <div className="flex flex-row justify-end mt-4">
