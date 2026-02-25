@@ -1,8 +1,9 @@
 import React from "react";
+import {isFactItem} from "../../utils/scheduler/items";
 
 
 export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs, openModalAssignSettings, selectedItems,
-                                    updateServiceWork, removeServiceWork}) {
+                                    updateServiceWork, removeServiceWork, sortRange}) {
 
     const isDateWithinLastDays = (isoDateString, days) => {
         if (!isoDateString) return false;
@@ -17,6 +18,8 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
         }
     };
 
+    const styleButton = "hover:bg-gray-100 w-full text-start px-2 rounded hover:text-gray-900";
+
     return (
         <>
                 <div
@@ -30,8 +33,8 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                     }}
                 >
 
-                    <div className="py-2 px-4 border-b">
-                        <strong>{contextMenu.item?.title}</strong>
+                    <div className="py-1 px-4 border-b bg-gray-600 text-white rounded-t font-medium">
+                        <span>{contextMenu.item?.title}</span>
                     </div>
 
                     <div className="px-2 py-1">
@@ -39,35 +42,54 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                             <>
                                 <button onClick={() => {
                                     pin()
-                                }} className="hover:bg-gray-100 w-full text-start px-2 rounded">Закрепить линию по
+                                }} className={styleButton}>Закрепить линию по
                                 </button>
                                 <button onClick={() => {
                                     unpin()
-                                }} className="hover:bg-gray-100 w-full text-start px-2 rounded">Открепить линию
+                                }} className={styleButton}>Открепить линию
                                 </button>
                                 <button onClick={() => {
                                     openModalMoveJobs()
-                                }} className="hover:bg-gray-100 w-full text-start px-2 rounded">Переместить
+                                }} className={styleButton}>Переместить
                                 </button>
                                 <button onClick={() => {
                                     openModalAssignSettings()
-                                }} className="hover:bg-gray-100 w-full text-start px-2 rounded">
+                                }} className={styleButton}>
                                     Добавить сервисную операцию
                                 </button>
 
                                 {/*Отображение для сервисной работы*/}
                                 {contextMenu.item.info.maintenance === true && selectedItems.length === 1 &&
                                     <>
-                                        <button onClick={() => {updateServiceWork()}} className="hover:bg-gray-100 w-full text-start px-2 rounded">
+                                        <button onClick={() => {
+                                            updateServiceWork()
+                                        }} className={styleButton}>
                                             Изменить сервисную операцию
                                         </button>
 
                                         {/*{contextMenu.item.info.start && isDateWithinLastDays(contextMenu.item.info.start, 2) &&*/}
-                                            <button onClick={() => {removeServiceWork(selectedItems[0].group, selectedItems[0].info.groupIndex-1)}} className="hover:bg-gray-100 w-full text-start px-2 rounded">
-                                                Удалить сервисную операцию
-                                            </button>
+                                        <button onClick={() => {
+                                            removeServiceWork(selectedItems[0].group, selectedItems[0].info.groupIndex - 1)
+                                        }} className={styleButton}>
+                                            Удалить сервисную операцию
+                                        </button>
                                         {/*}*/}
-                                      </>
+                                    </>
+                                }
+                                {/*Отображение сортировки*/}
+                                {selectedItems.filter(item => !isFactItem(item)).length > 1 &&
+                                    <>
+                                        <button onClick={() => {
+                                            sortRange(true)
+                                        }} className={styleButton}>Отсортировать по
+                                            возрастанию
+                                        </button>
+                                        <button onClick={() => {
+                                            sortRange(false)
+                                        }} className={styleButton}>Отсортировать по
+                                            убыванию
+                                        </button>
+                                    </>
                                 }
 
                             </>
@@ -76,8 +98,8 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                         {contextMenu.forCanvas &&
                             <button onClick={() => {
                                 openModalAssignSettings()
-                            }} className="hover:bg-gray-100 w-full text-start px-2 rounded">
-                            Добавить сервисную операцию
+                            }} className={styleButton}>
+                                Добавить сервисную операцию
                             </button>
                         }
                     </div>
