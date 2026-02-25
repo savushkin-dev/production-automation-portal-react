@@ -356,6 +356,10 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/moveJobs`, {fromLineId, toLineId, fromIndex, count, insertIndex})
     }
 
+    static async sortRangeScheduler(fromIndex, sortCount, lineId, sortUp) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/sortRange`, {fromIndex, sortCount, lineId, sortUp})
+    }
+
     static async assignServiceWork(lineId, insertIndex, durationMinutes, maintenanceTypeId, maintenanceNote) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, insertIndex, durationMinutes, maintenanceTypeId, maintenanceNote})
     }

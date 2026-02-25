@@ -791,6 +791,30 @@ function SchedulerPage() {
         }
     }
 
+    function sortRange(sortUp) {
+        const filteredItems = selectedItems
+            .filter(item => !isFactItem(item));
+
+        const groupId = filteredItems[0].group;
+        const sortedSelected = filteredItems
+            .sort((a, b) => a.start_time - b.start_time);
+        const firstItem = sortedSelected[0];
+        const firstItemIndex = firstItem.info.groupIndex-1;
+
+        sortRangeScheduler(firstItemIndex, filteredItems.length, groupId, sortUp)
+    }
+
+    async function sortRangeScheduler(fromIndex, sortCount, lineId, sortUp){
+        try {
+            await SchedulerService.sortRangeScheduler(fromIndex, sortCount, lineId, sortUp);
+            await fetchPlan()
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка сортировки диапазона: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
     const timelineRenderers = useMemo(
         () => {
             return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay)},
@@ -1068,7 +1092,9 @@ function SchedulerPage() {
                                                              openModalAssignSettings={() => setIsModalAssignServiceWork(true)}
                                                              selectedItems={selectedItems}
                                                              updateServiceWork={() => setIsModalUpdateServiceWork(true)}
-                                                             removeServiceWork={removeServiceWork}/>}
+                                                             removeServiceWork={removeServiceWork}
+                                                             sortRange={sortRange}
+                />}
 
                 {isModalMoveJobs &&
                     <ModalMoveJobs selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}
