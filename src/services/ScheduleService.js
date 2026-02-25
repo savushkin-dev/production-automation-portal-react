@@ -388,6 +388,10 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/alignPlan`, {})
     }
 
+    static async dailyCleaning() {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/dailyCleaning`, {})
+    }
+
     static async reloadPlan(selection) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/selection`, {selection})
     }

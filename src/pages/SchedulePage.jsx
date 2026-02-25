@@ -815,6 +815,17 @@ function SchedulerPage() {
         }
     }
 
+    async function dailyCleaning(){
+        try {
+            await SchedulerService.dailyCleaning();
+            await fetchPlan()
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка добавления суточной мойки: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
     const timelineRenderers = useMemo(
         () => {
             return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay)},
@@ -853,9 +864,14 @@ function SchedulerPage() {
 
                     <div className="w-4/6 py-1 flex justify-end pr-3">
 
-                        <button
-                            className="mr-1 rounded border border-slate-300 hover:bg-gray-100  px-3 h-[30px] font-medium text-[0.950rem]"
-                            onClick={sortSchedule}>
+                        <button onClick={dailyCleaning}
+                                className="mr-1 rounded border border-slate-300 hover:bg-gray-100  px-3 h-[30px] font-medium text-[0.950rem]">
+                            Добавить мойки
+                            <i className="pl-2 fa-solid fa-faucet-drip"></i>
+                        </button>
+
+                        <button onClick={sortSchedule}
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                             Отсортировать
                             <i className="pl-2 fa-solid fa-sort"></i>
                         </button>
@@ -886,7 +902,8 @@ function SchedulerPage() {
 
                     <div className="w-2/5 inline-flex justify-between">
 
-                        <div className="inline-flex px-2 h-[30px] items-center border rounded-md hover:bg-gray-100 selection:border-0">
+                        <div
+                            className="inline-flex px-2 h-[30px] items-center border rounded-md hover:bg-gray-100 selection:border-0">
                             <span className="py-1 font-medium text-nowrap ">Дата:</span>
                             <input
                                 className={"px-2 font-medium w-32 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:border-transparent"}
