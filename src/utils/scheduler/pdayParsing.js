@@ -50,7 +50,6 @@ export function groupDataByDay(data, baseDate) {
         // (первые 10 символов YYYY-MM-DD)
         const itemDate = item.dti.substring(0, 10);
 
-
         const dataWithSelection = { ...item, isSelected: false };
 
         // Определяем занятость
