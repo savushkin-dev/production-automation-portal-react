@@ -31,6 +31,7 @@ import {ViewReport} from "./ViewReport";
 import {DesignerParameter} from "./DesignerParameter";
 import {ModalParameterWithLayout} from "./ModalParameterWithLayout";
 import DropdownObj from "../dropdown/DropdownObj";
+import yaml from "js-yaml";
 
 
 // Добавляем шрифт Roboto в виртуальную файловую систему pdfmake
@@ -619,11 +620,20 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             });
         };
 
-
-        const exportJSON = async () => {
+        const exportYAML = async () => {
             saveCurrentPage(editorView).then((updatedPages) => {
-                let css = cleanCSS(updatedPages[0].styles)
-                let result = {
+                let css = cleanCSS(updatedPages[0].styles).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+
+                const toOneLine = (value) => {
+                    if (typeof value === 'string') {
+                        return value.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                    }
+                    if (value === null || value === undefined) return '';
+                    if (typeof value === 'object') return JSON.stringify(value);
+                    return String(value);
+                };
+
+                let resultWithoutScript = {
                     dbUrl: settingDB.url,
                     dbUsername: settingDB.username,
                     dbPassword: settingDB.password,
@@ -633,89 +643,98 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     reportCategory: reportCategory,
                     content: updatedPages[0].content,
                     styles: css,
-                    parameters: parameters,
                     sqlMode: isSqlMode,
-                    script: script,
                     dataBands: JSON.stringify(dataBandsOpt),
                     bookOrientation: isBookOrientation,
-                    layoutParamSettings: layoutParamSettings,
-                    layoutParam: layoutParam
+                    layoutParamSettings: toOneLine(layoutParamSettings),
+                    layoutParam: toOneLine(layoutParam),
+                    parameters: parameters,
                 }
 
                 try {
-                    const json = JSON.stringify(result, null, 2);
-                    const blob = new Blob([json], {type: "application/json"});
+                    let yamlString = yaml.dump(resultWithoutScript, {indent: 2, lineWidth: -1, noRefs: true});
+
+                    const cleanScript = script.replace(/\\r\\n/g, '\n').replace(/\\r/g, '\n');
+                    const scriptLines = cleanScript.split('\n');
+                    const scriptBlock = 'script: |-\n' + scriptLines.map(line => '  ' + line).join('\n');
+                    const finalYaml = yamlString + scriptBlock + '\n';
+
+                    const blob = new Blob([finalYaml], {type: "application/yaml"});
                     const link = document.createElement("a");
                     link.href = URL.createObjectURL(blob);
-                    link.download = reportName + ".json";
+                    link.download = reportName + ".yaml";
                     document.body.appendChild(link);
                     link.click();
-                    setTimeout(() => {
-
-                    }, 1000);
                     document.body.removeChild(link);
                 } catch (error) {
-                    console.error("Ошибка при сохранении и экспорте:", error);
-                    setModalMsg("Ошибка при экспорте отчета! Попробуйте еще раз.")
+                    console.error("Ошибка при экспорте отчета:", error);
+                    setModalMsg("Ошибка при экспорте отчета.");
                     showModalNotif();
                 }
-            })
+            });
         };
 
 
-        const importJSON = () => {
-
+        const importYAML = () => {
             const fileInput = document.createElement("input");
             fileInput.type = "file";
-            fileInput.accept = ".json";
+            fileInput.accept = ".yaml,.yml";
             fileInput.style.display = "none";
 
             fileInput.addEventListener("change", (event) => {
-
                 const file = event.target.files[0];
                 if (!file) return;
 
                 const reader = new FileReader();
-                setPages([{id: 1, content: "", styles: ""}])
-                try {
-                    reader.onload = (e) => {
-                        const importedPages = JSON.parse(e.target.result);
-                        // setPages(importedPages);
-                        setCurrentPage(importedPages[0]?.id || 1);
+
+                reader.onload = (e) => {
+                    try {
+                        const yamlContent = e.target.result;
+                        const importedData = yaml.load(yamlContent);
+
+                        setPages([{id: 1, content: "", styles: ""}]);
+                        setCurrentPage(1);
 
                         setSettingDB({
-                            url: importedPages.dbUrl,
-                            username: importedPages.dbUsername,
-                            password: importedPages.dbPassword,
-                            driverClassName: importedPages.dbDriver
+                            url: importedData.dbUrl,
+                            username: importedData.dbUsername,
+                            password: importedData.dbPassword,
+                            driverClassName: importedData.dbDriver
                         });
-                        setSql(importedPages.sql);
-                        setReportName(importedPages.reportName);
-                        setReportCategory(importedPages.reportCategory)
-                        editorView.setComponents(importedPages.content);
-                        editorView.setStyle(importedPages.styles);
-                        setParameters(importedPages.parameters);
-                        setIsSqlMode(importedPages.sqlMode);
-                        setScript(importedPages.script)
-                        setDataBandsOpt(JSON.parse(importedPages.dataBands))
-                        setIsBookOrientation(importedPages.bookOrientation);
-                        setLayoutParam(importedPages.layoutParam);
-                        setLayoutParamSettings(importedPages.layoutParamSettings);
-                        defineBands(importedPages.content);
-                    };
-                } catch (error) {
-                    console.error(error)
-                    setModalMsg("Ошибка иморта отчета! Попробуйте еще раз.")
-                    showModalNotif();
-                }
 
+                        setSql(importedData.sql);
+                        setReportName(importedData.reportName);
+                        setReportCategory(importedData.reportCategory);
+
+                        editorView.setComponents(importedData.content);
+                        editorView.setStyle(importedData.styles);
+
+                        setParameters(importedData.parameters || []);
+                        setIsSqlMode(importedData.sqlMode);
+                        setScript(importedData.script || '');
+
+                        setDataBandsOpt(JSON.parse(importedData.dataBands));
+                        setIsBookOrientation(importedData.bookOrientation ?? true);
+                        setLayoutParamSettings(JSON.parse(importedData.layoutParamSettings));
+                        setLayoutParam(JSON.parse(importedData.layoutParam));
+
+                        setTimeout(() => defineBands(importedData.content), 200);
+
+                        setModalMsg("Отчет успешно импортирован!");
+                        showModalNotif();
+
+                    } catch (error) {
+                        console.error("Ошибка при импорте отчета:", error);
+                        setModalMsg("Ошибка импорта отчета! Проверьте данные на корректность.");
+                        showModalNotif();
+                    }
+                };
                 reader.readAsText(file);
             });
 
             document.body.appendChild(fileInput);
             fileInput.click();
             document.body.removeChild(fileInput);
-
         };
 
         const updateCanvasZoom = (newZoom) => {
@@ -1418,10 +1437,10 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
 
                         <div className="flex justify-end text-center mr-2 w-1/2">
-                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100" onClick={exportJSON}
+                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100" onClick={exportYAML}
                                   title="Экспорт шаблона JSON">
                             <i className="fa fa-upload"></i></span>
-                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100" onClick={importJSON}
+                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100" onClick={importYAML}
                                   title="Импорт шаблона JSON">
                             <i className="fa fa-download"></i></span>
                             <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100" onClick={showModalSaveReport}

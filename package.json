@@ -26,6 +26,7 @@
     "grapesjs-table": "^1.0.8",
     "html-to-pdfmake": "^2.5.20",
     "html2canvas": "^1.4.1",
+    "js-yaml": "^4.1.1",
     "jspdf": "^2.5.2",
     "mobx": "^6.13.5",
     "mobx-react-lite": "^4.1.0",
