@@ -2,48 +2,41 @@ import React, {useEffect, useState} from 'react'
 import {styleInputWithoutRounded} from "../../data/styles";
 import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
-import {convertHoursMinutesToMinutes, validateHours, validateMinutes} from "../../utils/serviceWorkUtils";
+import {convertHoursMinutesToMinutes, validateHours, validateMinutes} from "../../utils/scheduler/serviceWork";
+import {getLastItemIndexInGroup} from "../../utils/scheduler/items";
 
 
 export function ModalAssignServiceWork({
                                   onClose, assignServiceWork,
                                   selectedItems,
                                   planByHardware,
-                                  lines, selectDate
+                                  lines, selectDate, serviceTypes
                               }) {
 
-    const options = lines.map(line => ({
+    const optLines = lines.map(line => ({
         value: line.lineId,
         label: line.originalName
     }));
 
-    const [selectLine, setSelectLine] = useState(options[0]);
+    const optServiceTypes = serviceTypes.map(service => ({
+        value: service.id,
+        label: service.name
+    }));
+
+    const [selectLine, setSelectLine] = useState(optLines[0]);
     const [insertIndex, setInsertIndex] = useState(1);
     const [isLastPos, setIsLastPos] = useState(false);
     const [time, setTime] = useState(new Date(selectDate).toISOString().replace(/T.*/, 'T08:00'));
-    const [nameOperation, setNameOperation] = useState("Обслуживание");
+    const [descriptionOperation, setDescriptionOperation] = useState("");
+    const [selectService, setSelectService] = useState(optServiceTypes[0]);
 
     const [hour, setHour] = useState(1);
     const [min, setMin] = useState(0);
 
     const [isAddingEmptyLine, setIsAddingEmptyLine] = useState(false);
 
-    const getLastItemIndexInGroup = (groupId) => {
-        // Фильтруем элементы по группе и ИСКЛЮЧАЕМ мойки
-        const groupItems = planByHardware
-            .filter(item => item.group === groupId && !item.id.includes('cleaning'))
-            .sort((a, b) => a.start_time - b.start_time);
-
-        if (groupItems.length === 0) {
-            return -1; // Группа пустая
-        }
-
-        // Возвращаем индекс последнего элемента (без учета моек)
-        return groupItems.length - 1;
-    };
-
     function assign() {
-        assignServiceWork(selectLine.value, insertIndex - 1, time, getTotalMinutes(), nameOperation, isAddingEmptyLine);
+        assignServiceWork(selectLine.value, insertIndex - 1, time, getTotalMinutes(), selectService.value, descriptionOperation, isAddingEmptyLine);
     }
 
     const getTotalMinutes = () => {
@@ -60,18 +53,22 @@ export function ModalAssignServiceWork({
         setMin(validatedValue);
     }
 
-    const handleChangeSelect = (event) => {
+    const handleChangeSelectLine = (event) => {
         if (event != null) {
             setSelectLine(event);
             if (isLastPos) {
-                setInsertIndex(getLastItemIndexInGroup(event.value) + 2)
+                setInsertIndex(getLastItemIndexInGroup(event.value, planByHardware) + 2)
             }
         } else {
-            setSelectLine(options[1]);
+            setSelectLine(optLines[1]);
             if (isLastPos) {
-                setInsertIndex(getLastItemIndexInGroup(options[1].value) + 2)
+                setInsertIndex(getLastItemIndexInGroup(optLines[1].value, planByHardware) + 2)
             }
         }
+    };
+
+    const handleChangeSelectService = (event) => {
+        event != null ? setSelectService(event) : setSelectService(optServiceTypes[1]);
     };
 
     useEffect(()=>{
@@ -90,7 +87,7 @@ export function ModalAssignServiceWork({
     const handleChangeIsLastPos = (event) => {
         setIsLastPos(event)
         if (event === true) {
-            setInsertIndex(getLastItemIndexInGroup(selectLine.value) + 2)
+            setInsertIndex(getLastItemIndexInGroup(selectLine.value, planByHardware) + 2)
         }
     };
 
@@ -110,9 +107,9 @@ export function ModalAssignServiceWork({
                         <span className="py-1 font-medium w-1/2">Выберите линию:</span>
                         <Select className=" ml-4 py-1 font-medium text-md w-1/2"
                                 value={selectLine}
-                                onChange={handleChangeSelect}
+                                onChange={handleChangeSelectLine}
                                 styles={CustomStyle}
-                                options={options}
+                                options={optLines}
                                 isClearable={false} isSearchable={false}/>
                     </div>
                     {!isAddingEmptyLine &&
@@ -171,7 +168,7 @@ export function ModalAssignServiceWork({
                         <span className="py-1 font-medium w-1/2">Длительность операции:</span>
 
                         <div className="ml-4 w-1/2 flex flex-row">
-                            <input min={0}  className={styleInputWithoutRounded + "rounded w-[54px]"}
+                            <input min={0} className={styleInputWithoutRounded + "rounded w-[54px]"}
                                    type="number"
                                    value={hour}
                                    onChange={(e) => onChangeHour(e.target.value)}
@@ -186,11 +183,20 @@ export function ModalAssignServiceWork({
                         </div>
 
                     </div>
+                    <div className="flex flex-row my-2">
+                        <span className="py-1 font-medium w-1/2">Выберите операцию:</span>
+                        <Select className=" ml-4 py-1 font-medium text-md w-1/2"
+                                value={selectService}
+                                onChange={handleChangeSelectService}
+                                styles={CustomStyle}
+                                options={optServiceTypes}
+                                isClearable={false} isSearchable={false}/>
+                    </div>
                     <div className="flex flex-row my-2 font-medium">
-                        <span className="py-1 font-medium w-1/2">Название операции:</span>
-                        <input className={styleInputWithoutRounded + "rounded ml-4 w-1/2"}
-                               value={nameOperation}
-                               onChange={(e) => setNameOperation(e.target.value)}
+                        <span className="py-1 font-medium w-1/2">Описание (опционально):</span>
+                        <textarea className={styleInputWithoutRounded + " h-[68px] rounded ml-4 w-1/2"}
+                               value={descriptionOperation}
+                               onChange={(e) => setDescriptionOperation(e.target.value)}
                         />
                     </div>
 

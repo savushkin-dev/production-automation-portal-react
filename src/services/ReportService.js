@@ -13,9 +13,11 @@ export default class ReportService {
         return $api.get(`${API_URL}/api/report/` + reportName + `/parameters`)
     }
 
-    static async createReportTemplate(reportName, reportCategory, dbUrl, dbUsername, dbPassword, dbDriver, sql, parametersMeta, content, styles, script, sqlMode, dataBands, bookOrientation) {
+    static async createReportTemplate(reportName, reportCategory, dbUrl, dbUsername, dbPassword, dbDriver, sql, parametersMeta,
+                                      content, styles, script, sqlMode, dataBands, bookOrientation, layoutSettingsParams, layoutParams) {
         return $api.post(`${API_URL}/api/report/create`, {reportName, reportCategory, dbUrl, dbUsername,
-            dbPassword, dbDriver, sql, parameters: JSON.stringify(parametersMeta), content, styles, script, sqlMode, dataBands: JSON.stringify(dataBands), bookOrientation})
+            dbPassword, dbDriver, sql, parameters: JSON.stringify(parametersMeta), content, styles, script, sqlMode,
+            dataBands: JSON.stringify(dataBands), bookOrientation, layoutSettingsParams: JSON.stringify(layoutSettingsParams), layoutParams: JSON.stringify(layoutParams)})
     }
 
     static async getReportsName() {

@@ -2,10 +2,10 @@ import React, {useEffect, useState} from "react";
 import {CustomMarker, TimelineMarkers} from "react-calendar-timeline";
 
 export function MyTimeline() {
-    const [now, setNow] = useState(new Date(Date.now()).setMonth(new Date(Date.now()).getMonth() - 2));
+    const [now, setNow] = useState(new Date(Date.now()).setMonth(new Date(Date.now()).getMonth() - 0));
 
     useEffect(() => {
-        const id = setInterval(() => setNow(new Date(Date.now()).setMonth(new Date(Date.now()).getMonth() - 2)), 10000);
+        const id = setInterval(() => setNow(new Date(Date.now()).setMonth(new Date(Date.now()).getMonth() - 0)), 10000);
         return () => clearInterval(id);
     }, []);
 

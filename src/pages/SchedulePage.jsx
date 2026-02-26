@@ -1,5 +1,5 @@
 import "./../App.css";
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
 import moment from 'moment';
 import 'moment/locale/ru';
@@ -20,15 +20,22 @@ import {DataTable} from "../components/scheduler/DataTable";
 import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
 import {ModalUpdateServiceWork} from "../components/scheduler/ModalUpdateServiceWork";
 import {MyTimeline} from "../components/scheduler/MyTimeline";
+import {convertLinesWithTimeFields, isValidLinesDate} from "../utils/scheduler/lines";
+import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
+import {createTimelineRenderersSheduler} from "../components/scheduler/TimelineItemRenderer";
+import {
+    getDateCurrent,
+    getDateMinus1,
+    getDateMinus2,
+    getDatePlus1,
+    getDatePlus2,
+    getDatePlus3, getDatePlus4, getDatePlus5, getDatePlus6, getDatePlus7,
+    groupDataByDay
+} from "../utils/scheduler/pdayParsing";
+import {isFactItem, isPackagedItem} from "../utils/scheduler/items";
+import {DisplayButtons} from "../components/scheduler/DisplayButtons";
+import {ModalNotifyError} from "../components/modal/ModalNotifyError";
 
-// Принудительно устанавливаем русскую локаль
-moment.updateLocale('ru', {
-    months: 'Январь_Февраль_Март_Апрель_Май_Июнь_Июль_Август_Сентябрь_Октябрь_Ноябрь_Декабрь'.split('_'),
-    monthsShort: 'Янв_Фев_Мар_Апр_Май_Июн_Июл_Авг_Сен_Окт_Ноя_Дек'.split('_'),
-    weekdays: 'Воскресенье_Понедельник_Вторник_Среда_Четверг_Пятница_Суббота'.split('_'),
-    weekdaysShort: 'вс_пн_вт_ср_чт_пт_сб'.split('_'),
-    weekdaysMin: 'вс_пн_вт_ср_чт_пт_сб'.split('_')
-});
 
 function SchedulerPage() {
 
@@ -42,22 +49,32 @@ function SchedulerPage() {
 
     const [groups, setGroups] = useState([]);
     const [items, setItems] = useState([]);
-    const [pdayDataPred, setPdayDataPred] = useState([]);
-    const [pdayData, setPdayData] = useState([]);
-    const [pdayDataNextDay, setPdayDataNextDay] = useState([]);
-    const [pdayDataNext2Day, setPdayDataNext2Day] = useState([]);
+    const [pdayData, setPdayData] = useState({
+        dayMinus2: [],
+        dayMinus1: [],
+        currentDay: [],
+        dayPlus1: [],
+        dayPlus2: [],
+        dayPlus3: [],
+        dayPlus4: [],
+        dayPlus5: [],
+        dayPlus6: [],
+        dayPlus7: [],
+        selectJobs: {}
+    });
     const [selectJobs, setSelectJobs] = useState([])
 
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingSolve, setIsLoadingSolve] = useState(false);
     const [msg, setMsg] = useState("");
     const [isModalNotify, setIsModalNotify] = useState(false);
-    const [isModalRemove, setIsModalRemove] = useState(false);
+    const [isModalNotifyError, setIsModalNotifyError] = useState(false);
     const [isModalInfoItem, setIsModalInfoItem] = useState(false);
     const [isModalMoveJobs, setIsModalMoveJobs] = useState(false);
     const [isModalAssignServiceWork, setIsModalAssignServiceWork] = useState(false);
     const [isModalUpdateServiceWork, setIsModalUpdateServiceWork] = useState(false);
-    const [isModalSendToWork, setIsModalSendToWrk] = useState(false);
+    const [isModalSendToWork, setIsModalSendToWork] = useState(false);
+    const [isModalSavePlan, setIsModalSavePlan] = useState(false);
 
     const [isSolve, setIsSolve] = useState(false);
     const [score, setScore] = useState({hard: 0, medium: 0, soft: 0});
@@ -71,6 +88,12 @@ function SchedulerPage() {
 
     const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0])
 
+    const [modalSortConfig, setModalSortConfig] = useState({
+        isOpen: false,
+        isSort: true,
+        message: '',
+        onConfirm: null
+    });
 
     const [contextMenu, setContextMenu] = useState({
         visible: false,
@@ -80,12 +103,26 @@ function SchedulerPage() {
         forCanvas: false,
     })
 
+    const [activeDisplay, setActiveDisplay] = useState({
+        planFact: false,
+        plan: true,
+        fact: false
+    });
+
     const [startTimeLines, setStartTimeLines] = useState(undefined);
     const [timelineKey, setTimelineKey] = useState(0);
+    const [serviceTypes, setServiceTypes] = useState([])
 
     const [currentUnit, setCurrentUnit] = useState('hour');
 
     const location = useLocation();
+
+    const [selectedItems, setSelectedItems] = useState([]);
+    const [lastSelectedItem, setLastSelectedItem] = useState(null);
+
+    const heightGroupScheduler = activeDisplay.fact || activeDisplay.plan? 100 : 164;
+
+    const [clickedCameras, setClickedCameras] = useState({});
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -102,85 +139,42 @@ function SchedulerPage() {
 
     async function init(date) {
         try {
-            setVisibleTimeRange(prevState => ({
-                ...prevState,
-                visibleTimeStart: moment(date).startOf('day').add(-2, 'hour'),
-                visibleTimeEnd: moment(date).startOf('day').add(30, 'hour')
-            }));
+            const baseDate = moment(date);
+
+            //Устанавливаем диапазон видимого времени
+            setVisibleTimeRange({
+                visibleTimeStart: baseDate.clone().startOf('day').add(-2, 'hour'),
+                visibleTimeEnd: baseDate.clone().startOf('day').add(30, 'hour')
+            });
 
             const response = await SchedulerService.init(date);
             fetchPlan();
 
-            const pdayDataPredTemp = [];
-            const pdayDataTemp = [];
-            const pdayDataNextDayTemp = [];
-            const pdayDataNext2DayTemp = [];
+            const groupedData = groupDataByDay(response.data, baseDate);
 
-            // Определяем базовую дату для сравнения
-            const baseDate = moment(date);
-            const previousDay = moment(baseDate).subtract(1, 'day');
-            const nextDay = moment(baseDate).add(1, 'day');
-            const next2Day = moment(baseDate).add(2, 'day');
+            setPdayData(groupedData);
 
-
-            const initialSelectJobs = {};
-
-            response.data.forEach(item => {
-                if (!item.dti) return;
-
-                const itemDate = moment(item.dti).startOf('day');
-                const dataWithSelection = {
-                    ...item,
-                    isSelected: false
-                };
-
-                if (item.snpz) {
-                    initialSelectJobs[item.snpz] = item.startProductionDateTime !== "" && item.startProductionDateTime !== null; // Занятые = true, свободные = false
-                }
-
-                // Сравниваем даты
-                if (itemDate.isSame(previousDay, 'day')) {
-                    pdayDataPredTemp.push(dataWithSelection);
-                } else if (itemDate.isSame(baseDate, 'day')) {
-                    pdayDataTemp.push(dataWithSelection);
-                } else if (itemDate.isSame(nextDay, 'day')) {
-                    pdayDataNextDayTemp.push(dataWithSelection);
-                } else if (itemDate.isSame(next2Day, 'day')) {
-                    pdayDataNext2DayTemp.push(dataWithSelection);
-                }
-
-            });
-
-            setPdayDataPred(pdayDataPredTemp);
-            setPdayData(pdayDataTemp);
-            setPdayDataNextDay(pdayDataNextDayTemp);
-            setPdayDataNext2Day(pdayDataNext2DayTemp);
-
-            setSelectJobs(initialSelectJobs);
-
+            setSelectJobs(groupedData.selectJobs);
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка инициализации: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка инициализации: " + e.response.data.message)
+            setIsModalNotifyError(true);
             setItems([])
             setScore({hard: 0, medium: 0, soft: 0})
-            setPdayDataPred([])
-            setPdayData([])
-            setPdayDataNextDay([])
-            setPdayDataNext2Day([])
+            setPdayData({
+                dayMinus2: [],
+                dayMinus1: [],
+                currentDay: [],
+                dayPlus1: [],
+                dayPlus2: [],
+                dayPlus3: [],
+                dayPlus4: [],
+                dayPlus5: [],
+                dayPlus6: [],
+                dayPlus7: [],
+                // selectJobs: []
+            });
         }
-    }
-
-    function getNextDateStr(date) {
-        const nextDay = new Date(date);
-        nextDay.setDate(nextDay.getDate() + 1);
-        return nextDay.toISOString().split('T')[0];
-    }
-
-    function getPredDateStr(date) {
-        const nextDay = new Date(date);
-        nextDay.setDate(nextDay.getDate() - 1);
-        return nextDay.toISOString().split('T')[0];
     }
 
     useEffect(() => {
@@ -190,6 +184,17 @@ function SchedulerPage() {
         }
     }, [selectDate])
 
+    async function alignPlan() {
+        try {
+            await SchedulerService.alignPlan();
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка выравнивания плана: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
     async function sendToWork() {
         try {
             await SchedulerService.sendToWork();
@@ -197,9 +202,40 @@ function SchedulerPage() {
             setIsModalNotify(true);
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка отправки плана в работу: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка отправки плана в работу: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
+    }
+
+    async function agreeSorting(){
+        setModalSortConfig(prevState => ({...prevState, isOpen: false}))
+        await sortSchedule();
+        await modalSortConfig.onConfirm?.();
+    }
+
+    async function disagreeSorting(){
+        setModalSortConfig(prevState => ({...prevState, isOpen: false}))
+        await modalSortConfig.onConfirm?.();
+    }
+
+    function openModalSendToWork(){
+        setMsg("Вы уверены что хотите отправить план в работу?")
+        setIsModalSendToWork(true);
+    }
+
+    function openModalSavePlan(){
+        setMsg("Вы уверены что хотите сохранить план?")
+        setIsModalSavePlan(true);
+    }
+
+    function clickSendToWork() {
+        setMsg("Вы хотите отсортировать план перед отправкой в работу?")
+        modalSortConfig.isSort? openModalSendToWork() : setModalSortConfig(prevState => ({...prevState, isOpen: true, onConfirm: ()=> openModalSendToWork()}));
+    }
+
+    function clickSavePlan(){
+        setMsg("Вы хотите отсортировать план перед сохранением?")
+        modalSortConfig.isSort? openModalSavePlan() : setModalSortConfig(prevState => ({...prevState, isOpen: true, onConfirm: ()=> openModalSavePlan()}));
     }
 
     async function savePlan() {
@@ -209,52 +245,38 @@ function SchedulerPage() {
             setIsModalNotify(true);
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка сохранения отчета: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка сохранения отчета: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
-    async function removePlan() {
+    async function fetchServiceTypes() {
         try {
-            await SchedulerService.removePlan();
-            setMsg("План успешно удален.")
-            setIsModalNotify(true);
+            const response = await SchedulerService.getServiceTypes();
+            let res = Object.entries(response.data)
+                .map(([typeId, serviceName], index) => ({
+                    id: typeId,
+                    name: serviceName.trim(),
+                }))
+                .sort((a, b) => {
+                    return a - b;
+                });
+            setServiceTypes(res)
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка удаления отчета: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка загрузки типов сервисных операций: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
-    }
-
-    function clickSendToWork() {
-        setMsg("Вы уверены что хотите отправить план в работу?")
-        setIsModalSendToWrk(true);
     }
 
     async function fetchLines() {
         try {
             const response = await SchedulerService.getLines();
-
-            let res = Object.entries(response.data)
-                .map(([lineId, lineName], index) => ({
-                    id: String(index + 1),
-                    name: lineName.trim(),
-                    lineId: lineId,
-                    originalName: lineName.trim(),
-                    startDateTime: "08:00",
-                    maxEndDateTime: "08:00",
-                }))
-                .sort((a, b) => {
-                    const numA = parseInt(a.name.match(/Линия №(\d+)/)?.[1] || 0);
-                    const numB = parseInt(b.name.match(/Линия №(\d+)/)?.[1] || 0);
-                    return numA - numB;
-                });
-
-            setStartTimeLines(res)
+            setStartTimeLines(convertLinesWithTimeFields(response.data))
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка загрузки линий отчета: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка загрузки линий отчета: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -265,8 +287,8 @@ function SchedulerPage() {
             setIsSolve(true);
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка начала планирования: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка начала планирования: " + e.response.data.message)
+            setIsModalNotifyError(true);
         } finally {
             setIsLoadingSolve(false)
         }
@@ -278,8 +300,8 @@ function SchedulerPage() {
             await SchedulerService.stopSolving();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка остановки планирования: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка остановки планирования: " + e.response.data.message)
+            setIsModalNotifyError(true);
         } finally {
             setIsLoadingSolve(false)
         }
@@ -296,8 +318,8 @@ function SchedulerPage() {
             setDownloadedPlan(null)
             setScore({hard: 0, medium: 0, soft: 0})
             setIsSolve(false)
-            setMsg("Ошибка получения плана: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка получения плана: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -308,8 +330,8 @@ function SchedulerPage() {
             setIsModalAnalyze(true);
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка получения подробного анализа: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка получения подробного анализа: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -321,8 +343,8 @@ function SchedulerPage() {
             setIsModalNotify(true)
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка обновления справочных данных: " + e.response.data.error)
-            setIsModalNotify(true)
+            setMsg("Ошибка обновления справочных данных: " + e.response.data.message)
+            setIsModalNotifyError(true)
         }
     }
 
@@ -361,7 +383,12 @@ function SchedulerPage() {
     }, [downloadedPlan]);
 
     async function solve() {
-        await fetchSolve();
+        (isValidLinesDate(startTimeLines))? await fetchSolve() : setLinesDateError();
+    }
+
+    function setLinesDateError(){
+        setMsg("Перед началом планирования или дозагрузки требуется настроить время начала и максимальное время линий в разделе \"Настройка линий\")")
+        setIsModalNotifyError(true);
     }
 
     useEffect(() => {
@@ -387,6 +414,7 @@ function SchedulerPage() {
     useEffect(() => {
         fetchStopSolving();
         fetchLines();
+        fetchServiceTypes();
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }, [])
 
@@ -396,76 +424,6 @@ function SchedulerPage() {
     const handleZoom = useCallback((timelineContext) => {
         setCurrentUnit(timelineContext.timelineUnit);
     }, []);
-
-    const formatTimelineLabel = (date, unit, width, height) => {
-        if (Array.isArray(date) && date.length === 2 && date[0] === 'Y' && date[1] === 'Y') {
-            return '';
-        }
-        if (!date || isNaN(new Date(date[0].$d).getTime())) {
-            console.warn('Invalid date in timeline:', date);
-            return '--:--';
-        }
-
-        const momentDate = moment(date[0].$d);
-
-        if (!momentDate.isValid()) {
-            return '--:--';
-        }
-
-        if (unit === 'minute') {
-            return momentDate.format('mm');
-        }
-
-        if (unit === 'hour') {
-            if (width < 40) return momentDate.format('HH');
-            return momentDate.format('HH:mm');
-        }
-
-        if (currentUnit === 'day') {
-            if (width < 30) return momentDate.format('DD');
-            if (width < 60) return momentDate.format('DD.MM');
-            if (width < 120) return momentDate.format('dd DD.MM');
-            return momentDate.format('dddd DD.MM');
-        }
-
-        if (currentUnit === 'month') {
-            if (width < 80) return momentDate.format('MM');
-            return momentDate.format('MMMM');
-        }
-
-        return momentDate.format('DD.MM HH:mm');
-    };
-
-    const formatTimelineLabelMain = (date, unit, width, height) => {
-        if (Array.isArray(date) && date.length === 2 && date[0] === 'Y' && date[1] === 'Y') {
-            return '';
-        }
-        if (!date || isNaN(new Date(date[0].$d).getTime())) {
-            console.warn('Invalid date in timeline:', date);
-            return '--:--';
-        }
-
-        const momentDate = moment(date[0].$d);
-
-        if (!momentDate.isValid()) {
-            return '--:--';
-        }
-
-        if (unit === 'hour') {
-            return momentDate.format('dddd, LL HH:00');
-        }
-
-        if (unit === 'day') {
-            return momentDate.format('dddd, LL');
-        }
-
-        if (unit === 'month') {
-            if (width < 80) return momentDate.format('MM');
-            return momentDate.format('MMMM');
-        }
-
-        return momentDate.format('YYYY');
-    };
 
     async function onChangeSelectDate(date) {
         setSelectDate(date);
@@ -479,6 +437,20 @@ function SchedulerPage() {
         }
 
         const clickedItem = planByHardware.find(item => item.id === itemId);
+
+        if (isFactItem(clickedItem)) {
+            setContextMenu({
+                visible: false,
+                x: 0,
+                y: 0,
+                item: null,
+                forCanvas: false,
+                forMultiple: false,
+                selectedItems: []
+            });
+            return;
+        }
+
         const isClickingSelected = selectedItems.includes(clickedItem);
 
         if (isClickingSelected && selectedItems.length > 1) {
@@ -512,6 +484,9 @@ function SchedulerPage() {
     };
 
     const handleCanvasRightClick = (groupId, time, e) => {
+        if(activeDisplay.fact){
+            return
+        }
         setSelectedItems([]);
         setSelectedItem(null);
         setLastSelectedItem(null);
@@ -556,8 +531,8 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка прикрепления: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка прикрепления: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -567,8 +542,8 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка открепления: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка открепления: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -618,6 +593,7 @@ function SchedulerPage() {
             // Shift+click - выделяем диапазон ТОЛЬКО в той же группе
             handleShiftSelect(itemId, itemsArray, clickedItem.group);
         } else {
+
             // Проверяем, кликаем на уже выделенный элемент
             const isClickingSelected = selectedItems.includes(clickedItem);
 
@@ -630,8 +606,30 @@ function SchedulerPage() {
                 setSelectedItem(clickedItem);
                 setSelectedItems([clickedItem]);
                 setLastSelectedItem(clickedItem);
+
+                linkPlanItemToFactItem(clickedItem)
             }
         }
+    }
+
+    //Добавляет в список выбранных элементов фактические или плановые элементы соответствующие друг другу
+    function linkPlanItemToFactItem(clickedItem) {
+        const itemsArray = planByHardware;
+        let idFact = null;
+        const prefix = "fact_camera";
+
+        if(!isPackagedItem(clickedItem)){
+            return
+        }
+
+        if(!isFactItem(clickedItem)){
+            idFact = clickedItem.id + prefix;
+        } else {
+            idFact = clickedItem.id.slice(0, -prefix.length);
+        }
+
+        const clickedFactItem = itemsArray.find(item => item.id === idFact);
+        setSelectedItems([clickedItem, clickedFactItem]);
     }
 
     // Функция для выделения диапазона по Shift ТОЛЬКО в одной группе
@@ -642,7 +640,7 @@ function SchedulerPage() {
         if (!lastItem || !currentItem) return;
 
         const groupItems = itemsArray.filter(item =>
-            item.group === groupId && !item.id.includes('cleaning')
+            item.group === groupId && !item.id.includes('cleaning') && !isFactItem(item)
         );
 
         const sortedGroupItems = [...groupItems].sort((a, b) => a.start_time - b.start_time);
@@ -663,43 +661,70 @@ function SchedulerPage() {
         setLastSelectedItem(currentItem);
     };
 
-    const [selectedItems, setSelectedItems] = useState([]);
-    const [lastSelectedItem, setLastSelectedItem] = useState(null);
-
     async function moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex) {
         try {
             await SchedulerService.moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex);
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка перемещения job-ов: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка перемещения job-ов: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
-    async function assignServiceWork(lineId, insertIndex, time, duration, name, isEmptyLine) {
+    async function assignServiceWork(lineId, insertIndex, time, duration, type, description, isEmptyLine) {
         try {
             if(isEmptyLine){
-                await SchedulerService.assignServiceWorkEmptyLine(lineId, time, duration, name);
+                await SchedulerService.assignServiceWorkEmptyLine(lineId, time, duration, type, description);
             } else {
-                await SchedulerService.assignServiceWork(lineId, insertIndex, duration, name);
+                await SchedulerService.assignServiceWork(lineId, insertIndex, duration, type, description);
             }
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка назначения сервисной операции: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка назначения сервисной операции: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
-    async function updateServiceWork(lineId, index, duration) {
+    async function determineFactPlace(snpz) {
         try {
-            await SchedulerService.updateServiceWork(lineId, index, duration);
+            await SchedulerService.determineFactPlace(snpz);
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка обновления сервисной операции: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка определения количества мест по факту: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
+    async function determineCameraFact(snpz) {
+        try {
+            await SchedulerService.determineCameraFact(snpz);
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка определения данных по камере: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
+    //Для обновления в modelInfoItem выбранного элемента
+    useEffect(() => {
+        if (selectedItem && selectedItem.info.snpz) {
+            const updatedItem = items.find(item => item.info.snpz === selectedItem.info.snpz);
+            setSelectedItem(updatedItem);
+        }
+    }, [items]);
+
+    async function updateServiceWork(lineId, index, duration, type, description) {
+        try {
+            await SchedulerService.updateServiceWork(lineId, index, duration, type, description);
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка обновления сервисной операции: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -709,8 +734,8 @@ function SchedulerPage() {
             await fetchPlan();
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка удаления сервисной операции: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка удаления сервисной операции: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -718,23 +743,29 @@ function SchedulerPage() {
         try {
             await SchedulerService.sortSchedule();
             await fetchPlan();
+            setModalSortConfig(prev => ({...prev, isSort: true}))
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка сортировки: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка сортировки: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
+    }
+
+    async function ClickReloadPlan(){
+        (isValidLinesDate(startTimeLines))? await reloadPlan() : setLinesDateError();
     }
 
     async function reloadPlan() {
         try {
             await SchedulerService.reloadPlan(selectJobs);
-            await fetchPlan();
             setMsg("Дозагрузка прошла успешно, можете продолжить планирование.")
+            await fetchPlan();
             setIsModalNotify(true);
+            setModalSortConfig(prev => ({...prev, isSort: false}));
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка дозагрузки: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка дозагрузки: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -744,8 +775,8 @@ function SchedulerPage() {
             await fetchPlan()
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка назначения времени: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка назначения времени: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
@@ -755,136 +786,26 @@ function SchedulerPage() {
             await fetchPlan()
         } catch (e) {
             console.error(e)
-            setMsg("Ошибка назначения времени: " + e.response.data.error)
-            setIsModalNotify(true);
+            setMsg("Ошибка назначения времени: " + e.response.data.message)
+            setIsModalNotifyError(true);
         }
     }
 
-    const customItemRenderer = ({item, itemContext, getItemProps}) => {
-        const isSelected = selectedItems.includes(item);
-        const isSingleSelected = selectedItem?.id === item.id;
-
-        const isFact = item.info.startFact !== null && !item.id.includes('cleaning');
-        const isLinesMatch = item.info.lineIdFact === item.info.lineInfo.id;
-
-        const itemProps = getItemProps({
-            style: {
-                background: isSelected ?
-                    (isSingleSelected ? "#cbff93" : "#cbff93") : (isFact ? "#c9ffd7" : item.itemProps?.style?.background)
-                    ,
-                border: '1px solid #aeaeae',
-                textAlign: 'start',
-                color: item.itemProps.style.color || 'black',
-                margin: 0,
-                padding: '0',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                maxWidth: '100%',
-            },
-            onMouseDown: getItemProps().onMouseDown,
-            onTouchStart: getItemProps().onTouchStart
-        });
-
-        // Удаляем key из полученных пропсов
-        const {key, ...safeItemProps} = itemProps;
-
-        return (
-            <>
-                <div
-                    key={item.id}
-                    {...safeItemProps}
-                    className="rct-item"
-                >
-                    <div className="flex px-1 justify-between font-medium text-sm text-black">
-                        {item.info?.pinned &&
-                            <>
-                                {isSelected && selectedItems.length > 1 && (
-                                    <div
-                                        className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                                        {selectedItems.findIndex(el => el.id === item.id) + 1}
-                                    </div>
-                                )}
-                                <div className="h-2 absolute p-0"><i
-                                    className="text-red-800 p-0 m-0 fa-solid fa-thumbtack"></i></div>
-                                <span className="ml-4">{item.title}</span>
-                            </>
-                        }
-
-                        {!item.info?.pinned &&
-                            <>
-                                {isSelected && selectedItems.length > 1 && (
-                                    <div
-                                        className="absolute top-1 left-1 z-10 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                                        {selectedItems.findIndex(el => el.id === item.id) + 1}
-                                    </div>
-                                )}
-                                <span className="">{item.title}</span>
-                            </>
-                        }
-                    </div>
-                    <div className="flex flex-col justify-start text-xs">
-                        {item.info.name !== "Мойка" && !item.info.maintenance &&
-                            <span className=" px-1 rounded">
-                            {item.info?.np && <span className="text-blue-500">{item.info.np}</span>}
-                                <span className="pl-1">№ партии</span>
-                            </span>
-                        }
-                        {item.info?.duration &&
-                            <span className=" px-1 rounded"><span
-                                className="text-pink-500">{item.info.duration} мин. </span>
-                                <span className="text-gray-500 px-1">|</span>
-                                <span className="text-green-600">{moment(item.start_time).format('HH:mm')} </span>
-                        - <span className="text-red-500">{moment(item.end_time).format('HH:mm')}</span>  Время</span>
-                        }
-                        {item.info?.groupIndex && !isFact &&
-                            <span className=" px-1 rounded">
-                                <span className="text-violet-600">{item.info?.groupIndex}</span>
-                                <span className="pl-1">Позиция на линии</span>
-                            </span>
-                        }
-
-                        {isFact &&
-                            <span className=" px-1 rounded">
-                                {!isLinesMatch &&
-                                    <span className="text-red-600 pr-2 h-[20px] w-[20px]"><i
-                                        className="fa-solid fa-triangle-exclamation"></i></span>
-                                }
-                                <span className="text-violet-600">{moment(item.info?.startFact).format('HH:mm')}</span>
-                                <span className="pl-1">Факт. время начала</span>
-
-                                <span className="pl-1 text-violet-600">| {item.info?.groupIndex}</span>
-                                <span className="pl-1">Позиция на линии</span>
-                            </span>
-                        }
-                    </div>
-                </div>
-            </>
-        );
-    };
-
-    const customGroupRenderer = ({group}) => {
-        return (
-            <div className="custom-group-renderer flex flex-col justify-center h-full px-2">
-                <div className="group-title font-semibold text-sm mb-1">
-                    {group.title}
-                </div>
-
-                <div className="group-stats text-xs text-gray-500">
-                    Выработка: {group.totalMass} кг.
-                </div>
-            </div>
-        );
-    };
+    const timelineRenderers = useMemo(
+        () => {
+            return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay)},
+        [selectedItems, selectedItem, activeDisplay]
+    );
 
     return (
         <>
             <div className="w-full">
 
-                {isModalInfoItem && selectedItem && <ModalInfoItem info={selectedItem.info} onClose={() => {
-                    setSelectedItem(null);
-                    setIsModalInfoItem(false);
-                }} lines={groups}/>}
+                {isModalInfoItem && selectedItem && <ModalInfoItem item={selectedItem} onClose={() => {
+                        setSelectedItem(null);
+                        setIsModalInfoItem(false);
+                    }} lines={groups} determineFactPlace={determineFactPlace} determineCameraFact={determineCameraFact}
+                    clickedCameras={clickedCameras} setClickedCameras={setClickedCameras}/>}
 
                 {isLoading &&
                     <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>
@@ -895,16 +816,33 @@ function SchedulerPage() {
                 </div>
 
                 <div className="flex flex-row">
-                    <div className="w-1/6 ">
+                    <div className="w-2/6 ">
                         <button onClick={() => {
                             navigate(from, {replace: true})
                         }} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Вернуться назад
                         </button>
+                        {/*<button onClick={() => {*/}
+                        {/*    navigate("/tracktrace", {replace: true})*/}
+                        {/*}} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Мониторинг*/}
+                        {/*</button>*/}
                     </div>
 
-                    <div className="w-5/6 py-1 flex justify-end pr-3">
+                    <div className="w-4/6 py-1 flex justify-end pr-3">
 
-                        <button onClick={savePlan}
+                        <button
+                            className="mr-1 rounded border border-slate-300 hover:bg-gray-100  px-3 h-[30px] font-medium text-[0.950rem]"
+                            onClick={sortSchedule}>
+                            Отсортировать
+                            <i className="pl-2 fa-solid fa-sort"></i>
+                        </button>
+
+                        <button onClick={alignPlan}
+                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
+                            Выровнять план
+                            <i className="pl-2 fa-solid fa-align-right"></i>
+                        </button>
+
+                        <button onClick={clickSavePlan}
                                 className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                             Сохранить
                             <i className="pl-2 fa-solid fa-floppy-disk"></i>
@@ -916,31 +854,41 @@ function SchedulerPage() {
                             <i className="pl-2 fa-solid fa-cloud-arrow-down"></i>
                         </button>
 
+
                     </div>
                 </div>
 
-                <div className="flex flex-row justify-between my-4 px-4 ">
+                <div className="flex flex-row justify-between my-4 px-4">
 
-                    <div className="w-1/3">
-                        <div
-                            className="inline-flex px-2 h-[30px] items-center border rounded-md hover:bg-gray-100 selection:border-0">
+                    <div className="w-2/5 inline-flex justify-between">
+
+                        <div className="inline-flex px-2 h-[30px] items-center border rounded-md hover:bg-gray-100 selection:border-0">
                             <span className="py-1 font-medium text-nowrap ">Дата:</span>
-                            <input className={"px-2 font-medium w-32 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:border-transparent"} type="date"
-                                   value={selectDate}
-                                   onChange={(e) => onChangeSelectDate(e.target.value)}
+                            <input
+                                className={"px-2 font-medium w-32 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:border-transparent"}
+                                type="date"
+                                value={selectDate}
+                                onChange={(e) => onChangeSelectDate(e.target.value)}
                             />
                         </div>
 
                         <button onClick={() => {
                             setIsModalDateSettings(true)
                         }}
-                                className={"ml-3 rounded border border-slate-300 bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px] font-medium text-[0.950rem]"}>
+                                className={"ml-3 mr-3 rounded border border-slate-300 bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px] font-medium text-[0.950rem]"}>
                             Настройка линий
                         </button>
 
+                        <DisplayButtons activeDisplay={activeDisplay}
+                                        setActiveDisplay={(newDisplay) => {setTimelineKey(prev => prev + 1);
+                                            setActiveDisplay(newDisplay);
+                                        }}
+                        />
+
+
                     </div>
 
-                    <div className="flex flex-row w-2/3 justify-between" style={{zIndex: 20}}>
+                    <div className="flex flex-row w-3/5 justify-between" style={{zIndex: 20}}>
 
                         <div className="inline-flex">
                             {!isSolve &&
@@ -963,18 +911,14 @@ function SchedulerPage() {
                             }
 
                             <button onClick={() => {
-                                reloadPlan();
+                                ClickReloadPlan();
                             }}
                                     className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
                                 Догрузить план
                                 <i className="pl-2 fa-solid fa-arrows-rotate"></i>
                             </button>
 
-                            <button
-                                className="mr-1 rounded border border-slate-300 hover:bg-gray-100  px-3 h-[30px] font-medium text-[0.950rem]"
-                                onClick={sortSchedule}>
-                                Отсортировать
-                            </button>
+
 
                             <button onClick={() => {
                                 clickSendToWork()
@@ -1019,8 +963,8 @@ function SchedulerPage() {
 
                 <div className="m-4 border-x-2">
                     <Timeline
-                        itemRenderer={customItemRenderer}
-                        groupRenderer={customGroupRenderer}
+                        itemRenderer={timelineRenderers.itemRenderer}
+                        groupRenderer={timelineRenderers.groupRenderer}
                         key={timelineKey}
                         groups={groups}
                         items={items}
@@ -1036,8 +980,10 @@ function SchedulerPage() {
                         canMove={true}
                         snap={1}
                         snapGrid={1}
+                        buffer={5}
                         sidebarWidth={150}
-                        lineHeight={90}
+                        lineHeight={heightGroupScheduler}
+
                     >
                         <TimelineHeaders className="sticky">
                             <SidebarHeader>
@@ -1078,10 +1024,7 @@ function SchedulerPage() {
                     </Timeline>
                 </div>
 
-                {isModalDateSettings && <ModalDateSettings onClose={() => {
-                    setIsModalDateSettings(false)
-                }}
-
+                {isModalDateSettings && <ModalDateSettings onClose={() => {setIsModalDateSettings(false)}}
                                                            lines={startTimeLines}
                                                            setLines={setStartTimeLines}
                                                            changeTime={assignLineStart} changeMaxEndTime={assignMaxEndDateTime}
@@ -1094,21 +1037,30 @@ function SchedulerPage() {
                 {isModalNotify &&
                     <ModalNotify title={"Результат операции"} message={msg} onClose={() => setIsModalNotify(false)}/>}
 
-                {isModalRemove &&
-                    <ModalConfirmation title={"Подтверждение действия"} message={msg}
-                                       onClose={() => setIsModalRemove(false)}
-                                       onAgree={() => {
-                                           setIsModalRemove(false);
-                                           removePlan();
-                                       }} onDisagree={() => setIsModalRemove(false)}/>}
+                {isModalNotifyError &&
+                    <ModalNotifyError title={"Ошибка операции"} message={msg} onClose={() => setIsModalNotifyError(false)}/>}
 
                 {isModalSendToWork &&
                     <ModalConfirmation title={"Подтверждение действия"} message={msg}
-                                       onClose={() => setIsModalSendToWrk(false)}
+                                       onClose={() => setIsModalSendToWork(false)}
                                        onAgree={() => {
-                                           setIsModalSendToWrk(false);
+                                           setIsModalSendToWork(false);
                                            sendToWork();
-                                       }} onDisagree={() => setIsModalSendToWrk(false)}/>}
+                                       }} onDisagree={() => setIsModalSendToWork(false)}/>}
+
+                {isModalSavePlan &&
+                    <ModalConfirmation title={"Подтверждение действия"} message={msg}
+                                       onClose={() => setIsModalSavePlan(false)}
+                                       onAgree={() => {
+                                           setIsModalSavePlan(false);
+                                           savePlan();
+                                       }} onDisagree={() => setIsModalSavePlan(false)}/>}
+
+                {modalSortConfig.isOpen &&
+                    <ModalConfirmation title={"Подтверждение действия"} message={msg}
+                                       onClose={() => setModalSortConfig(prev => ({...prev, isOpen: false}))}
+                                       onAgree={() => {agreeSorting()}}
+                                       onDisagree={() => {disagreeSorting()}}/>}
 
                 {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItems} unpin={unpinLine}
                                                              isDisplayByHardware={isDisplayByHardware}
@@ -1130,6 +1082,7 @@ function SchedulerPage() {
                                             onClose={() => setIsModalAssignServiceWork(false)}
                                             lines={startTimeLines}
                                             planByHardware={planByHardware} selectDate={selectDate}
+                                            serviceTypes={serviceTypes}
                     />}
 
                 {isModalUpdateServiceWork &&
@@ -1137,22 +1090,67 @@ function SchedulerPage() {
                                             onClose={() => setIsModalUpdateServiceWork(false)}
                                             lines={startTimeLines}
                                             planByHardware={planByHardware}
-                                            updateServiceWork={updateServiceWork}/>
+                                            updateServiceWork={updateServiceWork}
+                                            serviceTypes={serviceTypes}
+                    />
                 }
+                
 
-                <DataTable data={pdayDataPred} setData={setPdayDataPred} dateData={getPredDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                <DataTable data={pdayData.dayMinus2} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayMinus2: newData
+                }))} dateData={getDateMinus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} /> 
 
-                <DataTable data={pdayData} setData={setPdayData} dateData={selectDate} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                <DataTable data={pdayData.dayMinus1} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayMinus1: newData
+                }))} dateData={getDateMinus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
+                <DataTable data={pdayData.currentDay} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    currentDay: newData
+                }))} dateData={getDateCurrent(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
-                <DataTable data={pdayDataNextDay} setData={setPdayDataNextDay} dateData={getNextDateStr(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                <DataTable data={pdayData.dayPlus1} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus1: newData
+                }))} dateData={getDatePlus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
-                <DataTable data={pdayDataNext2Day} setData={setPdayDataNext2Day}  dateData={getNextDateStr(getNextDateStr(selectDate))} selectJobs={selectJobs} setSelectJobs={setSelectJobs}/>
+                <DataTable data={pdayData.dayPlus2} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus2: newData
+                }))} dateData={getDatePlus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+
+                <DataTable data={pdayData.dayPlus3} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus3: newData
+                }))} dateData={getDatePlus3(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+
+                <DataTable data={pdayData.dayPlus4} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus4: newData
+                }))} dateData={getDatePlus4(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+
+                <DataTable data={pdayData.dayPlus5} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus5: newData
+                }))} dateData={getDatePlus5(selectDate)}selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+
+                <DataTable data={pdayData.dayPlus6} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus6: newData
+                }))} dateData={getDatePlus6(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+
+                <DataTable data={pdayData.dayPlus7} setData={(newData) => setPdayData(prev => ({
+                    ...prev,
+                    dayPlus7: newData
+                }))} dateData={getDatePlus7(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
 
             </div>
         </>
     )
+
 }
 
 export default observer(SchedulerPage)

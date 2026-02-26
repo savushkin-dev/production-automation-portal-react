@@ -9,15 +9,21 @@ import ReportsPage from "./pages/ReportsPage";
 import ViewReportPage from "./pages/ViewReportPage";
 import SchedulePage from "./pages/SchedulePage";
 import AdminPanelPage from "./pages/AdminPanelPage";
+import TrackTracePage from "./pages/TrackTracePage";
+import {configureMomentLocale} from "./utils/date/momentConfig";
+import {TestGrid} from "./components/reportsConstruct/TestGrid";
+import {TestApp} from "./components/reportsConstruct/TestApp";
 
 
 function App() {
+
 
     const {store} = useContext(Context);
 
     const [isCheckAuth, setIsCheckAuth] = useState(false);
 
     useEffect(() => {
+        configureMomentLocale();
         if (localStorage.getItem('tokenAutomationProduction')) {
             store.checkAuth().then(() => setIsCheckAuth(true));
         } else {
@@ -34,6 +40,10 @@ function App() {
                     <Route path="/" element={<ReportsPage/>}/>
                     <Route path="/report" element={<ViewReportPage/>}/>
                     <Route path="/scheduler" element={<SchedulePage/>}/>
+                    <Route path="/tracktrace" element={<TrackTracePage/>}/>
+
+                    <Route path="/testparam" element={<TestGrid/>}/>
+                    <Route path="/test-layout" element={<TestApp />} />
 
 
 

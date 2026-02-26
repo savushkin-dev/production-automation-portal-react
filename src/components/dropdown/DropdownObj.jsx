@@ -10,8 +10,8 @@ const Dropdown = ({options, onSelect, label, onOpen, onClose}) => {
     };
 
     const handleSelect = (option) => {
-        onSelect(option); // Вызываем функцию при выборе опции
-        setIsOpen(false); // Закрываем выпадающий список
+        onSelect(option);
+        setIsOpen(false);
     };
 
     return (
@@ -27,8 +27,8 @@ const Dropdown = ({options, onSelect, label, onOpen, onClose}) => {
                 {isOpen && (
                     <div className="dropdown-menu text-xs font-medium">
                         {options.map((option, index) => (
-                            <div key={index} className="dropdown-item" onClick={() => handleSelect(option)}>
-                                {option === 'Дочерний-child' ? option.slice(0, -6) : option}
+                            <div key={index} className="dropdown-item" onClick={() => handleSelect(option.value)}>
+                                {option.label}
                             </div>
                         ))}
                     </div>
