@@ -147,10 +147,15 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
             // Находим все дочерние бэнды
             const childBands = Array.from(doc.querySelectorAll(`[data-band-child="true"]`));
 
-            dataArray.forEach(tableData => {
+            dataArray.forEach((tableData, index) => {
                 // Рендерим главный бэнд
                 let instanceHtml = replaceFieldsInHtml(bandHtml, tableData);
                 let bandCopy = band.cloneNode(true); // Глубокое клонирование
+
+                // Применяем чередование фона
+                if (index > 0 && index % 2 !== 0) {
+                    bandCopy.style.backgroundColor = '#f6f6f6';
+                }
 
                 counterBand++;
                 instanceHtml = replaceFieldInHtml(instanceHtml, counterBand, "№")
