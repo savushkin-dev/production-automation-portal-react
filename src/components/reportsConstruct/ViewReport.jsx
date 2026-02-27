@@ -577,12 +577,12 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
 
                     <div className="flex justify-center text-center mr-2 w-1/3 ">
-                        <span className="gjs-pn-btn hover:bg-gray-200" onClick={() => {
-                            printReport()
-                        }}
-                              title="Экспорт PDF">
-                            <i className="fa fa-file-pdf"></i>
-                            </span>
+                        {/*<span className="gjs-pn-btn hover:bg-gray-200" onClick={() => {*/}
+                        {/*    printReport()*/}
+                        {/*}}*/}
+                        {/*      title="Экспорт PDF">*/}
+                        {/*    <i className="fa fa-file-pdf"></i>*/}
+                        {/*</span>*/}
                         <span className="gjs-pn-btn hover:bg-gray-200" onClick={() => {
                             exportHtml()
                         }}
