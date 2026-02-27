@@ -31,6 +31,7 @@ import {ViewReport} from "./ViewReport";
 import {DesignerParameter} from "./DesignerParameter";
 import {ModalParameterWithLayout} from "./ModalParameterWithLayout";
 import DropdownObj from "../dropdown/DropdownObj";
+import {GlobalVars} from "./GlobalVars";
 
 
 // Добавляем шрифт Roboto в виртуальную файловую систему pdfmake
@@ -70,6 +71,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [isModalSQL, setIsModalSQL] = useState(false);
         const [isJavaEditor, setIsJavaEditor] = useState(false);
         const [isDesignerParameter, setIsDesignerParameter] = useState(false);
+        const [isGlobalVars, setIsGlobalVars] = useState(false);
         const [modalMsg, setModalMsg] = useState('');
 
         const [isSqlMode, setIsSqlMode] = useState(false);
@@ -1400,13 +1402,13 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                                             script={script} layout={layoutParamSettings} setLayout={setLayoutParamSettings}
                 />}
 
-                {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter &&
+                {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter && !isGlobalVars &&
 
                     <div className=" gjs-two-color gjs-one-bg flex flex-row justify-between py-1 gjs-pn-commands">
                         <div className="flex justify-start text-center ml-2 w-1/3">
                             <span className="gjs-pn-btn font-medium">Конструктор отчетов</span>
                             <span className="gjs-pn-btn">
-                            <i className="fa-solid fa-pencil"></i>
+                                <i className="fa-solid fa-pencil"></i>
                             </span>
                             <button onClick={clickEnterPreviewMode}>Просмотр</button>
                         </div>
@@ -1429,7 +1431,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                     </div>}
 
-                {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter &&
+                {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter && !isGlobalVars &&
                     <div
                         className="pl-2 gjs-two-color gjs-one-bg flex flex-row justify-between py-1 gjs-pn-commands ">
                         <div className="flex flex-row gap-x-2">
@@ -1479,6 +1481,16 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                             </div>
                         </div>
                         <div className="flex flex-row gap-x-2 pr-2">
+
+                            <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
+                                <button onClick={() => setIsGlobalVars(true)}
+                                        className="flex flex-col justify-between justify-items-center">
+                                        <span className="gjs-pn-btn hover:bg-gray-200 flex justify-center ">
+                                            <i className="fa-solid fa-earth-americas pt-1"></i>
+                                        </span>
+                                    <span className="text-xs font-medium px-1">Глобальные переменные</span>
+                                </button>
+                            </div>
 
                             <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
                                 <button onClick={() => setIsDesignerParameter(true)}
@@ -1537,7 +1549,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                     </div>}
 
-                <div className={!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter ? 'block' : 'hidden'}>
+                <div className={!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter && !isGlobalVars ? 'block' : 'hidden'}>
                     <div id="editor" ref={editorRef}/>
                 </div>
 
@@ -1586,6 +1598,10 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 {!isViewMode && isDesignerParameter &&
                     <DesignerParameter parameters={parameters || []} layout={layoutParam} setLayout={setLayoutParam}
                                        onClose={()=>setIsDesignerParameter(false)}/>
+                }
+
+                {!isViewMode && isGlobalVars &&
+                    <GlobalVars onClose={()=>setIsGlobalVars(false)}/>
                 }
 
 
