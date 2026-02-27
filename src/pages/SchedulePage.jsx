@@ -32,7 +32,7 @@ import {
     getDatePlus3, getDatePlus4, getDatePlus5, getDatePlus6, getDatePlus7,
     groupDataByDay
 } from "../utils/scheduler/pdayParsing";
-import {isFactItem, isPackagedItem} from "../utils/scheduler/items";
+import {isFactItem, isMaintenanceItem, isPackagedItem} from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
 
@@ -794,6 +794,12 @@ function SchedulerPage() {
     function sortRange(sortUp) {
         const filteredItems = selectedItems
             .filter(item => !isFactItem(item));
+
+        if (filteredItems.some(item => isPackagedItem(item) || isMaintenanceItem(item))) {
+            setMsg("Сортировка невозможна. В выделенном диапазоне присутствуют расфасованные элементы или сервисные операции.");
+            setIsModalNotify(true);
+            return;
+        }
 
         const groupId = filteredItems[0].group;
         const sortedSelected = filteredItems
