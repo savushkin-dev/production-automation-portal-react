@@ -8,6 +8,11 @@ export function isPackagedItem(item) {
     return item.info.startFact !== null
 }
 
+//Определяет является ли сервисной операцией
+export function isMaintenanceItem(item) {
+    return item.info.maintenance === true
+}
+
 export const getLastItemIndexInGroup = (groupId, plan) => {
     // Фильтруем элементы по группе и ИСКЛЮЧАЕМ мойки и фактические элементы
     const groupItems = plan
