@@ -629,7 +629,9 @@ function SchedulerPage() {
         }
 
         const clickedFactItem = itemsArray.find(item => item.id === idFact);
-        setSelectedItems([clickedItem, clickedFactItem]);
+        if(clickedFactItem){
+            setSelectedItems([clickedItem, clickedFactItem]);
+        }
     }
 
     // Функция для выделения диапазона по Shift ТОЛЬКО в одной группе
