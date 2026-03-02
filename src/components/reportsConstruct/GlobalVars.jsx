@@ -19,6 +19,37 @@ export function GlobalVars({ onClose }) {
     useEffect(() => {
         getGlobalVars()
     }, []);
+    
+    async function getGlobalVars() {
+        try {
+            const response = await ReportService.getReportGlobalVars();
+            let vars = response.data;
+            vars = vars.map(v => ({
+                ...v,
+                value: decryptData(v.value)
+            }));
+            setVariables(vars);
+        } catch (e) {
+            setError("Ошибка получения глобальных переменных: " + e.response?.data?.message)
+            setIsModalError(true);
+            setIsModalNotify(true)
+        }
+    }
+
+    async function saveGlobalVars() {
+        try {
+            let varsToSave = variables.map(v => ({
+                key: v.key,
+                value: encryptData(v.value),
+                description: v.description
+            }));
+            await ReportService.saveReportGlobalVars(varsToSave);
+        } catch (e) {
+            setError("Ошибка сохранения глобальных переменных: " + e.response?.data?.message)
+            setIsModalError(true);
+        }
+    }
+
 
     async function getGlobalVars() {
         try {
