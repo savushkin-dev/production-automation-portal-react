@@ -6,22 +6,24 @@ export function GlobalVars({ onClose }) {
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalNotify, setIsModalNotify] = useState(false);
     const [modalMsg, setModalMsg] = useState("");
-    const [editingId, setEditingId] = useState(null);
+    const [editingKey, setEditingKey] = useState(null);
     const [editForm, setEditForm] = useState({ key: '', value: '', description: '' });
     const [keyError, setKeyError] = useState('');
-
-    // Генерация простого ID
-    const generateId = () => {
-        return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-    };
+    const [originalKey, setOriginalKey] = useState('');
 
     // Загрузка демо-данных
     useEffect(() => {
         setVariables([
-            { id: generateId(), key: 'companyName', value: 'ООО "Ромашка"', description: 'Название компании' },
-            { id: generateId(), key: 'currentYear', value: '2026', description: 'Текущий год' },
-            { id: generateId(), key: 'currency', value: '₽', description: 'Валюта отчетов' },
-            { id: generateId(), key: 'directorName', value: 'Иванов И.И.', description: 'ФИО директора' },
+            { key: 'companyName', value: 'ООО "Ромашка"', description: 'Название компании' },
+            { key: 'currentYear', value: '2026', description: 'Текущий год' },
+            { key: 'currency', value: '₽', description: 'Валюта отчетов' },
+            { key: 'directorName', value: 'Иванов И.И.', description: 'ФИО директора' },
+            { key: 'directorName2', value: 'Иванов И.И.', description: 'ФИО директора' },
+            { key: 'directorNam3e', value: 'Иванов И.И.', description: 'ФИО директора' },
+            { key: 'directorNуцame', value: 'Иванов И.И.', description: 'ФИО директора' },
+            { key: 'directorNывame', value: 'Иванов И.И.', description: 'ФИО директора' },
+            { key: 'directorNмame', value: 'Иванов И.И.', description: 'ФИО директора' },
+            { key: 'directorсName', value: 'Иванов И.И.', description: 'ФИО директора' },
         ]);
     }, []);
 
@@ -33,9 +35,9 @@ export function GlobalVars({ onClose }) {
     );
 
     // Проверка уникальности ключа
-    const isKeyUnique = (key, excludeId = null) => {
+    const isKeyUnique = (key, excludeKey = null) => {
         return !variables.some(v =>
-            v.id !== excludeId && v.key.toLowerCase() === key.trim().toLowerCase()
+            v.key !== excludeKey && v.key.toLowerCase() === key.trim().toLowerCase()
         );
     };
 
@@ -46,31 +48,51 @@ export function GlobalVars({ onClose }) {
 
         if (!newKey.trim()) {
             setKeyError('Ключ не может быть пустым');
-        } else if (!isKeyUnique(newKey, editingId)) {
+        } else if (!isKeyUnique(newKey, originalKey)) {
             setKeyError('Переменная с таким ключом уже существует');
         } else {
             setKeyError('');
         }
     };
 
-    // Добавление новой переменной
     const addVariable = () => {
+        if (editingKey) {
+            setModalMsg("Сначала завершите редактирование текущей переменной");
+            setIsModalNotify(true);
+            return;
+        }
+
+        const newKey = 'new-variable';
+        // Проверяем, существует ли уже такой ключ
+        let uniqueKey = newKey;
+        let counter = 1;
+        while (variables.some(v => v.key === uniqueKey)) {
+            uniqueKey = `new-variable-${counter}`;
+            counter++;
+        }
+
         const newVar = {
-            id: generateId(),
-            key: '',
+            key: uniqueKey,
             value: '',
             description: '',
             isNew: true
         };
         setVariables([newVar, ...variables]);
-        setEditingId(newVar.id);
+        setEditingKey(uniqueKey);
+        setOriginalKey(uniqueKey);
         setEditForm({ key: '', value: '', description: '' });
         setKeyError('');
     };
 
-    // Начало редактирования
     const startEditing = (variable) => {
-        setEditingId(variable.id);
+        if (editingKey) {
+            setModalMsg("Сначала завершите редактирование текущей переменной");
+            setIsModalNotify(true);
+            return;
+        }
+
+        setEditingKey(variable.key);
+        setOriginalKey(variable.key);
         setEditForm({
             key: variable.key,
             value: variable.value,
@@ -79,7 +101,6 @@ export function GlobalVars({ onClose }) {
         setKeyError('');
     };
 
-    // Сохранение редактирования
     const saveEditing = () => {
         if (!editForm.key.trim()) {
             setModalMsg("Ключ переменной не может быть пустым");
@@ -87,47 +108,63 @@ export function GlobalVars({ onClose }) {
             return;
         }
 
-        if (!isKeyUnique(editForm.key, editingId)) {
+        if (!isKeyUnique(editForm.key, originalKey)) {
             setModalMsg("Переменная с таким ключом уже существует");
             setIsModalNotify(true);
             return;
         }
 
-        setVariables(variables.map(v =>
-            v.id === editingId
-                ? {
-                    ...v,
-                    key: editForm.key.trim(),
-                    value: editForm.value,
-                    description: editForm.description,
-                    isNew: false
-                }
-                : v
-        ));
-        setEditingId(null);
+        // Если ключ изменился, удаляем старую запись и создаем новую
+        if (originalKey !== editForm.key) {
+            setVariables(
+                variables
+                    .filter(v => v.key !== originalKey)
+                    .concat({
+                        key: editForm.key.trim(),
+                        value: editForm.value,
+                        description: editForm.description
+                    })
+            );
+        } else {
+            // Обновляем существующую запись
+            setVariables(variables.map(v =>
+                v.key === editingKey
+                    ? {
+                        ...v,
+                        key: editForm.key.trim(),
+                        value: editForm.value,
+                        description: editForm.description,
+                        isNew: false
+                    }
+                    : v
+            ));
+        }
+
+        setEditingKey(null);
+        setOriginalKey('');
         setEditForm({ key: '', value: '', description: '' });
         setKeyError('');
     };
 
-    // Отмена редактирования
     const cancelEditing = () => {
-        if (editingId) {
+        if (editingKey) {
             // Если это была новая запись - удаляем её
-            const variable = variables.find(v => v.id === editingId);
+            const variable = variables.find(v => v.key === editingKey);
             if (variable?.isNew) {
-                setVariables(variables.filter(v => v.id !== editingId));
+                setVariables(variables.filter(v => v.key !== editingKey));
             }
         }
-        setEditingId(null);
+        setEditingKey(null);
+        setOriginalKey('');
         setEditForm({ key: '', value: '', description: '' });
         setKeyError('');
     };
 
-    // Удаление переменной
-    const deleteVariable = (id) => {
-        setVariables(variables.filter(v => v.id !== id));
-        if (editingId === id) {
-            setEditingId(null);
+    const deleteVariable = (key) => {
+        setVariables(variables.filter(v => v.key !== key));
+        if (editingKey === key) {
+            setEditingKey(null);
+            setOriginalKey('');
             setEditForm({ key: '', value: '', description: '' });
             setKeyError('');
         }
@@ -135,14 +172,12 @@ export function GlobalVars({ onClose }) {
 
     // Сохранение всех изменений
     const saveAllChanges = () => {
-        // Проверяем, нет ли незавершенного редактирования
-        if (editingId) {
+        if (editingKey) {
             setModalMsg("Завершите редактирование текущей переменной");
             setIsModalNotify(true);
             return;
         }
 
-        // Проверяем, что все ключи заполнены
         const emptyKeys = variables.filter(v => !v.key.trim());
         if (emptyKeys.length > 0) {
             setModalMsg("У всех переменных должны быть заполнены ключи");
@@ -150,7 +185,6 @@ export function GlobalVars({ onClose }) {
             return;
         }
 
-        // Проверяем уникальность ключей
         const keys = variables.map(v => v.key.toLowerCase());
         const hasDuplicates = keys.some((key, index) => keys.indexOf(key) !== index);
 
@@ -162,14 +196,11 @@ export function GlobalVars({ onClose }) {
 
         setModalMsg("Глобальные переменные успешно сохранены");
         setIsModalNotify(true);
-
-        // Здесь можно добавить сохранение в localStorage или передачу в родительский компонент
         console.log('Сохраненные переменные:', variables);
     };
 
-    // Рендер строки таблицы в режиме просмотра
     const renderViewRow = (variable) => (
-        <div key={variable.id} className="flex flex-row py-2 border-b border-gray-100 hover:bg-gray-50 group">
+        <div key={variable.key} className="flex flex-row py-2 border-b border-gray-100 hover:bg-gray-50 group">
             <div className="w-[5%] flex items-center justify-center">
                 <span className="text-gray-400 pl-3">•</span>
             </div>
@@ -185,15 +216,17 @@ export function GlobalVars({ onClose }) {
             <div className="w-[10%] px-2 flex items-center justify-center gap-8 transition-opacity">
                 <button
                     onClick={() => startEditing(variable)}
-                    className="text-gray-500 hover:text-gray-800"
-                    title="Редактировать"
+                    className={`text-gray-700 hover:text-gray-500 ${editingKey ? 'opacity-30 cursor-not-allowed' : ''}`}
+                    title={editingKey ? "Сначала завершите редактирование" : "Редактировать"}
+                    disabled={!!editingKey}
                 >
                     <i className="text-lg fa-regular fa-pen-to-square"></i>
                 </button>
                 <button
-                    onClick={() => deleteVariable(variable.id)}
-                    className="text-red-600 hover:text-red-800"
-                    title="Удалить"
+                    onClick={() => deleteVariable(variable.key)}
+                    className={`text-red-600 hover:text-red-400 ${editingKey ? 'opacity-30 cursor-not-allowed' : ''}`}
+                    title={editingKey ? "Сначала завершите редактирование" : "Удалить"}
+                    disabled={!!editingKey}
                 >
                     <i className="text-lg fa-regular fa-trash-can"></i>
                 </button>
@@ -201,7 +234,6 @@ export function GlobalVars({ onClose }) {
         </div>
     );
 
-    // Рендер строки таблицы в режиме редактирования
     const renderEditRow = () => (
         <div key="edit-row" className="flex flex-row py-2 bg-gray-100 rounded border border-gray-400 mb-2">
             <div className="w-[5%] flex items-center justify-center">
@@ -246,21 +278,21 @@ export function GlobalVars({ onClose }) {
                     className="w-full px-2 py-1 text-sm border border-gray-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-800"
                 />
             </div>
-            <div className="w-[10%] px-1 flex items-center justify-center gap-2">
+            <div className="w-[10%] pr-4 flex items-center justify-center gap-8">
                 <button
                     onClick={saveEditing}
                     disabled={!!keyError || !editForm.key.trim()}
-                    className={`text-green-600 hover:text-green-800 disabled:opacity-30 disabled:cursor-not-allowed`}
+                    className={`text-blue-800 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed`}
                     title="Сохранить"
                 >
-                    <i className="fa-regular fa-floppy-disk"></i>
+                    <i className="text-xl fa-regular fa-floppy-disk"></i>
                 </button>
                 <button
                     onClick={cancelEditing}
-                    className="text-gray-600 hover:text-gray-800"
+                    className="text-gray-700 hover:text-gray-500"
                     title="Отмена"
                 >
-                    <i className="fa-regular fa-circle-xmark"></i>
+                    <i className="text-xl fa-regular fa-circle-xmark"></i>
                 </button>
             </div>
         </div>
@@ -268,7 +300,6 @@ export function GlobalVars({ onClose }) {
 
     return (
         <div className="flex flex-col h-screen bg-gray-50">
-            {/* Шапка */}
             <div className="flex flex-row py-3 px-8 border-b-2 bg-white shadow-sm">
                 <div className="flex justify-between w-2/6 text-2xl font-medium items-center text-center">
                     <span className="gjs-pn-btn font-medium gjs-two-color">Глобальные переменные</span>
@@ -277,7 +308,9 @@ export function GlobalVars({ onClose }) {
                 <div className="flex flex-row justify-end w-4/6 gap-2">
                     <button
                         onClick={saveAllChanges}
-                        className="min-w-[50px] px-3 h-7 rounded text-sm font-medium text-white bg-blue-800 hover:bg-blue-700 flex items-center gap-2"
+                        className={`min-w-[50px] px-3 h-7 rounded text-sm font-medium text-white bg-blue-800 hover:bg-blue-700 flex items-center gap-2 ${editingKey ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={!!editingKey}
+                        title={editingKey ? "Сначала завершите редактирование" : "Сохранить переменные"}
                     >
                         Сохранить переменные
                     </button>
@@ -290,10 +323,8 @@ export function GlobalVars({ onClose }) {
                 </div>
             </div>
 
-            {/* Основной контент */}
             <div style={{ height: 'calc(100vh - 150px)' }}>
                 <div className="h-full flex flex-col">
-                    {/* Информационный блок */}
                     <div className="bg-white shadow-sm border border-gray-100 overflow-hidden mb-4 py-4">
                         <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border border-gray-100">
                             <div className="flex items-center gap-4">
@@ -313,8 +344,7 @@ export function GlobalVars({ onClose }) {
                             </div>
                         </div>
 
-                        {/* Панель управления */}
-                        <div className="px-6 pt-4  border-gray-100 bg-white">
+                        <div className="px-6 pt-4 border-gray-100 bg-white">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-4 flex-1">
                                     <div className="relative flex-1 max-w-md">
@@ -323,13 +353,16 @@ export function GlobalVars({ onClose }) {
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
                                             placeholder="Поиск по ключу, значению или описанию..."
-                                            className="w-full px-4 py-2 pl-10 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:bg-white focus:border-blue-300 focus:ring-4 focus:ring-blue-50 transition-all"
+                                            className={`w-full px-4 py-2 pl-10 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:bg-white focus:border-gray-600 focus:ring-1 focus:ring-gray-600 transition-all ${editingKey ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            disabled={!!editingKey}
                                         />
                                         <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
                                     </div>
                                     <button
                                         onClick={addVariable}
-                                        className="px-4 py-2 bg-blue-800 from-gray-600 to-gray-500 text-white text-sm font-medium rounded-lg hover:from-gray-700 hover:to-gray-600 focus:ring-4 focus:ring-green-100 transition-all flex items-center gap-2"
+                                        className={`px-4 py-2 bg-blue-800 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-green-100 transition-all flex items-center gap-2 ${editingKey ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        disabled={!!editingKey}
+                                        title={editingKey ? "Сначала завершите редактирование" : "Добавить переменную"}
                                     >
                                         <i className="fa-solid fa-plus"></i>
                                         Добавить переменную
@@ -339,9 +372,7 @@ export function GlobalVars({ onClose }) {
                         </div>
                     </div>
 
-                    {/* Таблица переменных */}
                     <div className="bg-white shadow-sm border border-gray-100 rounded-lg flex-1 overflow-hidden mx-6">
-                        {/* Заголовки таблицы */}
                         <div className="flex flex-row py-2 px-2 border border-b-2 border-gray-200">
                             <div className="w-[5%] flex items-center justify-center">
                                 <span className="text-md font-medium text-gray-500">#</span>
@@ -356,25 +387,27 @@ export function GlobalVars({ onClose }) {
                                 <span className="text-md font-medium text-gray-500 tracking-wider">Описание</span>
                             </div>
                             <div className="w-[10%] px-2 text-center">
-                                <span className="text-md font-medium  text-gray-500 tracking-wider">Действия</span>
+                                <span className="text-md font-medium text-gray-500 tracking-wider">Действия</span>
                             </div>
                         </div>
 
                         <div>
-                            {/* Строка редактирования всегда первой, если есть editingId */}
-                            {editingId && renderEditRow()}
+                            {editingKey && renderEditRow()}
                         </div>
-                        {/* Строки таблицы */}
-                        <div className="overflow-y-scroll" style={{ maxHeight: 'calc(100vh - 450px)' }}>
 
-
-                            {/* Остальные строки */}
+                        <div
+                            className="overflow-y-scroll"
+                            style={{
+                                maxHeight: editingKey
+                                    ? 'calc(100vh - 28rem)'
+                                    : 'calc(100vh - 25rem)'
+                            }}
+                        >
                             {filteredVars
-                                .filter(v => v.id !== editingId)
+                                .filter(v => v.key !== editingKey)
                                 .map(variable => renderViewRow(variable))}
 
-                            {/* Пустое состояние */}
-                            {filteredVars.length === 0 && !editingId && (
+                            {filteredVars.length === 0 && !editingKey && (
                                 <div className="flex flex-col items-center justify-center py-12 text-gray-500">
                                     <div className="text-4xl mb-4">📋</div>
                                     <h3 className="text-lg font-medium mb-2">Переменные не найдены</h3>
@@ -393,34 +426,9 @@ export function GlobalVars({ onClose }) {
                             )}
                         </div>
                     </div>
-
-                    {/*/!* Подсказки по использованию *!/*/}
-                    {/*<div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg mb-4 mx-6">*/}
-                    {/*    <div className="flex items-start gap-3">*/}
-                    {/*        <i className="fa-solid fa-circle-info text-blue-600 mt-0.5"></i>*/}
-                    {/*        <div>*/}
-                    {/*            <h4 className="text-sm font-medium text-blue-800 mb-1">Как использовать глобальные переменные:</h4>*/}
-                    {/*            <div className="grid grid-cols-2 gap-4 text-xs text-blue-700">*/}
-                    {/*                <div>*/}
-                    {/*                    <span className="font-medium">В тексте отчета:</span>*/}
-                    {/*                    <code className="ml-2 px-2 py-0.5 bg-white rounded">{'{{global.companyName}}'}</code>*/}
-                    {/*                </div>*/}
-                    {/*                <div>*/}
-                    {/*                    <span className="font-medium">В SQL запросе:</span>*/}
-                    {/*                    <code className="ml-2 px-2 py-0.5 bg-white rounded">:global.currentYear</code>*/}
-                    {/*                </div>*/}
-                    {/*                <div>*/}
-                    {/*                    <span className="font-medium">В параметрах:</span>*/}
-                    {/*                    <code className="ml-2 px-2 py-0.5 bg-white rounded">defaultValue: global.currency</code>*/}
-                    {/*                </div>*/}
-                    {/*            </div>*/}
-                    {/*        </div>*/}
-                    {/*    </div>*/}
-                    {/*</div>*/}
                 </div>
             </div>
 
-            {/* Модальное окно уведомлений */}
             {isModalNotify && (
                 <ModalNotify
                     title="Глобальные переменные"
