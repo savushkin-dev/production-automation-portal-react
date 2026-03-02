@@ -58,10 +58,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             { label: 'Дополнительный бэнд', value: 'main-child' },
         ])
 
-
         const [isViewMode, setIsViewMode] = useState(false);
-
-
         const [isModalParameter, setIsModalParameter] = useState(false);
         const [isModalSaveReport, setIsModalSaveReport] = useState(false);
         const [isModalNotify, setIsModalNotif] = useState(false);
@@ -1065,8 +1062,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         async function fetchReportData(reportName, reportCategory, dbUrl, dbUsername, dbPassword, dbDriver, sql, content, styles, parameters, script, isSqlMode) {
             try {
                 setIsLoading(true);
-                const response = await ReportService.getDataForReport(reportName, reportCategory, dbUrl, dbUsername,
-                    encryptData(dbPassword), dbDriver, sql, content, styles, parameters, script, isSqlMode);
+                const response = await ReportService.getDataForReport(reportName, reportCategory, encryptData(dbUrl), encryptData(dbUsername),
+                    encryptData(dbPassword), dbDriver, encryptData(sql), content, styles, parameters, encryptData(script), isSqlMode);
                 return response.data;
             } catch (e) {
                 setError("Ошибка получения данных отчета: " + e.response.data.message)
@@ -1206,10 +1203,10 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 let css = cleanCSS(updatedPages[0].styles)
                 try {
                     await ReportService.createReportTemplate(reportName, reportCategory,
-                        settingDB.url, settingDB.username, encryptData(settingDB.password), settingDB.driverClassName, sql,
+                        encryptData(settingDB.url), encryptData(settingDB.username), encryptData(settingDB.password), settingDB.driverClassName, encryptData(sql),
                         parameters,
                         updatedPages[0].content, css,
-                        script, isSqlMode, dataBandsOpt, isBookOrientation, layoutParamSettings, layoutParam);
+                        encryptData(script), isSqlMode, dataBandsOpt, isBookOrientation, layoutParamSettings, layoutParam);
                     setModalMsg("Документ успешно отправлен!");
 
                 } catch (error) {
@@ -1228,14 +1225,14 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 setReportName(response.data.reportName);
                 setReportCategory(response.data.reportCategory)
                 setSettingDB({
-                    url: response.data.dbUrl,
-                    username: response.data.dbUsername,
+                    url: decryptData(response.data.dbUrl),
+                    username: decryptData(response.data.dbUsername),
                     password: decryptData(response.data.dbPassword),
                     driverClassName: response.data.dbDriver
                 });
-                setSql(response.data.sql);
+                setSql(decryptData(response.data.sql));
                 setParameters(JSON.parse(response.data.parameters));
-                setScript(response.data.script);
+                setScript(decryptData(response.data.script));
                 setIsSqlMode(response.data.sqlMode);
                 defineBands(response.data.content);
                 setDataBandsOpt(JSON.parse(response.data.dataBands));
