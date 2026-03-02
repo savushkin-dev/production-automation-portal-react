@@ -68,6 +68,14 @@ export default class ReportService {
             dbPassword, dbDriver, sql, parameters, content, styles})
     }
 
+    static async getReportGlobalVars() {
+        return $api.get(`${API_URL}/api/report/globalVars`)
+    }
+
+    static async saveReportGlobalVars(vars) {
+        return $api.post(`${API_URL}/api/report/globalVars`, vars)
+    }
+
 
     static convertReportsNameToSelectOpt(data){
         let options = [];

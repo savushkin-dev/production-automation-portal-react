@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ModalNotify } from "../modal/ModalNotify";
+import ReportService from "../../services/ReportService";
+import {decryptData, encryptData} from "../../utils/Сrypto";
 
 export function GlobalVars({ onClose }) {
     const [variables, setVariables] = useState([]);
@@ -11,21 +13,43 @@ export function GlobalVars({ onClose }) {
     const [keyError, setKeyError] = useState('');
     const [originalKey, setOriginalKey] = useState('');
 
-    // Загрузка демо-данных
+    const [isModalError, setIsModalError] = useState(false);
+    const [error, setError] = useState(null);
+
     useEffect(() => {
-        setVariables([
-            { key: 'companyName', value: 'ООО "Ромашка"', description: 'Название компании' },
-            { key: 'currentYear', value: '2026', description: 'Текущий год' },
-            { key: 'currency', value: '₽', description: 'Валюта отчетов' },
-            { key: 'directorName', value: 'Иванов И.И.', description: 'ФИО директора' },
-            { key: 'directorName2', value: 'Иванов И.И.', description: 'ФИО директора' },
-            { key: 'directorNam3e', value: 'Иванов И.И.', description: 'ФИО директора' },
-            { key: 'directorNуцame', value: 'Иванов И.И.', description: 'ФИО директора' },
-            { key: 'directorNывame', value: 'Иванов И.И.', description: 'ФИО директора' },
-            { key: 'directorNмame', value: 'Иванов И.И.', description: 'ФИО директора' },
-            { key: 'directorсName', value: 'Иванов И.И.', description: 'ФИО директора' },
-        ]);
+        getGlobalVars()
     }, []);
+
+    async function getGlobalVars() {
+        try {
+            const response = await ReportService.getReportGlobalVars();
+            let vars = response.data;
+            vars = vars.map(v => ({
+                ...v,
+                value: decryptData(v.value)
+            }));
+            setVariables(vars);
+        } catch (e) {
+            setError("Ошибка получения глобальных переменных: " + e.response?.data?.message)
+            setIsModalError(true);
+            setIsModalNotify(true)
+        }
+    }
+
+    async function saveGlobalVars() {
+        try {
+            let varsToSave = variables.map(v => ({
+                key: v.key,
+                value: encryptData(v.value),
+                description: v.description
+            }));
+            await ReportService.saveReportGlobalVars(varsToSave);
+        } catch (e) {
+            setError("Ошибка сохранения глобальных переменных: " + e.response?.data?.message)
+            setIsModalError(true);
+        }
+    }
+
 
     // Фильтрация переменных по поиску
     const filteredVars = variables.filter(v =>
@@ -194,9 +218,11 @@ export function GlobalVars({ onClose }) {
             return;
         }
 
-        setModalMsg("Глобальные переменные успешно сохранены");
-        setIsModalNotify(true);
-        console.log('Сохраненные переменные:', variables);
+
+        saveGlobalVars().then(()=>{
+            setModalMsg("Глобальные переменные успешно сохранены");
+            setIsModalNotify(true);
+        });
     };
 
     const renderViewRow = (variable) => (
@@ -430,12 +456,12 @@ export function GlobalVars({ onClose }) {
             </div>
 
             {isModalNotify && (
-                <ModalNotify
-                    title="Глобальные переменные"
-                    message={modalMsg}
-                    onClose={() => setIsModalNotify(false)}
-                />
+                <ModalNotify title="Глобальные переменные" message={modalMsg} onClose={() => setIsModalNotify(false)}/>
             )}
+            {/*Не работает уведомление*/}
+            {isModalError &&
+                <ModalNotify title={"Ошибка"} message={error} onClose={() => setIsModalError(false)}/>
+            }
         </div>
     );
 }
