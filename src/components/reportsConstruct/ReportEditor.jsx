@@ -31,7 +31,11 @@ import {ViewReport} from "./ViewReport";
 import {DesignerParameter} from "./DesignerParameter";
 import {ModalParameterWithLayout} from "./ModalParameterWithLayout";
 import DropdownObj from "../dropdown/DropdownObj";
+
 import yaml from "js-yaml";
+import {GlobalVars} from "./GlobalVars";
+import {ModalErrorScriptCompile} from "./ModalErrorScriptCompile";
+
 
 
 // Добавляем шрифт Roboto в виртуальную файловую систему pdfmake
@@ -58,19 +62,18 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             { label: 'Дополнительный бэнд', value: 'main-child' },
         ])
 
-
         const [isViewMode, setIsViewMode] = useState(false);
-
-
         const [isModalParameter, setIsModalParameter] = useState(false);
         const [isModalSaveReport, setIsModalSaveReport] = useState(false);
         const [isModalNotify, setIsModalNotif] = useState(false);
         const [isModalError, setIsModalError] = useState(false);
+        const [isModalErrorScript, setIsModalErrorScript] = useState(false);
         const [isModalDownloadReport, setIsModalDownloadReport] = useState(false);
         const [isModalSettingDB, setIsModalSettingDB] = useState(false);
         const [isModalSQL, setIsModalSQL] = useState(false);
         const [isJavaEditor, setIsJavaEditor] = useState(false);
         const [isDesignerParameter, setIsDesignerParameter] = useState(false);
+        const [isGlobalVars, setIsGlobalVars] = useState(false);
         const [modalMsg, setModalMsg] = useState('');
 
         const [isSqlMode, setIsSqlMode] = useState(false);
@@ -1082,12 +1085,12 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         async function fetchReportData(reportName, reportCategory, dbUrl, dbUsername, dbPassword, dbDriver, sql, content, styles, parameters, script, isSqlMode) {
             try {
                 setIsLoading(true);
-                const response = await ReportService.getDataForReport(reportName, reportCategory, dbUrl, dbUsername,
-                    encryptData(dbPassword), dbDriver, sql, content, styles, parameters, script, isSqlMode);
+                const response = await ReportService.getDataForReport(reportName, reportCategory, encryptData(dbUrl), encryptData(dbUsername),
+                    encryptData(dbPassword), dbDriver, encryptData(sql), content, styles, parameters, encryptData(script), isSqlMode);
                 return response.data;
             } catch (e) {
                 setError("Ошибка получения данных отчета: " + e.response.data.message)
-                setIsModalError(true);
+                setIsModalErrorScript(true);
                 setIsLoading(false);
             }
         }
@@ -1223,10 +1226,10 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 let css = cleanCSS(updatedPages[0].styles)
                 try {
                     await ReportService.createReportTemplate(reportName, reportCategory,
-                        settingDB.url, settingDB.username, encryptData(settingDB.password), settingDB.driverClassName, sql,
+                        encryptData(settingDB.url), encryptData(settingDB.username), encryptData(settingDB.password), settingDB.driverClassName, encryptData(sql),
                         parameters,
                         updatedPages[0].content, css,
-                        script, isSqlMode, dataBandsOpt, isBookOrientation, layoutParamSettings, layoutParam);
+                        encryptData(script), isSqlMode, dataBandsOpt, isBookOrientation, layoutParamSettings, layoutParam);
                     setModalMsg("Документ успешно отправлен!");
 
                 } catch (error) {
@@ -1245,14 +1248,14 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 setReportName(response.data.reportName);
                 setReportCategory(response.data.reportCategory)
                 setSettingDB({
-                    url: response.data.dbUrl,
-                    username: response.data.dbUsername,
+                    url: decryptData(response.data.dbUrl),
+                    username: decryptData(response.data.dbUsername),
                     password: decryptData(response.data.dbPassword),
                     driverClassName: response.data.dbDriver
                 });
-                setSql(response.data.sql);
+                setSql(decryptData(response.data.sql));
                 setParameters(JSON.parse(response.data.parameters));
-                setScript(response.data.script);
+                setScript(decryptData(response.data.script));
                 setIsSqlMode(response.data.sqlMode);
                 defineBands(response.data.content);
                 setDataBandsOpt(JSON.parse(response.data.dataBands));
@@ -1419,7 +1422,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                                             script={script} layout={layoutParamSettings} setLayout={setLayoutParamSettings}
                 />}
 
-                {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter &&
+                {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter && !isGlobalVars &&
+
 
                     <div className=" gjs-two-color gjs-one-bg flex flex-row justify-between gjs-pn-commands py-1">
                         <div className="flex justify-between text-center items-center pl-2 w-1/2">
@@ -1434,6 +1438,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                     className="h-7 ml-8 text-nowrap px-2 text-sm  text-gray-600 rounded ring-1 ring-gray-300
                                      shadow hover:shadow-md hover:text-blue-700 hover:scale-105 transition duration-150 ">Предпросмотр
                                 отчета <i className="fa-solid fa-eye"></i></button>
+
                         </div>
 
                         <div className="flex justify-end text-center mr-2 w-1/2">
@@ -1454,7 +1459,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                     </div>}
 
-                {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter &&
+                {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter && !isGlobalVars &&
                     <div
                         className="pl-2 gjs-two-color gjs-one-bg flex flex-row justify-between items-center  gjs-pn-commands ">
                         <div className="flex flex-row gap-x-2">
@@ -1505,9 +1510,21 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                         <div className="flex flex-row gap-x-2 pr-2">
 
-                            <div className="py-2 hover:bg-gray-200 flex-col justify-center justify-items-center">
+
+                            <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
+                                <button onClick={() => setIsGlobalVars(true)}
+                                        className="flex flex-col justify-between justify-items-center pt-2">
+                                        <span className="gjs-pn-btn hover:bg-gray-200 flex justify-center ">
+                                            <i className="fa-solid fa-earth-americas pt-1"></i>
+                                        </span>
+                                    <span className="text-xs font-medium px-1">Глобальные переменные</span>
+                                </button>
+                            </div>
+
+                            <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
+
                                 <button onClick={() => setIsDesignerParameter(true)}
-                                        className="flex flex-col justify-between justify-items-center">
+                                        className="flex flex-col justify-between justify-items-center pt-2">
                                         <span className="gjs-pn-btn hover:bg-gray-200 flex justify-center ">
                                             <i className="fa-lg fa-solid fa-list-check pt-3"></i>
                                         </span>
@@ -1563,7 +1580,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                     </div>}
 
-                <div className={!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter ? 'block' : 'hidden'}>
+                <div className={!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter && !isGlobalVars ? 'block' : 'hidden'}>
                     <div id="editor" ref={editorRef}/>
                 </div>
 
@@ -1581,6 +1598,9 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                 {!isViewMode && isModalError &&
                     <ModalNotify title={"Ошибка"} message={error} onClose={() => setIsModalError(false)}/>}
+
+                {!isViewMode && isModalErrorScript &&
+                    <ModalErrorScriptCompile title={"Ошибка получения данных для отчета"} message={error} onClose={() => setIsModalErrorScript(false)}/>}
 
                 {!isViewMode && isModalDownloadReport &&
                     <ModalSelect title={"Загрузка отчета с сервера"} message={"modalMsg"}
@@ -1612,6 +1632,10 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 {!isViewMode && isDesignerParameter &&
                     <DesignerParameter parameters={parameters || []} layout={layoutParam} setLayout={setLayoutParam}
                                        onClose={()=>setIsDesignerParameter(false)}/>
+                }
+
+                {!isViewMode && isGlobalVars &&
+                    <GlobalVars onClose={()=>setIsGlobalVars(false)}/>
                 }
 
 

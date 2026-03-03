@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
+import {ModalNotify} from "../modal/ModalNotify";
 
 
 export function ViewReport({data, dataParam, html, css, onClose, isBookOrientation}) {
@@ -9,6 +10,8 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
     const iframeRef = useRef(null);
     const [iframeScale, setIframeScale] = useState(1); // Начальный масштаб 1 (100%)
 
+    const [isModalNotify, setIsModalNotif] = useState(false);
+    const [modalMsg, setModalMsg] = useState('');
 
     const [pages, setPages] = useState([
         {id: 1, content: "", styles: ""}
@@ -88,24 +91,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
             pagesHtml += "<div class='page-container'>";
             pagesHtml += pages[i].content;
             pagesHtml += "</div> ";
-            // pagesHtml += "<script>\n" +
-            //     "        document.addEventListener('DOMContentLoaded', function() {\n" +
-            //     "            // Получаем все элементы с data-field=\"true\"\n" +
-            //     "            const fields = document.querySelectorAll('[data-field=\"true\"]');\n" +
-            //     "            let clickTimeout;\n" +
-            //     "            \n" +
-            //     "            fields.forEach(field => {\n" +
-            //     "                // Одинарный клик - скрываем поле\n" +
-            //     "                field.addEventListener('click', function(e) {\n" +
-            //     "                    clearTimeout(clickTimeout);\n" +
-            //     "                    \n" +
-            //     "                    clickTimeout = setTimeout(() => {\n" +
-            //     "                        this.style.visibility = 'hidden';\n" +
-            //     "                    }, 250);\n" +
-            //     "                });\n" +
-            //     "            });\n" +
-            //     "        });\n" +
-            //     "    </script>";
         }
 
         setPrintContent(pagesHtml)
@@ -117,22 +102,23 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
 
     function render(data, dataParam, html, css) {
-
-        let startTime = performance.now();
-
         css = transformIDs(css);
         setUniqueStyles(css);
         renderDataBand(data, dataParam, html, css);
-
-        let endTime = performance.now();
-        const seconds = (endTime - startTime) / 1000; // Преобразуем миллисекунды в секунды
-        // console.log("Рендер: " + seconds.toFixed(3))
     }
 
     function renderDataBand(data, dataParam, htmlTemplate, css) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlTemplate, 'text/html');
         const dataArray = data.tableData;
+
+        if(!data.tableData){
+            setPages([{content: doc.body.innerHTML, css: ""}]);
+            setModalMsg("Скрипт вернул пустые данные. Подстановка значений в отчет невозможна.");
+            setIsModalNotif(true);
+            return;
+        }
+
         // Удаляем описательные бэнды
         const descriptionBands = doc.querySelectorAll('[description-band="true"]');
         descriptionBands.forEach(description => description.remove());
@@ -625,6 +611,9 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
                 </div>
             </div>
+
+            {isModalNotify &&
+                <ModalNotify title={"Результат операции"} message={modalMsg} onClose={()=>setIsModalNotif(false)}/>}
         </>
     )
 
