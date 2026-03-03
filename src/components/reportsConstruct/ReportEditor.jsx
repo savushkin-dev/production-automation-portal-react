@@ -32,6 +32,7 @@ import {DesignerParameter} from "./DesignerParameter";
 import {ModalParameterWithLayout} from "./ModalParameterWithLayout";
 import DropdownObj from "../dropdown/DropdownObj";
 import {GlobalVars} from "./GlobalVars";
+import {ModalErrorScriptCompile} from "./ModalErrorScriptCompile";
 
 
 // Добавляем шрифт Roboto в виртуальную файловую систему pdfmake
@@ -63,6 +64,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [isModalSaveReport, setIsModalSaveReport] = useState(false);
         const [isModalNotify, setIsModalNotif] = useState(false);
         const [isModalError, setIsModalError] = useState(false);
+        const [isModalErrorScript, setIsModalErrorScript] = useState(false);
         const [isModalDownloadReport, setIsModalDownloadReport] = useState(false);
         const [isModalSettingDB, setIsModalSettingDB] = useState(false);
         const [isModalSQL, setIsModalSQL] = useState(false);
@@ -1067,7 +1069,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 return response.data;
             } catch (e) {
                 setError("Ошибка получения данных отчета: " + e.response.data.message)
-                setIsModalError(true);
+                setIsModalErrorScript(true);
                 setIsLoading(false);
             }
         }
@@ -1564,6 +1566,9 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                 {!isViewMode && isModalError &&
                     <ModalNotify title={"Ошибка"} message={error} onClose={() => setIsModalError(false)}/>}
+
+                {!isViewMode && isModalErrorScript &&
+                    <ModalErrorScriptCompile title={"Ошибка получения данных для отчета"} message={error} onClose={() => setIsModalErrorScript(false)}/>}
 
                 {!isViewMode && isModalDownloadReport &&
                     <ModalSelect title={"Загрузка отчета с сервера"} message={"modalMsg"}
