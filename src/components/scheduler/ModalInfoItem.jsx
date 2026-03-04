@@ -30,7 +30,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
             />
             <div className="fixed inset-0 flex  items-center justify-center p-4 z-100 pointer-events-none"
                  style={{zIndex: 100}}>
-                <div className="w-auto min-w-[700px] max-w-[900px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
+                <div className="w-auto min-w-[800px] max-w-[900px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
                     <div className="flex flex-row justify-between">
                         <h1 className="text-xl font-medium text-start mb-2">{item.info.name}</h1>
                         <span>
@@ -180,15 +180,22 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
 
 
                     {item.info.name !== "Мойка" && !item.info.maintenance &&
-                        <div className="flex flex-row px-4 items-center">
-                            <span className={styleLable}>Мест факт:</span>
-                            {item.info.placeFactInfo &&
-                                <span className={styleInfo}>{item.info.placeFactInfo || "-"}</span>
-                            }
-                            {!item.info.placeFactInfo &&
-                                <button onClick={()=>determineFactPlace(item.info.snpz)} className="h-6 bg-gray-600 font-medium  rounded text-white px-2">Найти</button>
-                            }
-                        </div>
+                        <>
+                            <div className="flex flex-row px-4 items-center">
+                                <span className={styleLable}>Мест план:</span>
+                                <span className={styleInfo}>{item.info.placePlan || "-"}</span>
+                            </div>
+                            <div className="flex flex-row px-4 items-center">
+                                <span className={styleLable}>Мест факт:</span>
+                                {item.info.placeFactInfo &&
+                                    <span className={styleInfo}>{item.info.placeFactInfo || "-"}</span>
+                                }
+                                {!item.info.placeFactInfo &&
+                                    <button onClick={() => determineFactPlace(item.info.snpz)}
+                                            className="h-6 bg-gray-600 font-medium  rounded text-white px-2">Найти</button>
+                                }
+                            </div>
+                        </>
                     }
 
 
