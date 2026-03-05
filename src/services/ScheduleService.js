@@ -129,6 +129,7 @@ export default class ScheduleService {
                 startCameraFact: filteredData[i].cameraStart,
                 endCameraFact: filteredData[i].cameraEnd,
                 placeFactInfo: filteredData[i].placeFactInfo,
+                placePlan: filteredData[i].placePlan,
                 dti: filteredData[i].dti,
             }
         }
@@ -215,6 +216,7 @@ export default class ScheduleService {
                 startCameraFact: json.jobs[i].cameraStart,
                 endCameraFact: json.jobs[i].cameraEnd,
                 placeFactInfo: json.jobs[i].placeFactInfo,
+                placePlan: json.jobs[i].placePlan,
                 dti: json.jobs[i].dti,
             }
         }

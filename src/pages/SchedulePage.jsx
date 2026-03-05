@@ -797,7 +797,8 @@ function SchedulerPage() {
         const filteredItems = selectedItems
             .filter(item => !isFactItem(item));
 
-        if (filteredItems.some(item => isPackagedItem(item) || isMaintenanceItem(item))) {
+        // if (filteredItems.some(item => isPackagedItem(item) || isMaintenanceItem(item))) {
+        if (filteredItems.some(item => isMaintenanceItem(item))) { //Временно
             setMsg("Сортировка невозможна. В выделенном диапазоне присутствуют расфасованные элементы или сервисные операции.");
             setIsModalNotify(true);
             return;
