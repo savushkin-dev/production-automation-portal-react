@@ -148,23 +148,24 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
                             {isFact && (
                                 <span className="px-1 rounded">
-                                  {!isLinesMatch && (
-                                      <span className="text-red-600 pr-2 h-[20px] w-[20px]">
-                                      <i className="fa-solid fa-triangle-exclamation"></i>
-                                    </span>
-                                  )}
+                                    {!isLinesMatch && (
+                                        <span className="text-red-600 pr-2 h-[20px] w-[20px]">
+                                            <i className="fa-solid fa-triangle-exclamation"></i>
+                                        </span>
+                                    )}
+
+                                    <span className="text-violet-600">{item.info?.groupIndex}</span>
+                                    <span className="px-1">Позиция на линии |</span>
+
                                     <span className="text-violet-600">
-                                         {moment(item.info?.startFact).format('HH:mm')}
+                                        {moment(item.info?.startFact).format('HH:mm')}
 
                                     </span>
-                                     <span className="text-gray-600 ml-1">
-                                         {moment(item.info?.startFact).format('DD.MM.YYYY')}
+                                    <span className="text-gray-600 ml-1">
+                                        {moment(item.info?.startFact).format('DD.MM.YYYY')}
                                     </span>
 
-                                  <span className="pl-1">Факт. время начала</span>
-
-                                  <span className="pl-1 text-violet-600">| {item.info?.groupIndex}</span>
-                                  <span className="pl-1">Позиция на линии</span>
+                                    <span className="pl-1">Факт. время начала</span>
                                 </span>
                             )}
                         </div>
