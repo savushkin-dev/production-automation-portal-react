@@ -51,7 +51,7 @@ function App() {
                         <Route index element={<ReportDesignerPage/>}/>
                     </Route>
 
-                    {/*<Route path="/scheduler" element={<PrivateRoute requiredRoles={['ROLE_ADMIN']} />}>*/}
+                    {/*<Route path="/scheduler" element={<PrivateRoute requiredRoles={['ROLE_ADMIN', 'ROLE_SCHEDULER']} />}>*/}
                     {/*    <Route index element={<SchedulePage/>}/>*/}
                     {/*</Route>*/}
 

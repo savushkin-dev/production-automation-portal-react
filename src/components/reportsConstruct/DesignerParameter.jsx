@@ -257,14 +257,14 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                 </div>
 
                 <div className="flex flex-row justify-end w-4/6">
+                    <button onClick={saveLayout}
+                            className="min-w-[50px] text-sm h-7 font-medium px-3 py-1 rounded text-white bg-blue-800 hover:bg-blue-700">
+                        Применить разметку
+                    </button>
                     <button
                         onClick={onClose}
                         className="min-w-[50px] px-3 mx-2 h-7 rounded text-sm font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
                         Закрыть
-                    </button>
-                    <button onClick={saveLayout}
-                            className="min-w-[50px] text-sm h-7 font-medium px-3 py-1 rounded text-white bg-blue-800 hover:bg-blue-700">
-                        Применить разметку
                     </button>
                 </div>
             </div>
@@ -291,8 +291,8 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
 
                 <div className="p-6 border-b border-gray-100 bg-white">
                     <div className="flex items-center gap-2 mb-4">
-                        <div className="p-1.5 bg-green-100 rounded-lg">
-                            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor"
+                        <div className="p-1.5 bg-blue-50 rounded-lg">
+                            <svg className="w-4 h-4 text-blue-800" fill="none" stroke="currentColor"
                                  viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -302,15 +302,15 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                     </div>
 
                     <div className=" flex flex-row">
-                        <div className="relative w-3/4">
+                        <div className="relative w-3/4 pr-4">
                             <textarea
                                 value={newTextBlockContent}
                                 onChange={(e) => setNewTextBlockContent(e.target.value)}
                                 placeholder="Введите текст для нового блока..."
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:bg-white focus:border-green-300 focus:ring-4 focus:ring-green-50 transition-all duration-200 resize-none"
+                                className={`w-full px-4 py-2 mt-1 pl-10 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:bg-white focus:border-gray-600 focus:ring-1 focus:ring-gray-600 `}
                                 rows="1"
                             />
-                            <div className="absolute right-3 bottom-3">
+                            <div className="absolute right-3 bottom-3 pr-3">
                                 <span className="text-xs text-gray-400">{newTextBlockContent.length} симв.</span>
                             </div>
                         </div>
@@ -319,19 +319,16 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                             <button
                                 onClick={addTextBlock}
                                 disabled={!newTextBlockContent.trim()}
-                                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-500 text-white text-sm font-medium rounded-xl hover:from-green-700 hover:to-green-600 focus:ring-4 focus:ring-green-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-green-600 flex items-center justify-center gap-2"
+                                className={`px-4 py-2 bg-blue-800 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-green-100 transition-all flex items-center gap-2 ${!newTextBlockContent.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                          d="M12 4v16m8-8H4"/>
-                                </svg>
+                                <i className="fa-solid fa-plus"></i>
                                 Добавить блок
                             </button>
 
                             <button
                                 onClick={removeAllTextBlocks}
                                 disabled={textBlockCount === 0}
-                                className="px-4 py-2.5 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 hover:border-gray-300 focus:ring-4 focus:ring-gray-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                className="px-4 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 hover:border-gray-300 focus:ring-4 focus:ring-gray-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 title="Удалить все текстовые блоки"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,7 +340,7 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                             </button>
                             <button
                                 onClick={resetLayoutLocal}
-                                className="px-4 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 hover:border-gray-300 focus:ring-4 focus:ring-purple-100 transition-all duration-200 flex items-center gap-2"
+                                className="px-4 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 flex items-center gap-2"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
