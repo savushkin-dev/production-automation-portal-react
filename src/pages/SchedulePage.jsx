@@ -32,7 +32,7 @@ import {
     getDatePlus3, getDatePlus4, getDatePlus5, getDatePlus6, getDatePlus7,
     groupDataByDay
 } from "../utils/scheduler/pdayParsing";
-import {isFactItem, isMaintenanceItem, isPackagedItem} from "../utils/scheduler/items";
+import {isCleaningItem, isDelayItem, isFactItem, isMaintenanceItem, isPackagedItem} from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
 
@@ -432,7 +432,7 @@ function SchedulerPage() {
     const handleItemRightClick = (itemId, e) => {
         e.preventDefault();
 
-        if (itemId.includes('cleaning')) {
+        if (itemId.includes('cleaning') || itemId.includes('delay')) {
             return;
         }
 
@@ -583,7 +583,7 @@ function SchedulerPage() {
     }
 
     function onItemSelect(itemId, e, time) {
-        if (itemId.includes('cleaning')) {
+        if (itemId.includes('cleaning') || itemId.includes('delay')) {
             return;
         }
         const itemsArray = planByHardware;
@@ -642,7 +642,7 @@ function SchedulerPage() {
         if (!lastItem || !currentItem) return;
 
         const groupItems = itemsArray.filter(item =>
-            item.group === groupId && !item.id.includes('cleaning') && !isFactItem(item)
+            item.group === groupId && !isCleaningItem(item) && !isDelayItem(item) && !isFactItem(item)
         );
 
         const sortedGroupItems = [...groupItems].sort((a, b) => a.start_time - b.start_time);
@@ -799,7 +799,7 @@ function SchedulerPage() {
 
         // if (filteredItems.some(item => isPackagedItem(item) || isMaintenanceItem(item))) {
         if (filteredItems.some(item => isMaintenanceItem(item))) { //Временно
-            setMsg("Сортировка невозможна. В выделенном диапазоне присутствуют расфасованные элементы или сервисные операции.");
+            setMsg("Сортировка невозможна. В выделенном диапазоне присутствуют сервисные операции.");
             setIsModalNotify(true);
             return;
         }

@@ -1,7 +1,7 @@
 // components/scheduler/TimelineRenderers.js
 import React, {useEffect} from "react";
 import moment from "moment/moment";
-import {isFactItem, isMaintenancePackingOrLeveling} from "../../utils/scheduler/items";
+import {isCleaningItem, isDelayItem, isFactItem, isMaintenancePackingOrLeveling} from "../../utils/scheduler/items";
 
 /**
  * Фабрика для создания рендерера элементов таймлайна планировщика
@@ -35,7 +35,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
     return ({item, itemContext, getItemProps}) => {
         const isSelected = selectedItems.some(sel => sel.id === item.id);
         const isSingleSelected = selectedItem?.id === item.id;
-        const isFact = item.info?.startFact !== null && !item.id.includes('cleaning');
+        const isFact = item.info?.startFact !== null && !isCleaningItem(item) && !isDelayItem(item);
         const isLinesMatch = item.info?.lineIdFact === item.info?.lineInfo?.id;
 
         const factElBg = "#fafafa";
@@ -43,7 +43,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
         const selectBg = "#cbff93";
 
         const isFactEl = isFactItem(item);
-        const isLeveling = isMaintenancePackingOrLeveling(item);
+        const isLeveling =  isDelayItem(item);
 
         let settings = defineStyle(activeDisplay, isFactEl, isLeveling)
 
@@ -111,9 +111,9 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                         <div className="flex flex-col justify-start text-xs">
                             {item.info?.name !== "Мойка" && !item.info?.maintenance && item.info?.np && (
                                 <span className="px-1 rounded">
-                          <span className="text-blue-500">{item.info.np}</span>
-                          <span className="pl-1">№ партии</span>
-                        </span>
+                                  <span className="text-blue-500">{item.info.np}</span>
+                                  <span className="pl-1">№ партии</span>
+                                </span>
                             )}
 
                             {item.info?.duration && (
@@ -129,13 +129,13 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                         </span>
                                       <span className="pl-1">Время</span>
 
-                                    {isLeveling &&
-                                        <>
-                                            <span className="text-gray-500 px-1">|</span>
-                                            <span className="text-violet-600">{item.info.groupIndex}</span>
-                                            <span className="pl-1">Позиция на линии</span>
-                                        </>
-                                    }
+                                    {/*{isLeveling &&*/}
+                                    {/*    <>*/}
+                                    {/*        <span className="text-gray-500 px-1">|</span>*/}
+                                    {/*        <span className="text-violet-600">{item.info.groupIndex}</span>*/}
+                                    {/*        <span className="pl-1">Позиция на линии</span>*/}
+                                    {/*    </>*/}
+                                    {/*}*/}
                                 </span>
                             )}
 

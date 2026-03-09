@@ -60,11 +60,6 @@ export function ModalMoveJobs({
         }
     };
 
-    useEffect(() => {
-        console.log(selectedItems[0])
-        console.log(options)
-    }, [options]);
-
     return (
         <>
             <div

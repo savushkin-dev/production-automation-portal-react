@@ -77,6 +77,45 @@ export default class ScheduleService {
         return cleaning;
     }
 
+    static async parseDelayByHardware(json) {
+        const filteredData = json.jobs.filter(item => {
+            return item.planEndDateTime !== null;
+        });
+        let cleaning = [];
+        for (let i = 0; i < filteredData.length; i++) {
+            if(!filteredData[i].line){
+                console.warn("Job with id " + filteredData[i].id + " has a null line field")
+                continue;
+            }
+            let dur = Math.round(new Date(filteredData[i].endDateTime) - new Date(filteredData[i].planEndDateTime))/ 60000;
+            cleaning[i] = Object.assign({}, exampleTask);
+            cleaning[i].id = i + "delay";
+            cleaning[i].start_time = new Date(filteredData[i].planEndDateTime).getTime();
+            cleaning[i].end_time = new Date(filteredData[i].endDateTime).getTime();
+            cleaning[i].title = "Отклонение от плана";
+            cleaning[i].group = filteredData[i].line?.id || "NAN";
+
+            let colorGr = "#fff2db";
+            cleaning[i].itemProps = {
+                style: {
+                    background: "linear-gradient(to right, #f4e9ff, " + colorGr +")",
+                    border: '1px solid #dcdcdc',
+                    color: "#0369a1",
+                },
+            };
+            cleaning[i].info = { //Доп информация
+                name: "Отклонение от плана",
+                start: filteredData[i].planEndDateTime,
+                end: filteredData[i].endDateTime,
+                line: filteredData[i].line?.name || "NAN",
+                duration: dur,
+                pinned: false,
+                lineInfo: json.jobs[i].line,
+            }
+        }
+        return cleaning;
+    }
+
     static async parseFactItemsByHardware(json) {
         const filteredData = json.jobs.filter(item => {
             return ((item.cameraEnd !== null) && (item.cameraStart !== null));
@@ -179,7 +218,15 @@ export default class ScheduleService {
             planByHardware[i] = Object.assign({}, exampleTask);
             planByHardware[i].id = json.jobs[i].id;
             planByHardware[i].start_time = new Date(json.jobs[i].startProductionDateTime).getTime();
-            planByHardware[i].end_time = new Date(json.jobs[i].endDateTime).getTime();
+
+            let endTime;
+            //Определяем было ли выравнивание
+            if(json.jobs[i].planEndDateTime !== null){
+                endTime = json.jobs[i].planEndDateTime;
+            } else {
+                endTime = json.jobs[i].endDateTime;
+            }
+            planByHardware[i].end_time = new Date(endTime).getTime();
             planByHardware[i].title = json.jobs[i].name;
             planByHardware[i].group = json.jobs[i].line.id ;
 
@@ -193,13 +240,14 @@ export default class ScheduleService {
             planByHardware[i].info = { //Доп информация
                 name: json.jobs[i].name,
                 start: json.jobs[i].startProductionDateTime,
-                end: json.jobs[i].endDateTime,
+                end: endTime,
+                planEndDateTime: json.jobs[i].planEndDateTime,
                 line: json.jobs[i].line?.name,
                 quantity: json.jobs[i].quantity,
                 mass: json.jobs[i].mass,
                 np: json.jobs[i].np,
                 snpz: json.jobs[i].snpz,
-                duration: Math.round(new Date(json.jobs[i].endDateTime) - new Date(json.jobs[i].startProductionDateTime))/ 60000,
+                duration: Math.round(new Date(endTime) - new Date(json.jobs[i].startProductionDateTime))/ 60000,
 
                 fullName: json.jobs[i].product.name,
                 type: json.jobs[i].product.type,
@@ -223,10 +271,13 @@ export default class ScheduleService {
 
         let factList = await this.parseFactItemsByHardware(json)
         let cleaning = await this.parseCleaningByHardware(json)
+        let delay = await this.parseDelayByHardware(json)
         let result = [...planByHardware, ...cleaning]
         result = result.filter(item => item !== undefined);
         result = ScheduleService.defineAssignedJobs(result, json)
         result = [...result, ...factList]
+        result = [...result, ...delay]
+
 
         return result;
     }
