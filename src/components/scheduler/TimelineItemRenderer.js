@@ -118,7 +118,11 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
                             {item.info?.duration && (
                                 <span className="px-1 rounded">
-                                      <span className="text-pink-500">{item.info.duration} мин.</span>
+                                      <span className="text-pink-500">
+                                          {item.info.duration >= 60
+                                              ? `${Math.floor(item.info.duration / 60)} ч. ${item.info.duration % 60} мин.`
+                                              : `${item.info.duration} мин.`}
+                                      </span>
                                       <span className="text-gray-500 px-1">|</span>
                                       <span className="text-green-600">
                                         {moment(item.start_time).format('HH:mm')}
@@ -129,13 +133,6 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                         </span>
                                       <span className="pl-1">Время</span>
 
-                                    {/*{isLeveling &&*/}
-                                    {/*    <>*/}
-                                    {/*        <span className="text-gray-500 px-1">|</span>*/}
-                                    {/*        <span className="text-violet-600">{item.info.groupIndex}</span>*/}
-                                    {/*        <span className="pl-1">Позиция на линии</span>*/}
-                                    {/*    </>*/}
-                                    {/*}*/}
                                 </span>
                             )}
 
@@ -210,18 +207,21 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
                             {item.info?.duration && (
                                 <span className="px-1 rounded">
-                                  <span
-                                      className="text-pink-500">{Number(item.info.durationFactCamera.toFixed(0))} мин.</span>
-                                  <span className="text-gray-500 px-1">|</span>
-                                  <span className="text-green-600">
-                                    {moment(item.start_time).format('HH:mm')}
-                                  </span>
+                                    <span className="text-pink-500">
+                                          {Number(item.info.durationFactCamera.toFixed(0)) >= 60
+                                              ? `${Math.floor(Number(item.info.durationFactCamera.toFixed(0)) / 60)} ч. ${Number(item.info.durationFactCamera.toFixed(0)) % 60} мин.`
+                                              : `${item.info.duration} мин.`}
+                                    </span>
+                                    <span className="text-gray-500 px-1">|</span>
+                                    <span className="text-green-600">
+                                       {moment(item.start_time).format('HH:mm')}
+                                    </span>
                                     {' - '}
                                     <span className="text-red-500">
                                         {moment(item.end_time).format('HH:mm')}
-                                      </span>
-                                      <span className="pl-1">Время</span>
                                     </span>
+                                    <span className="pl-1">Время</span>
+                                </span>
                             )}
                         </div>
                     </>
