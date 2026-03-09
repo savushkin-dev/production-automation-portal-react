@@ -35,6 +35,7 @@ import {
 import {isCleaningItem, isDelayItem, isFactItem, isMaintenanceItem, isPackagedItem} from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
+import {ModalUpdateJobDelay} from "../components/scheduler/ModalUpdateJobDelay";
 
 
 function SchedulerPage() {
@@ -75,6 +76,8 @@ function SchedulerPage() {
     const [isModalUpdateServiceWork, setIsModalUpdateServiceWork] = useState(false);
     const [isModalSendToWork, setIsModalSendToWork] = useState(false);
     const [isModalSavePlan, setIsModalSavePlan] = useState(false);
+    const [isModalUpdateDelayJob, setIsModalUpdateDelayJob] = useState(false);
+
 
     const [isSolve, setIsSolve] = useState(false);
     const [score, setScore] = useState({hard: 0, medium: 0, soft: 0});
@@ -432,7 +435,7 @@ function SchedulerPage() {
     const handleItemRightClick = (itemId, e) => {
         e.preventDefault();
 
-        if (itemId.includes('cleaning') || itemId.includes('delay')) {
+        if (itemId.includes('cleaning')) {
             return;
         }
 
@@ -583,7 +586,7 @@ function SchedulerPage() {
     }
 
     function onItemSelect(itemId, e, time) {
-        if (itemId.includes('cleaning') || itemId.includes('delay')) {
+        if (itemId.includes('cleaning')) {
             return;
         }
         const itemsArray = planByHardware;
@@ -831,6 +834,17 @@ function SchedulerPage() {
         } catch (e) {
             console.error(e)
             setMsg("Ошибка добавления суточной мойки: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
+    async function updateDelayJob(){
+        try {
+            // await SchedulerService.dailyCleaning();
+            // await fetchPlan()
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка обновления отклонения от плана: " + e.response.data.message)
             setIsModalNotifyError(true);
         }
     }
@@ -1120,6 +1134,7 @@ function SchedulerPage() {
                                                              updateServiceWork={() => setIsModalUpdateServiceWork(true)}
                                                              removeServiceWork={removeServiceWork}
                                                              sortRange={sortRange}
+                                                             updateDelayJob={() => setIsModalUpdateDelayJob(true)}
                 />}
 
                 {isModalMoveJobs &&
@@ -1145,6 +1160,11 @@ function SchedulerPage() {
                                             updateServiceWork={updateServiceWork}
                                             serviceTypes={serviceTypes}
                     />
+                }
+
+                {isModalUpdateDelayJob &&
+                    <ModalUpdateJobDelay onClose={() => setIsModalUpdateDelayJob(false)}
+                    updateDelayJob={updateDelayJob} selectedItems={selectedItems}/>
                 }
                 
 
