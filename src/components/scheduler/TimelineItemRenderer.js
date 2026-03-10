@@ -1,7 +1,7 @@
 // components/scheduler/TimelineRenderers.js
 import React, {useEffect} from "react";
 import moment from "moment/moment";
-import {isFactItem, isMaintenancePackingOrLeveling} from "../../utils/scheduler/items";
+import {isCleaningItem, isDelayItem, isFactItem, isMaintenancePackingOrLeveling} from "../../utils/scheduler/items";
 
 /**
  * Фабрика для создания рендерера элементов таймлайна планировщика
@@ -35,7 +35,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
     return ({item, itemContext, getItemProps}) => {
         const isSelected = selectedItems.some(sel => sel.id === item.id);
         const isSingleSelected = selectedItem?.id === item.id;
-        const isFact = item.info?.startFact !== null && !item.id.includes('cleaning');
+        const isFact = item.info?.startFact !== null && !isCleaningItem(item) && !isDelayItem(item);
         const isLinesMatch = item.info?.lineIdFact === item.info?.lineInfo?.id;
 
         const factElBg = "#fafafa";
@@ -43,7 +43,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
         const selectBg = "#cbff93";
 
         const isFactEl = isFactItem(item);
-        const isLeveling = isMaintenancePackingOrLeveling(item);
+        const isLeveling =  isDelayItem(item);
 
         let settings = defineStyle(activeDisplay, isFactEl, isLeveling)
 
@@ -111,14 +111,18 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                         <div className="flex flex-col justify-start text-xs">
                             {item.info?.name !== "Мойка" && !item.info?.maintenance && item.info?.np && (
                                 <span className="px-1 rounded">
-                          <span className="text-blue-500">{item.info.np}</span>
-                          <span className="pl-1">№ партии</span>
-                        </span>
+                                  <span className="text-blue-500">{item.info.np}</span>
+                                  <span className="pl-1">№ партии</span>
+                                </span>
                             )}
 
                             {item.info?.duration && (
                                 <span className="px-1 rounded">
-                                      <span className="text-pink-500">{item.info.duration} мин.</span>
+                                      <span className="text-pink-500">
+                                          {item.info.duration >= 60
+                                              ? `${Math.floor(item.info.duration / 60)} ч. ${item.info.duration % 60} мин.`
+                                              : `${item.info.duration} мин.`}
+                                      </span>
                                       <span className="text-gray-500 px-1">|</span>
                                       <span className="text-green-600">
                                         {moment(item.start_time).format('HH:mm')}
@@ -129,13 +133,6 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                         </span>
                                       <span className="pl-1">Время</span>
 
-                                    {isLeveling &&
-                                        <>
-                                            <span className="text-gray-500 px-1">|</span>
-                                            <span className="text-violet-600">{item.info.groupIndex}</span>
-                                            <span className="pl-1">Позиция на линии</span>
-                                        </>
-                                    }
                                 </span>
                             )}
 
@@ -148,23 +145,24 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
                             {isFact && (
                                 <span className="px-1 rounded">
-                                  {!isLinesMatch && (
-                                      <span className="text-red-600 pr-2 h-[20px] w-[20px]">
-                                      <i className="fa-solid fa-triangle-exclamation"></i>
-                                    </span>
-                                  )}
+                                    {!isLinesMatch && (
+                                        <span className="text-red-600 pr-2 h-[20px] w-[20px]">
+                                            <i className="fa-solid fa-triangle-exclamation"></i>
+                                        </span>
+                                    )}
+
+                                    <span className="text-violet-600">{item.info?.groupIndex}</span>
+                                    <span className="px-1">Позиция на линии |</span>
+
                                     <span className="text-violet-600">
-                                         {moment(item.info?.startFact).format('HH:mm')}
+                                        {moment(item.info?.startFact).format('HH:mm')}
 
                                     </span>
-                                     <span className="text-gray-600 ml-1">
-                                         {moment(item.info?.startFact).format('DD.MM.YYYY')}
+                                    <span className="text-gray-600 ml-1">
+                                        {moment(item.info?.startFact).format('DD.MM.YYYY')}
                                     </span>
 
-                                  <span className="pl-1">Факт. время начала</span>
-
-                                  <span className="pl-1 text-violet-600">| {item.info?.groupIndex}</span>
-                                  <span className="pl-1">Позиция на линии</span>
+                                    <span className="pl-1">Факт. время начала</span>
                                 </span>
                             )}
                         </div>
@@ -209,18 +207,21 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
                             {item.info?.duration && (
                                 <span className="px-1 rounded">
-                                  <span
-                                      className="text-pink-500">{Number(item.info.durationFactCamera.toFixed(0))} мин.</span>
-                                  <span className="text-gray-500 px-1">|</span>
-                                  <span className="text-green-600">
-                                    {moment(item.start_time).format('HH:mm')}
-                                  </span>
+                                    <span className="text-pink-500">
+                                          {Number(item.info.durationFactCamera.toFixed(0)) >= 60
+                                              ? `${Math.floor(Number(item.info.durationFactCamera.toFixed(0)) / 60)} ч. ${Number(item.info.durationFactCamera.toFixed(0)) % 60} мин.`
+                                              : `${item.info.duration} мин.`}
+                                    </span>
+                                    <span className="text-gray-500 px-1">|</span>
+                                    <span className="text-green-600">
+                                       {moment(item.start_time).format('HH:mm')}
+                                    </span>
                                     {' - '}
                                     <span className="text-red-500">
                                         {moment(item.end_time).format('HH:mm')}
-                                      </span>
-                                      <span className="pl-1">Время</span>
                                     </span>
+                                    <span className="pl-1">Время</span>
+                                </span>
                             )}
                         </div>
                     </>

@@ -16,7 +16,7 @@ export function isMaintenanceItem(item) {
 export const getLastItemIndexInGroup = (groupId, plan) => {
     // Фильтруем элементы по группе и ИСКЛЮЧАЕМ мойки и фактические элементы
     const groupItems = plan
-        .filter(item => item.group === groupId && !item.id.includes('cleaning') && !isFactItem(item))
+        .filter(item => item.group === groupId && !item.id.includes('cleaning') && !item.id.includes('delay') && !isFactItem(item))
         .sort((a, b) => a.start_time - b.start_time);
 
     if (groupItems.length === 0) {
@@ -29,4 +29,14 @@ export const getLastItemIndexInGroup = (groupId, plan) => {
 //Определяет является ли тип сервисной операции "Фасовка" или "Выравнивание"
 export function isMaintenancePackingOrLeveling(item) {
     return (item.info.maintenanceTypeId === 7) || (item.info.maintenanceTypeId === 8);
+}
+
+//Определяет является ли задержкой
+export function isDelayItem(item) {
+    return item.id.includes('delay');
+}
+
+//Определяет является ли мойкой
+export function isCleaningItem(item) {
+    return item.id.includes('cleaning');
 }
