@@ -110,7 +110,9 @@ export default class ScheduleService {
                 line: filteredData[i].line?.name || "NAN",
                 duration: dur,
                 pinned: false,
-                lineInfo: json.jobs[i].line,
+                lineInfo: filteredData[i].line,
+                delayNote: filteredData[i].delayNote,
+                parentJobId: filteredData[i].id
             }
         }
         return cleaning;
@@ -274,10 +276,11 @@ export default class ScheduleService {
         let delay = await this.parseDelayByHardware(json)
         let result = [...planByHardware, ...cleaning]
         result = result.filter(item => item !== undefined);
-        result = ScheduleService.defineAssignedJobs(result, json)
-        result = [...result, ...factList]
-        result = [...result, ...delay]
 
+        result = ScheduleService.defineAssignedJobs(result, json)
+        result = [...result, ...delay]
+        result = ScheduleService.defineGroupPositionDelayItems(result, json)
+        result = [...result, ...factList]
 
         return result;
     }
@@ -311,6 +314,19 @@ export default class ScheduleService {
         return result;
     }
 
+    static defineGroupPositionDelayItems(result, json){
+        for (let i = 0; i < result.length; i++) {
+            if(result[i].id.includes('delay')) {
+                if(result[i].group === ""){
+                    return result
+                }
+                // Получаем позицию родителя для элемента delay
+                result[i].info.groupIndex = ScheduleService.getGroupPosition(result[i].info.parentJobId, result).position;
+            }
+        }
+        return result;
+    }
+
     // Позиция в своей группе (без учета cleaning и фактических элементов)
     static getGroupPosition = (itemId, allItems) => {
         const item = allItems.find(i => i.id === itemId)
@@ -318,7 +334,7 @@ export default class ScheduleService {
 
         // Исключаем cleaning и фактические элементы из группы
         const groupItems = allItems.filter(i =>
-            i.group === item.group && !i.id.includes('cleaning') && !isFactItem(i)
+            i.group === item.group && !i.id.includes('cleaning') && !i.id.includes('delay') && !isFactItem(i)
         )
 
         const sorted = groupItems.sort((a, b) =>
@@ -467,6 +483,10 @@ export default class ScheduleService {
 
     static async determineCameraFact(snpz) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/findCameraFact`, {snpz})
+    }
+
+    static async updateDelayJob(lineId, index, delayNote) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/delayNote`, {lineId, index, delayNote})
     }
 
 }

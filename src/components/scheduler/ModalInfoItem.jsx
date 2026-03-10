@@ -99,7 +99,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                     {!isCleaningItem(item) && !isDelayItem(item) && !item.info.maintenance && isFact &&
                         <div>
                             <div className="flex flex-row px-4">
-                                <span className={styleLable}>Линия по факту:</span>
+                                <span className={styleLable}>{!isDelayItem(item)? "Линия по факту:" : "Линия"}</span>
                                 <span className={styleInfo}>
                                     {lines.find(line => line.id === item.info.lineIdFact)?.title || "-"}
                                 </span>
@@ -131,6 +131,13 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                         <div className="flex flex-row px-4">
                             <span className={styleLable}>Описание:</span>
                             <span className={styleInfo}>{item.info.maintenanceNote || "-"}</span>
+                        </div>
+                    }
+
+                    {isDelayItem(item) &&
+                        <div className="flex flex-row px-4">
+                            <span className={styleLable}>Описание:</span>
+                            <span className={styleInfo}>{item.info.delayNote || "-"}</span>
                         </div>
                     }
 

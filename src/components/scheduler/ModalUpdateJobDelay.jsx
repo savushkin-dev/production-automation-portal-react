@@ -5,20 +5,15 @@ import {styleInputWithoutRounded} from "../../data/styles";
 export function ModalUpdateJobDelay({onClose, selectedItems, updateDelayJob}) {
 
 
-    const [descriptionOperation, setDescriptionOperation] = useState(selectedItems[0]?.info?.maintenanceNote?.trim() || "");
+    const [descriptionOperation, setDescriptionOperation] = useState(selectedItems[0]?.info?.delayNote?.trim() || "");
 
-//добавить при парсинге поле описания
     function update() {
         const firstItem = selectedItems[0];
-        const index = firstItem.info.groupIndex-1;
-        // const line = firstItem.group;
-        // const totalMinutes = convertHoursMinutesToMinutes(hour, min)
-        // updateServiceWork(line, index, totalMinutes, selectService.value, descriptionOperation)
+        const parentIndex = firstItem.info.groupIndex-1;
+        const line = firstItem.group;
+        updateDelayJob(line, parentIndex, descriptionOperation)
     }
 
-    useEffect(() => {
-        console.log(selectedItems)
-    }, []);
 
     return (
         <>

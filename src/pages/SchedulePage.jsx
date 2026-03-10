@@ -838,10 +838,10 @@ function SchedulerPage() {
         }
     }
 
-    async function updateDelayJob(){
+    async function updateDelayJob(lineId, index, delayNote){
         try {
-            // await SchedulerService.dailyCleaning();
-            // await fetchPlan()
+            await SchedulerService.updateDelayJob(lineId, index, delayNote);
+            await fetchPlan();
         } catch (e) {
             console.error(e)
             setMsg("Ошибка обновления отклонения от плана: " + e.response.data.message)
