@@ -1461,11 +1461,11 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         <div className="flex justify-end text-center mr-2 w-1/2">
                             <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100"
                                   onClick={exportYAML}
-                                  title="Экспорт шаблона JSON">
+                                  title="Экспорт шаблона">
                             <i className="fa fa-upload"></i></span>
                             <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100"
                                   onClick={importYAML}
-                                  title="Импорт шаблона JSON">
+                                  title="Импорт шаблона">
                             <i className="fa fa-download"></i></span>
                             <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100"
                                   onClick={showModalSaveReport}
