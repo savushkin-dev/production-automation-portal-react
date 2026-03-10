@@ -37,7 +37,6 @@ import {GlobalVars} from "./GlobalVars";
 import {ModalErrorScriptCompile} from "./ModalErrorScriptCompile";
 
 
-
 // Добавляем шрифт Roboto в виртуальную файловую систему pdfmake
 // pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
@@ -56,10 +55,10 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         ]);
         const [currentPage, setCurrentPage] = useState(1); // Активная страница
 
-        const [dataBandsOpt, setDataBandsOpt] = useState(["main","main-child"])
+        const [dataBandsOpt, setDataBandsOpt] = useState(["main", "main-child"])
         const [dataBandsOptDropDown, setDataDropDown] = useState([
-            { label: 'Основной бэнд', value: 'main' },
-            { label: 'Дополнительный бэнд', value: 'main-child' },
+            {label: 'Основной бэнд', value: 'main'},
+            {label: 'Дополнительный бэнд', value: 'main-child'},
         ])
 
         const [isViewMode, setIsViewMode] = useState(false);
@@ -684,6 +683,21 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             fileInput.accept = ".yaml,.yml";
             fileInput.style.display = "none";
 
+            // Обратная функция для toOneLine
+            const fromOneLine = (value) => {
+                if (typeof value === 'string') {
+                    if (value.trim().startsWith('{') || value.trim().startsWith('[')) {
+                        try {
+                            return JSON.parse(value);
+                        } catch {
+                            return value;
+                        }
+                    }
+                    return value;
+                }
+                return value;
+            };
+
             fileInput.addEventListener("change", (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
@@ -718,8 +732,10 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                         setDataBandsOpt(JSON.parse(importedData.dataBands));
                         setIsBookOrientation(importedData.bookOrientation ?? true);
-                        setLayoutParamSettings(JSON.parse(importedData.layoutParamSettings));
-                        setLayoutParam(JSON.parse(importedData.layoutParam));
+
+                        // Применяем fromOneLine к полям, которые были через toOneLine
+                        setLayoutParamSettings(fromOneLine(importedData.layoutParamSettings));
+                        setLayoutParam(fromOneLine(importedData.layoutParam));
 
                         setTimeout(() => defineBands(importedData.content), 200);
 
@@ -1419,7 +1435,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                 {!isViewMode && isJavaEditor && <JavaEditor onClose={() => setIsJavaEditor(false)} parameters={parameters}
                                                             setParameters={setParameters} setScript={(e) => setScript(e)}
-                                                            script={script} layout={layoutParamSettings} setLayout={setLayoutParamSettings}
+                                                            script={script} layout={layoutParamSettings}
+                                                            setLayout={setLayoutParamSettings}
                 />}
 
                 {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter && !isGlobalVars &&
@@ -1442,18 +1459,22 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
 
                         <div className="flex justify-end text-center mr-2 w-1/2">
-                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100" onClick={exportYAML}
+                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100"
+                                  onClick={exportYAML}
                                   title="Экспорт шаблона JSON">
                             <i className="fa fa-upload"></i></span>
-                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100" onClick={importYAML}
+                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100"
+                                  onClick={importYAML}
                                   title="Импорт шаблона JSON">
                             <i className="fa fa-download"></i></span>
-                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100" onClick={showModalSaveReport}
+                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100"
+                                  onClick={showModalSaveReport}
                                   title="Сохранить шаблон на сервер">
                             <i className="fa-solid fa-sd-card"></i></span>
-                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100" onClick={() => {
-                                downloadReportsName();
-                            }}
+                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100"
+                                  onClick={() => {
+                                      downloadReportsName();
+                                  }}
                                   title="Загрузить шаблон с сервера">
                            <i className="fa-solid fa-cloud-arrow-down"></i></span>
                         </div>
@@ -1497,9 +1518,11 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                             </div>
                             <div className="px-1 py-2 hover:bg-gray-200 flex-col justify-center justify-items-center">
                                 <img src="/icons/DataBand.png" className="icon-band" alt="Data band" draggable="false"/>
-                                <DropdownObj options={dataBandsOptDropDown} onSelect={handleSelectTableBand} label={"Бэнды"}/>
+                                <DropdownObj options={dataBandsOptDropDown} onSelect={handleSelectTableBand}
+                                             label={"Бэнды"}/>
                             </div>
-                            <div className=" px-1 py-2 hover:bg-gray-200 flex flex-col justify-center justify-items-center ">
+                            <div
+                                className=" px-1 py-2 hover:bg-gray-200 flex flex-col justify-center justify-items-center ">
 
                                 <span className=" hover:bg-gray-200 flex justify-center mt-2 h-3">
                                     <i className="fa-lg fa-regular fa-copy pt-1"></i>
@@ -1580,7 +1603,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                     </div>}
 
-                <div className={!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter && !isGlobalVars ? 'block' : 'hidden'}>
+                <div
+                    className={!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter && !isGlobalVars ? 'block' : 'hidden'}>
                     <div id="editor" ref={editorRef}/>
                 </div>
 
@@ -1600,7 +1624,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     <ModalNotify title={"Ошибка"} message={error} onClose={() => setIsModalError(false)}/>}
 
                 {!isViewMode && isModalErrorScript &&
-                    <ModalErrorScriptCompile title={"Ошибка получения данных для отчета"} message={error} onClose={() => setIsModalErrorScript(false)}/>}
+                    <ModalErrorScriptCompile title={"Ошибка получения данных для отчета"} message={error}
+                                             onClose={() => setIsModalErrorScript(false)}/>}
 
                 {!isViewMode && isModalDownloadReport &&
                     <ModalSelect title={"Загрузка отчета с сервера"} message={"modalMsg"}
@@ -1623,19 +1648,19 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                 {!isViewMode && isModalParameter && <ModalParameterWithLayout parameters={parameters || []}
                                                                               layout={layoutParam}
-                                                                    onSubmit={enterPreviewMode}
-                                                                    onClose={() => {
-                                                                        setIsModalParameter(false)
-                                                                    }}
+                                                                              onSubmit={enterPreviewMode}
+                                                                              onClose={() => {
+                                                                                  setIsModalParameter(false)
+                                                                              }}
                 />}
 
                 {!isViewMode && isDesignerParameter &&
                     <DesignerParameter parameters={parameters || []} layout={layoutParam} setLayout={setLayoutParam}
-                                       onClose={()=>setIsDesignerParameter(false)}/>
+                                       onClose={() => setIsDesignerParameter(false)}/>
                 }
 
                 {!isViewMode && isGlobalVars &&
-                    <GlobalVars onClose={()=>setIsGlobalVars(false)}/>
+                    <GlobalVars onClose={() => setIsGlobalVars(false)}/>
                 }
 
 
