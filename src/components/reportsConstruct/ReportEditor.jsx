@@ -35,6 +35,7 @@ import DropdownObj from "../dropdown/DropdownObj";
 import yaml from "js-yaml";
 import {GlobalVars} from "./GlobalVars";
 import {ModalErrorScriptCompile} from "./ModalErrorScriptCompile";
+import {defaultScript} from "../../data/report";
 
 
 // Добавляем шрифт Roboto в виртуальную файловую систему pdfmake
@@ -76,7 +77,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [modalMsg, setModalMsg] = useState('');
 
         const [isSqlMode, setIsSqlMode] = useState(false);
-        const [script, setScript] = useState("");
+        const [script, setScript] = useState(defaultScript);
 
         const [optReportsName, setOptReportsName] = useState([]);
 
