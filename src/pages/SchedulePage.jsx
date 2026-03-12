@@ -801,11 +801,10 @@ function SchedulerPage() {
             .filter(item => !isFactItem(item));
 
         // if (filteredItems.some(item => isPackagedItem(item) || isMaintenanceItem(item))) {
-        if (filteredItems.some(item => isMaintenanceItem(item))) { //Временно
-            setMsg("Сортировка невозможна. В выделенном диапазоне присутствуют сервисные операции.");
-            setIsModalNotify(true);
-            return;
-        }
+        //     setMsg("Сортировка невозможна. В выделенном диапазоне присутствуют сервисные операции.");
+        //     setIsModalNotify(true);
+        //     return;
+        // }
 
         const groupId = filteredItems[0].group;
         const sortedSelected = filteredItems
