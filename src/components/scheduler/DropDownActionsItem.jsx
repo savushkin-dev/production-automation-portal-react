@@ -1,9 +1,9 @@
-import React from "react";
-import {isFactItem} from "../../utils/scheduler/items";
+import React, {useEffect} from "react";
+import {isDelayItem, isFactItem} from "../../utils/scheduler/items";
 
 
 export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs, openModalAssignSettings, selectedItems,
-                                    updateServiceWork, removeServiceWork, sortRange}) {
+                                    updateServiceWork, removeServiceWork, sortRange, updateDelayJob}) {
 
     const isDateWithinLastDays = (isoDateString, days) => {
         if (!isoDateString) return false;
@@ -29,7 +29,8 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                         top: contextMenu.y,
                         left: contextMenu.x,
                         zIndex: 1000,
-                        maxWidth: '300px'
+                        maxWidth: '300px',
+                        minWidth: '300px'
                     }}
                 >
 
@@ -40,26 +41,31 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                     <div className="px-2 py-1">
                         {!contextMenu.forCanvas &&
                             <>
-                                <button onClick={() => {
-                                    pin()
-                                }} className={styleButton}>Закрепить линию по
-                                </button>
-                                <button onClick={() => {
-                                    unpin()
-                                }} className={styleButton}>Открепить линию
-                                </button>
-                                <button onClick={() => {
-                                    openModalMoveJobs()
-                                }} className={styleButton}>Переместить
-                                </button>
-                                <button onClick={() => {
-                                    openModalAssignSettings()
-                                }} className={styleButton}>
-                                    Добавить сервисную операцию
-                                </button>
+                                {!isDelayItem(contextMenu.item) &&
+                                    <>
+                                        <button onClick={() => {
+                                            pin()
+                                        }} className={styleButton}>Закрепить линию по
+                                        </button>
+                                        <button onClick={() => {
+                                            unpin()
+                                        }} className={styleButton}>Открепить линию
+                                        </button>
+                                        <button onClick={() => {
+                                            openModalMoveJobs()
+                                        }} className={styleButton}>Переместить
+                                        </button>
+                                        <button onClick={() => {
+                                            openModalAssignSettings()
+                                        }} className={styleButton}>
+                                            Добавить сервисную операцию
+                                        </button>
+                                    </>
+                                }
+
 
                                 {/*Отображение для сервисной работы*/}
-                                {contextMenu.item.info.maintenance === true && selectedItems.length === 1 &&
+                                {contextMenu.item.info.maintenance === true && selectedItems.length === 1 && !isDelayItem(contextMenu.item) &&
                                     <>
                                         <button onClick={() => {
                                             updateServiceWork()
@@ -77,7 +83,7 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                                     </>
                                 }
                                 {/*Отображение сортировки*/}
-                                {selectedItems.filter(item => !isFactItem(item)).length > 1 &&
+                                {selectedItems.filter(item => !isFactItem(item)).length > 1 && !isDelayItem(contextMenu.item) &&
                                     <>
                                         <button onClick={() => {
                                             sortRange(true)
@@ -88,6 +94,16 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                                             sortRange(false)
                                         }} className={styleButton}>Отсортировать по
                                             убыванию
+                                        </button>
+                                    </>
+                                }
+                                {/*Отображение для элемента отклонения*/}
+                                {isDelayItem(contextMenu.item) && selectedItems.length === 1 &&
+                                    <>
+                                        <button onClick={() => {
+                                            updateDelayJob()
+                                        }} className={styleButton}>
+                                            Изменить описание
                                         </button>
                                     </>
                                 }

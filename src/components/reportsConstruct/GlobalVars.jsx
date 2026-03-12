@@ -386,11 +386,11 @@ export function GlobalVars({ onClose }) {
                         <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border border-gray-100">
                             <div className="flex items-center gap-4">
                                 <div className="w-[4px] h-12 bg-blue-600 rounded-full flex-shrink-0"></div>
-                                <div>
+                                <div className="w-[80%]">
                                     <p className="text-sm text-gray-600 leading-relaxed">
                                         Глобальные переменные доступны для использования в скрипте отчета. Используйте синтаксис
-                                        <code className="mx-2 px-2 py-1 bg-gray-100 rounded text-blue-600">{'getGlobalParam().ключ'}</code>
-                                        для подстановки значений в качестве текстовых строк.
+                                        <code className="mx-2 px-2 py-1 bg-gray-100 rounded text-blue-600">{'globalVars.get("ключ")'}</code>
+                                        для подстановки значений в качестве текстовых строк. При необходимости преобразуйте в другой тип данных.
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full ml-auto">

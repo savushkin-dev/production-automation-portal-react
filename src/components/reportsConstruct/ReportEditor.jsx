@@ -31,8 +31,11 @@ import {ViewReport} from "./ViewReport";
 import {DesignerParameter} from "./DesignerParameter";
 import {ModalParameterWithLayout} from "./ModalParameterWithLayout";
 import DropdownObj from "../dropdown/DropdownObj";
+
+import yaml from "js-yaml";
 import {GlobalVars} from "./GlobalVars";
 import {ModalErrorScriptCompile} from "./ModalErrorScriptCompile";
+import {defaultScript} from "../../data/report";
 
 
 // Добавляем шрифт Roboto в виртуальную файловую систему pdfmake
@@ -53,10 +56,10 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         ]);
         const [currentPage, setCurrentPage] = useState(1); // Активная страница
 
-        const [dataBandsOpt, setDataBandsOpt] = useState(["main","main-child"])
+        const [dataBandsOpt, setDataBandsOpt] = useState(["main", "main-child"])
         const [dataBandsOptDropDown, setDataDropDown] = useState([
-            { label: 'Основной бэнд', value: 'main' },
-            { label: 'Дополнительный бэнд', value: 'main-child' },
+            {label: 'Основной бэнд', value: 'main'},
+            {label: 'Дополнительный бэнд', value: 'main-child'},
         ])
 
         const [isViewMode, setIsViewMode] = useState(false);
@@ -74,7 +77,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [modalMsg, setModalMsg] = useState('');
 
         const [isSqlMode, setIsSqlMode] = useState(false);
-        const [script, setScript] = useState("");
+        const [script, setScript] = useState(defaultScript);
 
         const [optReportsName, setOptReportsName] = useState([]);
 
@@ -620,11 +623,20 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             });
         };
 
-
-        const exportJSON = async () => {
+        const exportYAML = async () => {
             saveCurrentPage(editorView).then((updatedPages) => {
-                let css = cleanCSS(updatedPages[0].styles)
-                let result = {
+                let css = cleanCSS(updatedPages[0].styles).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+
+                const toOneLine = (value) => {
+                    if (typeof value === 'string') {
+                        return value.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                    }
+                    if (value === null || value === undefined) return '';
+                    if (typeof value === 'object') return JSON.stringify(value);
+                    return String(value);
+                };
+
+                let resultWithoutScript = {
                     dbUrl: settingDB.url,
                     dbUsername: settingDB.username,
                     dbPassword: settingDB.password,
@@ -634,89 +646,115 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     reportCategory: reportCategory,
                     content: updatedPages[0].content,
                     styles: css,
-                    parameters: parameters,
                     sqlMode: isSqlMode,
-                    script: script,
                     dataBands: JSON.stringify(dataBandsOpt),
                     bookOrientation: isBookOrientation,
-                    layoutParamSettings: layoutParamSettings,
-                    layoutParam: layoutParam
+                    layoutParamSettings: toOneLine(layoutParamSettings),
+                    layoutParam: toOneLine(layoutParam),
+                    parameters: parameters,
                 }
 
                 try {
-                    const json = JSON.stringify(result, null, 2);
-                    const blob = new Blob([json], {type: "application/json"});
+                    let yamlString = yaml.dump(resultWithoutScript, {indent: 2, lineWidth: -1, noRefs: true});
+
+                    const cleanScript = script.replace(/\\r\\n/g, '\n').replace(/\\r/g, '\n');
+                    const scriptLines = cleanScript.split('\n');
+                    const scriptBlock = 'script: |-\n' + scriptLines.map(line => '  ' + line).join('\n');
+                    const finalYaml = yamlString + scriptBlock + '\n';
+
+                    const blob = new Blob([finalYaml], {type: "application/yaml"});
                     const link = document.createElement("a");
                     link.href = URL.createObjectURL(blob);
-                    link.download = reportName + ".json";
+                    link.download = reportName + ".yaml";
                     document.body.appendChild(link);
                     link.click();
-                    setTimeout(() => {
-
-                    }, 1000);
                     document.body.removeChild(link);
                 } catch (error) {
-                    console.error("Ошибка при сохранении и экспорте:", error);
-                    setModalMsg("Ошибка при экспорте отчета! Попробуйте еще раз.")
+                    console.error("Ошибка при экспорте отчета:", error);
+                    setModalMsg("Ошибка при экспорте отчета.");
                     showModalNotif();
                 }
-            })
+            });
         };
 
 
-        const importJSON = () => {
-
+        const importYAML = () => {
             const fileInput = document.createElement("input");
             fileInput.type = "file";
-            fileInput.accept = ".json";
+            fileInput.accept = ".yaml,.yml";
             fileInput.style.display = "none";
 
-            fileInput.addEventListener("change", (event) => {
+            // Обратная функция для toOneLine
+            const fromOneLine = (value) => {
+                if (typeof value === 'string') {
+                    if (value.trim().startsWith('{') || value.trim().startsWith('[')) {
+                        try {
+                            return JSON.parse(value);
+                        } catch {
+                            return value;
+                        }
+                    }
+                    return value;
+                }
+                return value;
+            };
 
+            fileInput.addEventListener("change", (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
 
                 const reader = new FileReader();
-                setPages([{id: 1, content: "", styles: ""}])
-                try {
-                    reader.onload = (e) => {
-                        const importedPages = JSON.parse(e.target.result);
-                        // setPages(importedPages);
-                        setCurrentPage(importedPages[0]?.id || 1);
+
+                reader.onload = (e) => {
+                    try {
+                        const yamlContent = e.target.result;
+                        const importedData = yaml.load(yamlContent);
+
+                        setPages([{id: 1, content: "", styles: ""}]);
+                        setCurrentPage(1);
 
                         setSettingDB({
-                            url: importedPages.dbUrl,
-                            username: importedPages.dbUsername,
-                            password: importedPages.dbPassword,
-                            driverClassName: importedPages.dbDriver
+                            url: importedData.dbUrl,
+                            username: importedData.dbUsername,
+                            password: importedData.dbPassword,
+                            driverClassName: importedData.dbDriver
                         });
-                        setSql(importedPages.sql);
-                        setReportName(importedPages.reportName);
-                        setReportCategory(importedPages.reportCategory)
-                        editorView.setComponents(importedPages.content);
-                        editorView.setStyle(importedPages.styles);
-                        setParameters(importedPages.parameters);
-                        setIsSqlMode(importedPages.sqlMode);
-                        setScript(importedPages.script)
-                        setDataBandsOpt(JSON.parse(importedPages.dataBands))
-                        setIsBookOrientation(importedPages.bookOrientation);
-                        setLayoutParam(importedPages.layoutParam);
-                        setLayoutParamSettings(importedPages.layoutParamSettings);
-                        defineBands(importedPages.content);
-                    };
-                } catch (error) {
-                    console.error(error)
-                    setModalMsg("Ошибка иморта отчета! Попробуйте еще раз.")
-                    showModalNotif();
-                }
 
+                        setSql(importedData.sql);
+                        setReportName(importedData.reportName);
+                        setReportCategory(importedData.reportCategory);
+
+                        editorView.setComponents(importedData.content);
+                        editorView.setStyle(importedData.styles);
+
+                        setParameters(importedData.parameters || []);
+                        setIsSqlMode(importedData.sqlMode);
+                        setScript(importedData.script || '');
+
+                        setDataBandsOpt(JSON.parse(importedData.dataBands));
+                        setIsBookOrientation(importedData.bookOrientation ?? true);
+
+                        // Применяем fromOneLine к полям, которые были через toOneLine
+                        setLayoutParamSettings(fromOneLine(importedData.layoutParamSettings));
+                        setLayoutParam(fromOneLine(importedData.layoutParam));
+
+                        setTimeout(() => defineBands(importedData.content), 200);
+
+                        setModalMsg("Отчет успешно импортирован!");
+                        showModalNotif();
+
+                    } catch (error) {
+                        console.error("Ошибка при импорте отчета:", error);
+                        setModalMsg("Ошибка импорта отчета! Проверьте данные на корректность.");
+                        showModalNotif();
+                    }
+                };
                 reader.readAsText(file);
             });
 
             document.body.appendChild(fileInput);
             fileInput.click();
             document.body.removeChild(fileInput);
-
         };
 
         const updateCanvasZoom = (newZoom) => {
@@ -1398,33 +1436,46 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                 {!isViewMode && isJavaEditor && <JavaEditor onClose={() => setIsJavaEditor(false)} parameters={parameters}
                                                             setParameters={setParameters} setScript={(e) => setScript(e)}
-                                                            script={script} layout={layoutParamSettings} setLayout={setLayoutParamSettings}
+                                                            script={script} layout={layoutParamSettings}
+                                                            setLayout={setLayoutParamSettings}
                 />}
 
                 {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter && !isGlobalVars &&
 
-                    <div className=" gjs-two-color gjs-one-bg flex flex-row justify-between py-1 gjs-pn-commands">
-                        <div className="flex justify-start text-center ml-2 w-1/3">
-                            <span className="gjs-pn-btn font-medium">Конструктор отчетов</span>
-                            <span className="gjs-pn-btn">
-                                <i className="fa-solid fa-pencil"></i>
-                            </span>
-                            <button onClick={clickEnterPreviewMode}>Просмотр</button>
+
+                    <div className=" gjs-two-color gjs-one-bg flex flex-row justify-between gjs-pn-commands py-1">
+                        <div className="flex justify-between text-center items-center pl-2 w-1/2">
+                            <div>
+                                <span className="text-lg font-medium">Конструктор отчетов</span>
+                                <span className="px-2 text-lg">
+                                     <i className="fa-solid fa-pencil"></i>
+                                </span>
+                            </div>
+
+                            <button onClick={clickEnterPreviewMode}
+                                    className="h-7 ml-8 text-nowrap px-2 text-sm  text-gray-600 rounded ring-1 ring-gray-300
+                                     shadow hover:shadow-md hover:text-blue-700 hover:scale-105 transition duration-150 ">Предпросмотр
+                                отчета <i className="fa-solid fa-eye"></i></button>
+
                         </div>
 
-                        <div className="flex justify-end text-center mr-2 w-1/3">
-                            <span className="gjs-pn-btn hover:bg-gray-200" onClick={exportJSON}
-                                  title="Экспорт шаблона JSON">
+                        <div className="flex justify-end text-center mr-2 w-1/2">
+                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100"
+                                  onClick={exportYAML}
+                                  title="Экспорт шаблона">
                             <i className="fa fa-upload"></i></span>
-                            <span className="gjs-pn-btn hover:bg-gray-200" onClick={importJSON}
-                                  title="Импорт шаблона JSON">
+                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100"
+                                  onClick={importYAML}
+                                  title="Импорт шаблона">
                             <i className="fa fa-download"></i></span>
-                            <span className="gjs-pn-btn hover:bg-gray-200" onClick={showModalSaveReport}
+                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100"
+                                  onClick={showModalSaveReport}
                                   title="Сохранить шаблон на сервер">
                             <i className="fa-solid fa-sd-card"></i></span>
-                            <span className="gjs-pn-btn hover:bg-gray-200" onClick={() => {
-                                downloadReportsName();
-                            }}
+                            <span className="gjs-pn-btn hover:bg-gray-200 hover:scale-110 transition duration-100"
+                                  onClick={() => {
+                                      downloadReportsName();
+                                  }}
                                   title="Загрузить шаблон с сервера">
                            <i className="fa-solid fa-cloud-arrow-down"></i></span>
                         </div>
@@ -1432,9 +1483,9 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                 {!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter && !isGlobalVars &&
                     <div
-                        className="pl-2 gjs-two-color gjs-one-bg flex flex-row justify-between py-1 gjs-pn-commands ">
+                        className="pl-2 gjs-two-color gjs-one-bg flex flex-row justify-between items-center  gjs-pn-commands ">
                         <div className="flex flex-row gap-x-2">
-                            <div className="p-1 hover:bg-gray-200">
+                            <div className="px-1 py-2 hover:bg-gray-200">
                                 <button onClick={addReportTitleBand}
                                         className="flex-col justify-center justify-items-center">
                                     <img src="/icons/ReportTitle.png" className="icon-band" alt="Report title"
@@ -1442,7 +1493,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                     <span className="text-xs font-medium">Заголовок отчета</span>
                                 </button>
                             </div>
-                            <div className="p-1 hover:bg-gray-200">
+                            <div className="px-1 py-2 hover:bg-gray-200">
                                 <button onClick={addPageHeaderBand}
                                         className="flex-col justify-center justify-items-center">
                                     <img src="/icons/PageHeader.png" className="icon-band" alt="Page header"
@@ -1450,7 +1501,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                     <span className="text-xs font-medium">Заголовок страницы</span>
                                 </button>
                             </div>
-                            <div className="p-1 hover:bg-gray-200">
+                            <div className="px-1 py-2 hover:bg-gray-200">
                                 <button onClick={addReportSummaryBand}
                                         className="flex-col justify-center justify-items-center">
                                     <img src="/icons/ReportSummary.png" className="icon-band" alt="Report Summary"
@@ -1458,7 +1509,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                     <span className="text-xs font-medium">Подвал отчета</span>
                                 </button>
                             </div>
-                            <div className="p-1 hover:bg-gray-200">
+                            <div className="px-1 py-2 hover:bg-gray-200">
                                 <button onClick={addPageFooterBand}
                                         className="flex-col justify-center justify-items-center">
                                     <img src="/icons/PageFooter.png" className="icon-band" alt="Page footer"
@@ -1466,14 +1517,16 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                     <span className="text-xs font-medium">Подвал страницы</span>
                                 </button>
                             </div>
-                            <div className="p-1 hover:bg-gray-200 flex-col justify-center justify-items-center">
+                            <div className="px-1 py-2 hover:bg-gray-200 flex-col justify-center justify-items-center">
                                 <img src="/icons/DataBand.png" className="icon-band" alt="Data band" draggable="false"/>
-                                <DropdownObj options={dataBandsOptDropDown} onSelect={handleSelectTableBand} label={"Бэнды"}/>
+                                <DropdownObj options={dataBandsOptDropDown} onSelect={handleSelectTableBand}
+                                             label={"Бэнды"}/>
                             </div>
-                            <div className=" hover:bg-gray-200 flex flex-col justify-center justify-items-center">
+                            <div
+                                className=" px-1 py-2 hover:bg-gray-200 flex flex-col justify-center justify-items-center ">
 
-                                <span className=" hover:bg-gray-200 flex justify-center ">
-                                    <i className="fa-regular fa-copy pt-1"></i>
+                                <span className=" hover:bg-gray-200 flex justify-center mt-2 h-3">
+                                    <i className="fa-lg fa-regular fa-copy pt-1"></i>
                                 </span>
                                 <Dropdown options={orientationOpt} onSelect={handleSelectOrientation}
                                           label={"Ориентация"}/>
@@ -1481,9 +1534,10 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                         <div className="flex flex-row gap-x-2 pr-2">
 
+
                             <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
                                 <button onClick={() => setIsGlobalVars(true)}
-                                        className="flex flex-col justify-between justify-items-center">
+                                        className="flex flex-col justify-between justify-items-center pt-2">
                                         <span className="gjs-pn-btn hover:bg-gray-200 flex justify-center ">
                                             <i className="fa-solid fa-earth-americas pt-1"></i>
                                         </span>
@@ -1492,50 +1546,52 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                             </div>
 
                             <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
+
                                 <button onClick={() => setIsDesignerParameter(true)}
-                                        className="flex flex-col justify-between justify-items-center">
+                                        className="flex flex-col justify-between justify-items-center pt-2">
                                         <span className="gjs-pn-btn hover:bg-gray-200 flex justify-center ">
-                                            <i className="fa-solid fa-arrows-up-down-left-right pt-1"></i>
+                                            <i className="fa-lg fa-solid fa-list-check pt-3"></i>
                                         </span>
                                     <span className="text-xs font-medium px-1">Дизайнер параметров</span>
                                 </button>
                             </div>
 
                             {isSqlMode && <>
-                                <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
+                                <div className="py-2 hover:bg-gray-200 flex-col justify-center justify-items-center">
                                     <button onClick={showModalSettingDB}
                                             className="flex flex-col justify-between justify-items-center">
-                                <span className="gjs-pn-btn hover:bg-gray-200 flex justify-center ">
-                                        <i className="fa-lg fa-solid fa-server pt-3"></i>
-                                </span>
+                                        <span className="gjs-pn-btn hover:bg-gray-200 flex justify-center ">
+                                                <i className="fa-lg fa-solid fa-server pt-3"></i>
+                                        </span>
                                         <span className="text-xs font-medium px-1">Конфигурация БД</span>
                                     </button>
                                 </div>
-                                <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
+                                <div className="py-2 hover:bg-gray-200 flex-col justify-center justify-items-center">
                                     <button onClick={showModalSQL}
                                             className="flex flex-col justify-between justify-items-center">
-                                <span className="gjs-pn-btn hover:bg-gray-200 flex justify-center ">
-                                        <i className="fa-lg fa-solid fa-database pt-3"></i>
-                                </span>
+                                        <span className="gjs-pn-btn hover:bg-gray-200 flex justify-center ">
+                                                <i className="fa-lg fa-solid fa-database pt-3"></i>
+                                        </span>
                                         <span className="text-xs font-medium px-1">SQL запрос</span>
                                     </button>
                                 </div>
                             </>}
 
                             {!isSqlMode && <>
-                                <div className="hover:bg-gray-200 flex-col justify-center justify-items-center">
+                                <div className="py-2 hover:bg-gray-200 flex-col justify-center justify-items-center">
                                     <button onClick={() => setIsJavaEditor(true)}
                                             className="flex flex-col justify-between justify-items-center">
-                                        <span className="gjs-pn-btn hover:bg-gray-200 flex justify-center ">
-                                                <i className="fa-lg fa-solid fa-keyboard pt-3"></i>
-                                        </span>
+                                            <span className="gjs-pn-btn hover:bg-gray-200 flex justify-center ">
+                                                    {/*<i className="fa-lg fa-solid fa-keyboard pt-3"></i>*/}
+                                                <i className="fa-lg fa-regular fa-clipboard pt-3"></i>
+                                            </span>
                                         <span className="text-xs font-medium px-1">Java редактор</span>
                                     </button>
                                 </div>
                             </>}
                         </div>
                         <div className="flex flex-row gap-x-2 pr-3 py-3">
-                            <div className="flex flex-row  ">
+                            <div className="flex flex-row h-7">
                                 <button onClick={selectSQLMethod}
                                         className={isSqlMode ? "w-16 rounded-l-xl text-xs text-white font-medium shadow-inner bg-blue-800 hover:bg-blue-700" : "w-16 rounded-l-xl text-xs font-medium shadow-inner border border-slate-400 hover:bg-gray-200"}
                                 >SQL
@@ -1548,7 +1604,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         </div>
                     </div>}
 
-                <div className={!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter && !isGlobalVars ? 'block' : 'hidden'}>
+                <div
+                    className={!isViewMode && !isLoading && !isJavaEditor && !isDesignerParameter && !isGlobalVars ? 'block' : 'hidden'}>
                     <div id="editor" ref={editorRef}/>
                 </div>
 
@@ -1568,7 +1625,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     <ModalNotify title={"Ошибка"} message={error} onClose={() => setIsModalError(false)}/>}
 
                 {!isViewMode && isModalErrorScript &&
-                    <ModalErrorScriptCompile title={"Ошибка получения данных для отчета"} message={error} onClose={() => setIsModalErrorScript(false)}/>}
+                    <ModalErrorScriptCompile title={"Ошибка получения данных для отчета"} message={error}
+                                             onClose={() => setIsModalErrorScript(false)}/>}
 
                 {!isViewMode && isModalDownloadReport &&
                     <ModalSelect title={"Загрузка отчета с сервера"} message={"modalMsg"}
@@ -1591,19 +1649,19 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                 {!isViewMode && isModalParameter && <ModalParameterWithLayout parameters={parameters || []}
                                                                               layout={layoutParam}
-                                                                    onSubmit={enterPreviewMode}
-                                                                    onClose={() => {
-                                                                        setIsModalParameter(false)
-                                                                    }}
+                                                                              onSubmit={enterPreviewMode}
+                                                                              onClose={() => {
+                                                                                  setIsModalParameter(false)
+                                                                              }}
                 />}
 
                 {!isViewMode && isDesignerParameter &&
                     <DesignerParameter parameters={parameters || []} layout={layoutParam} setLayout={setLayoutParam}
-                                       onClose={()=>setIsDesignerParameter(false)}/>
+                                       onClose={() => setIsDesignerParameter(false)}/>
                 }
 
                 {!isViewMode && isGlobalVars &&
-                    <GlobalVars onClose={()=>setIsGlobalVars(false)}/>
+                    <GlobalVars onClose={() => setIsGlobalVars(false)}/>
                 }
 
 

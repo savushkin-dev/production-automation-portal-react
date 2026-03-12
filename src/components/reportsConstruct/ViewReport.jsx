@@ -133,10 +133,15 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
             // Находим все дочерние бэнды
             const childBands = Array.from(doc.querySelectorAll(`[data-band-child="true"]`));
 
-            dataArray.forEach(tableData => {
+            dataArray.forEach((tableData, index) => {
                 // Рендерим главный бэнд
                 let instanceHtml = replaceFieldsInHtml(bandHtml, tableData);
                 let bandCopy = band.cloneNode(true); // Глубокое клонирование
+
+                // Применяем чередование фона
+                if (index > 0 && index % 2 !== 0) {
+                    bandCopy.style.backgroundColor = '#f6f6f6';
+                }
 
                 counterBand++;
                 instanceHtml = replaceFieldInHtml(instanceHtml, counterBand, "№")
@@ -213,8 +218,8 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
     function splitIntoA4Pages(htmlString, css, bands) {
 
         return new Promise((resolve) => {
-            const startTime = performance.now();
 
+            let currentBands = bands;
             const tempContainer = createTempContainer();
             tempContainer.style.cssText = `
                         position: absolute;
@@ -252,7 +257,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
                 const currentBandsHeight = calculateCurrentBandsHeight(true, true, bandHeights);
                 const initialHeight = tempContainer.scrollHeight + currentBandsHeight;
-                let bandsWithPage = insertNumbPage(1, bands);
+                let bandsWithPage = insertNumbPage(1, currentBands);
                 insertBand(tempContainer, bandsWithPage, true, true);
 
                 if (initialHeight <= maxHeight) {
@@ -269,10 +274,8 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                 let currentPageHeight = 0;
                 const childNodes = Array.from(bodyContainer.childNodes);
 
-
                 for (let i = 0; i < childNodes.length; i++) {
                     const node = childNodes[i];
-
 
                     // Пропускаем style элементы
                     if (node.nodeName === "STYLE") {
@@ -317,11 +320,14 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
                     // Если не помещается - сохраняем текущую страницу
                     if (totalHeight > maxHeight) {
-                        bandsWithPage = insertNumbPage(pages.length + 1, bands);
+                        bandsWithPage = insertNumbPage(pages.length + 1 , currentBands);
                         finalizePage(currentPage, pages, bandsWithPage, false, false);
                         currentPage = createPageTemplate(pages.length + 1, css);
                         currentPageHeight = 0;
-                        insertBand(currentPage.container, bandsWithPage, false, false);
+
+                        currentBands = bands; // Возвращаемся к исходным бэндам для следующей страницы
+                        const bandsForNewPage = insertNumbPage(pages.length + 1 , currentBands);
+                        insertBand(currentPage.container, bandsForNewPage, false, false);
                     }
 
                     // Добавляем родительский элемент
@@ -334,17 +340,15 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
                     currentPageHeight += totalNodeHeight;
 
-
                     // Если это последний узел - добавляем report footer
                     if (i >= childNodes.length - 1) {  //Проверить или починилось
-                        insertBand(currentPage.container, bands, false, true);
+                        insertBand(currentPage.container, bands, false, true, false);
                         currentPageHeight += bandHeights.reportFooter;
                     }
 
-
                 }
 
-                bandsWithPage = insertNumbPage(pages.length + 1, bands);
+                bandsWithPage = insertNumbPage(pages.length + 1, currentBands);
                 if (currentPage.container.querySelector('#body-container').childNodes.length > 0) {
                     finalizePage(currentPage, pages, bandsWithPage, false, false);
                 }
@@ -357,9 +361,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
             } finally {
                 safeRemove(tempContainer);
                 safeRemove(measureDiv);
-
-                const duration = (performance.now() - startTime) / 1000;
-                // console.log(`Разбиение выполнено за ${duration.toFixed(3)} сек`);
             }
         });
     }
@@ -429,7 +430,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         return htmlString.replace(styleRegex, '');
     }
 
-    function insertBand(tempContainer, bands, addReportTitle, addReportSummary) {
+    function insertBand(tempContainer, bands, addReportTitle, addReportSummary, addPageFooter = true) {
 
         for (let i = 0; i < bands.length; i++) {
 
@@ -447,7 +448,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                     break;
                 }
                 case 'pageFooter': {
-                    tempContainer.querySelector('#footer-container').append(bands[i])
+                    if (addPageFooter) tempContainer.querySelector('#footer-container').append(bands[i])
                     break;
                 }
             }
@@ -558,12 +559,12 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
 
                     <div className="flex justify-center text-center mr-2 w-1/3 ">
-                        <span className="gjs-pn-btn hover:bg-gray-200" onClick={() => {
-                            printReport()
-                        }}
-                              title="Экспорт PDF">
-                            <i className="fa fa-file-pdf"></i>
-                            </span>
+                        {/*<span className="gjs-pn-btn hover:bg-gray-200" onClick={() => {*/}
+                        {/*    printReport()*/}
+                        {/*}}*/}
+                        {/*      title="Экспорт PDF">*/}
+                        {/*    <i className="fa fa-file-pdf"></i>*/}
+                        {/*</span>*/}
                         <span className="gjs-pn-btn hover:bg-gray-200" onClick={() => {
                             exportHtml()
                         }}

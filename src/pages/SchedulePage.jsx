@@ -32,9 +32,10 @@ import {
     getDatePlus3, getDatePlus4, getDatePlus5, getDatePlus6, getDatePlus7,
     groupDataByDay
 } from "../utils/scheduler/pdayParsing";
-import {isFactItem, isMaintenanceItem, isPackagedItem} from "../utils/scheduler/items";
+import {isCleaningItem, isDelayItem, isFactItem, isMaintenanceItem, isPackagedItem} from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
+import {ModalUpdateJobDelay} from "../components/scheduler/ModalUpdateJobDelay";
 
 
 function SchedulerPage() {
@@ -75,6 +76,8 @@ function SchedulerPage() {
     const [isModalUpdateServiceWork, setIsModalUpdateServiceWork] = useState(false);
     const [isModalSendToWork, setIsModalSendToWork] = useState(false);
     const [isModalSavePlan, setIsModalSavePlan] = useState(false);
+    const [isModalUpdateDelayJob, setIsModalUpdateDelayJob] = useState(false);
+
 
     const [isSolve, setIsSolve] = useState(false);
     const [score, setScore] = useState({hard: 0, medium: 0, soft: 0});
@@ -642,7 +645,7 @@ function SchedulerPage() {
         if (!lastItem || !currentItem) return;
 
         const groupItems = itemsArray.filter(item =>
-            item.group === groupId && !item.id.includes('cleaning') && !isFactItem(item)
+            item.group === groupId && !isCleaningItem(item) && !isDelayItem(item) && !isFactItem(item)
         );
 
         const sortedGroupItems = [...groupItems].sort((a, b) => a.start_time - b.start_time);
@@ -798,11 +801,10 @@ function SchedulerPage() {
             .filter(item => !isFactItem(item));
 
         // if (filteredItems.some(item => isPackagedItem(item) || isMaintenanceItem(item))) {
-        if (filteredItems.some(item => isMaintenanceItem(item))) { //Временно
-            setMsg("Сортировка невозможна. В выделенном диапазоне присутствуют расфасованные элементы или сервисные операции.");
-            setIsModalNotify(true);
-            return;
-        }
+        //     setMsg("Сортировка невозможна. В выделенном диапазоне присутствуют сервисные операции.");
+        //     setIsModalNotify(true);
+        //     return;
+        // }
 
         const groupId = filteredItems[0].group;
         const sortedSelected = filteredItems
@@ -831,6 +833,17 @@ function SchedulerPage() {
         } catch (e) {
             console.error(e)
             setMsg("Ошибка добавления суточной мойки: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
+    async function updateDelayJob(lineId, index, delayNote){
+        try {
+            await SchedulerService.updateDelayJob(lineId, index, delayNote);
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка обновления отклонения от плана: " + e.response.data.message)
             setIsModalNotifyError(true);
         }
     }
@@ -1120,6 +1133,7 @@ function SchedulerPage() {
                                                              updateServiceWork={() => setIsModalUpdateServiceWork(true)}
                                                              removeServiceWork={removeServiceWork}
                                                              sortRange={sortRange}
+                                                             updateDelayJob={() => setIsModalUpdateDelayJob(true)}
                 />}
 
                 {isModalMoveJobs &&
@@ -1145,6 +1159,11 @@ function SchedulerPage() {
                                             updateServiceWork={updateServiceWork}
                                             serviceTypes={serviceTypes}
                     />
+                }
+
+                {isModalUpdateDelayJob &&
+                    <ModalUpdateJobDelay onClose={() => setIsModalUpdateDelayJob(false)}
+                    updateDelayJob={updateDelayJob} selectedItems={selectedItems}/>
                 }
                 
 

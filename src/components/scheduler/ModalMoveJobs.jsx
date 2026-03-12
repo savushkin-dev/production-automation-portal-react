@@ -1,4 +1,4 @@
-import React, {useState} from 'react'
+import React, {useEffect, useState} from 'react'
 import {styleInputWithoutRounded} from "../../data/styles";
 import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
@@ -31,7 +31,7 @@ export function ModalMoveJobs({
         label: line.originalName
     }));
 
-    const [selectLine, setSelectLine] = useState(options[0]);
+    const [selectLine, setSelectLine] = useState(options.find(opt => opt.value === selectedItems?.[0]?.group) || options?.[0] || null);
     const [insertIndex, setInsertIndex] = useState(1);
     const [isLastPos, setIsLastPos] = useState(false);
 

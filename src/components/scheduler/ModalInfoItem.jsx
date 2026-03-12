@@ -1,6 +1,7 @@
 import React, {useEffect} from 'react'
-import {isFactItem, isPackagedItem} from "../../utils/scheduler/items";
+import {isCleaningItem, isDelayItem, isFactItem, isPackagedItem} from "../../utils/scheduler/items";
 import {formatIsoToDateOnly, formatIsoToDatetimeRegex} from "../../utils/date/date";
+
 
 
 export function ModalInfoItem({item, onClose, lines, determineFactPlace, determineCameraFact, clickedCameras, setClickedCameras}) {
@@ -34,7 +35,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                     <div className="flex flex-row justify-between">
                         <h1 className="text-xl font-medium text-start mb-2">{item.info.name}</h1>
                         <span>
-                            {!isLinesMatch && isFact && item.info.name !== "Мойка" && !item.info.maintenance &&
+                            {!isLinesMatch && isFact && !isCleaningItem(item) && !isDelayItem(item) && !item.info.maintenance &&
                                 <span className="font-medium align-middle text-red-600 pl-2">Фактическая линия не совпадает с планируемой<i
                                     className="pl-2 fa-solid fa-triangle-exclamation"></i></span>
                             }
@@ -44,7 +45,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
 
                     <hr className="mb-3"/>
 
-                    {item.info.name !== "Мойка" && !item.info.maintenance &&
+                    {!isCleaningItem(item) && !isDelayItem(item) && !item.info.maintenance &&
                         <div className="">
                             <div className="flex flex-row bg-blue-800 rounded text-white px-4">
                                 <span className={styleLable}>Наименование:</span>
@@ -95,10 +96,10 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                     </div>
 
 
-                    {item.info.name !== "Мойка" && !item.info.maintenance && isFact &&
+                    {!isCleaningItem(item) && !isDelayItem(item) && !item.info.maintenance && isFact &&
                         <div>
                             <div className="flex flex-row px-4">
-                                <span className={styleLable}>Линия по факту:</span>
+                                <span className={styleLable}>{!isDelayItem(item)? "Линия по факту:" : "Линия"}</span>
                                 <span className={styleInfo}>
                                     {lines.find(line => line.id === item.info.lineIdFact)?.title || "-"}
                                 </span>
@@ -107,11 +108,11 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                     }
 
                     <div className="flex flex-row px-4">
-                        <span className={styleLable}>Начало по плану:</span>
+                        <span className={styleLable}>{!isDelayItem(item)? "Начало по плану:" : "Начало:"}</span>
                         <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.start) || "-"}</span>
                     </div>
 
-                    {item.info.name !== "Мойка" && !item.info.maintenance && isFact &&
+                    {!isCleaningItem(item) && !isDelayItem(item) && !item.info.maintenance && isFact &&
                         <div>
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Начало по факту:</span>
@@ -122,7 +123,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                     }
 
                     <div className="flex flex-row px-4">
-                        <span className={styleLable}>Конец по плану:</span>
+                        <span className={styleLable}>{!isDelayItem(item)? "Конец по плану:" : "Конец:"}</span>
                         <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.end) || ""}</span>
                     </div>
 
@@ -133,7 +134,14 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                         </div>
                     }
 
-                    {item.info.name !== "Мойка" && !item.info.maintenance && isFact &&
+                    {isDelayItem(item) &&
+                        <div className="flex flex-row px-4">
+                            <span className={styleLable}>Описание:</span>
+                            <span className={styleInfo}>{item.info.delayNote || "-"}</span>
+                        </div>
+                    }
+
+                    {!isCleaningItem(item) && !isDelayItem(item) && !item.info.maintenance && isFact &&
                         <>
                             <div className="flex flex-row px-4">
                                 <span className={styleLable}>Начало по камере:</span>
@@ -148,7 +156,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                         </>
                     }
 
-                    {item.info.name !== "Мойка" && !item.info.maintenance && !isFact &&
+                    {!isCleaningItem(item) && !isDelayItem(item) && !item.info.maintenance && !isFact &&
                         <>
                             {!item.info.startCameraFact && !item.info.endCameraFact && !clickedCameras[item.info.snpz] &&
                                 <>
@@ -179,7 +187,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                     }
 
 
-                    {item.info.name !== "Мойка" && !item.info.maintenance &&
+                    {!isCleaningItem(item) && !isDelayItem(item) && !item.info.maintenance &&
                         <>
                             <div className="flex flex-row px-4 items-center">
                                 <span className={styleLable}>Мест план:</span>
