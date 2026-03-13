@@ -8,7 +8,7 @@ import {isCleaningItem, isDelayItem, isFactItem, isMaintenancePackingOrLeveling}
  */
 export const createItemRendererScheduler = (selectedItems, selectedItem, activeDisplay) => {
 
-    function defineStyle(activeDisplay, isFactEl, isLeveling) {
+    function defineStyle(activeDisplay, isFactEl, isLeveling, isSelected) {
         const { plan, fact, planFact } = activeDisplay || {};
 
         if (plan) {
@@ -19,17 +19,17 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
         if (fact) {
             return isFactEl
-                ? { display: 'block', marginTop: '4px'}
-                : { display: 'none', marginTop: '-16px' };
+                ?(isSelected? { display: 'block', marginTop: '9px'} : { display: 'block', marginTop: '4px'})
+                : { display: 'none', marginTop: '-16px'};
         }
 
         if (planFact) {
             return isFactEl
-                ? { display: 'block', marginTop: '65px'}
+                ? (isSelected? { display: 'block', marginTop: '70px'} : { display: 'block', marginTop: '65px'})
                 : (isLeveling? { display: 'block', marginTop: '16px'}:{ display: 'block', marginTop: '-16px'});
         }
 
-        return { display: 'block', marginTop: '-16px' };
+        return { display: 'block', marginTop: '-16px'};
     }
 
     return ({item, itemContext, getItemProps}) => {
@@ -45,17 +45,16 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
         const isFactEl = isFactItem(item);
         const isLeveling =  isDelayItem(item);
 
-        let settings = defineStyle(activeDisplay, isFactEl, isLeveling)
+        let settings = defineStyle(activeDisplay, isFactEl, isLeveling, isSelected)
 
         const itemProps = getItemProps({
             style: {
                 background: isSelected
                     ? (isSingleSelected ? selectBg : selectBg)
                     : (isFactEl ? factElBg : (isFact ? factBg : item.itemProps?.style?.background || '#fff')),
-                borderWidth: '1px', //для новой версии
-                borderStyle: 'solid', //для новой версии
-                borderColor: '#aeaeae', //для новой версии
-                // border: '1px solid #aeaeae',
+                borderWidth: '1px',
+                borderStyle: 'solid',
+                borderColor: '#aeaeae',
                 textAlign: 'start',
                 color: item.itemProps?.style?.color || 'black',
                 margin: 0,
@@ -65,6 +64,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                 textOverflow: 'ellipsis',
                 display: settings.display,
                 marginTop: settings.marginTop,
+                zIndex: isSelected? 31 : 30
             },
             onMouseDown: getItemProps().onMouseDown,
             onTouchStart: getItemProps().onTouchStart,
