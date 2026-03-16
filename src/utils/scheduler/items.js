@@ -14,17 +14,26 @@ export function isMaintenanceItem(item) {
 }
 
 export const getLastItemIndexInGroup = (groupId, plan) => {
-    // Фильтруем элементы по группе и ИСКЛЮЧАЕМ мойки и фактические элементы
-    const groupItems = plan
-        .filter(item => item.group === groupId && !item.id.includes('cleaning') && !item.id.includes('delay') && !isFactItem(item))
-        .sort((a, b) => a.start_time - b.start_time);
-
+    const groupItems = filterGroupItems(groupId, plan)
     if (groupItems.length === 0) {
-        return -1;
+        return 0;
     }
-
     return groupItems.length - 1;
 };
+
+export const getLastItemInGroup = (groupId, plan) => {
+    const groupItems = filterGroupItems(groupId, plan)
+    if (groupItems.length === 0) {
+        return null;
+    }
+    return groupItems[groupItems.length-1];
+};
+
+export const filterGroupItems = (groupId, plan) => {
+    // Фильтруем элементы по группе и ИСКЛЮЧАЕМ мойки и фактические элементы
+    return plan.filter(item => item.group === groupId && !item.id.includes('cleaning') && !item.id.includes('delay') && !isFactItem(item))
+        .sort((a, b) => a.start_time - b.start_time);
+}
 
 //Определяет является ли тип сервисной операции "Фасовка" или "Выравнивание"
 export function isMaintenancePackingOrLeveling(item) {
