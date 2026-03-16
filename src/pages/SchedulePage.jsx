@@ -986,11 +986,11 @@ function SchedulerPage() {
                         <button onClick={assignAllPauses}
                                 className="mr-1 rounded border border-slate-300 hover:bg-gray-100  px-3 h-[30px] font-medium text-[0.950rem]">
                             Добавить простои
-                            <i className="pl-2 fa-solid fa-faucet-drip"></i>
+                            <i className="pl-2 fa-solid fa-stopwatch"></i>
                         </button>
 
                         <button onClick={dailyCleaning}
-                                className="mr-1 rounded border border-slate-300 hover:bg-gray-100  px-3 h-[30px] font-medium text-[0.950rem]">
+                                className="mr-1 rounded border border-slate-300 hover:bg-gray-100 mx-2 px-3 h-[30px] font-medium text-[0.950rem]">
                             Добавить мойки
                             <i className="pl-2 fa-solid fa-faucet-drip"></i>
                         </button>
