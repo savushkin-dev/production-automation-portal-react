@@ -32,10 +32,19 @@ import {
     getDatePlus3, getDatePlus4, getDatePlus5, getDatePlus6, getDatePlus7,
     groupDataByDay
 } from "../utils/scheduler/pdayParsing";
-import {isCleaningItem, isDelayItem, isFactItem, isMaintenanceItem, isPackagedItem} from "../utils/scheduler/items";
+import {
+    calculateTimeToNext8AM,
+    filterGroupItems, getLastItemIndexInGroup,
+    isCleaningItem,
+    isDelayItem,
+    isFactItem,
+    isMaintenanceItem,
+    isPackagedItem
+} from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
 import {ModalUpdateJobDelay} from "../components/scheduler/ModalUpdateJobDelay";
+import {convertHoursMinutesToMinutes} from "../utils/scheduler/serviceWork";
 
 
 function SchedulerPage() {
@@ -854,6 +863,94 @@ function SchedulerPage() {
         [selectedItems, selectedItem, activeDisplay]
     );
 
+    async function assignAllPauses() {
+        const allLines = startTimeLines || [];
+        if (allLines.length === 0) {
+            console.log('Нет линий для обработки');
+            return;
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
+
+        for (const line of allLines) {
+            const lineId = line.lineId || line.id || line.value;
+
+            const lineItems = planByHardware?.filter(item =>
+                item.info?.lineInfo?.id === lineId
+            ) || [];
+
+            const filteredItems = filterGroupItems(lineId, lineItems);
+
+            const hasJobsOnLine = filteredItems.length > 0;
+
+            try {
+                if (!hasJobsOnLine) {
+
+                    // Просто добавляем 'T08:00' к дате из selectDate
+                    const timeStr = `${selectDate}T08:00`;
+
+                    await SchedulerService.assignServiceWorkEmptyLine(
+                        lineId,
+                        timeStr,
+                        1440, // 24 часа в минутах
+                        "8",
+                        "Простой до 08:00"
+                    );
+                    successCount++;
+                } else {
+                    // Если есть элементы, находим последний
+                    const lastItem = filteredItems.reduce((max, current) => {
+                        const currentEnd = new Date(current.info?.end || 0);
+                        const maxEnd = new Date(max.info?.end || 0);
+                        return currentEnd > maxEnd ? current : max;
+                    }, filteredItems[0]);
+
+                    const lastEndTime = lastItem.info?.end;
+
+                    if (!lastEndTime) {
+                        throw new Error(`Нет времени окончания у последнего элемента на линии ${lineId}`);
+                    }
+
+                    // Рассчитываем время до следующих 8 утра
+                    const timeTo8AM = calculateTimeToNext8AM(lastEndTime);
+
+                    // Проверяем, что время до 8 утра больше 0
+                    if (timeTo8AM.hours === 0 && timeTo8AM.minutes === 0) {
+                        continue;
+                    }
+                    const totalMinutes = convertHoursMinutesToMinutes(timeTo8AM.hours, timeTo8AM.minutes);
+                    const insertPosition = getLastItemIndexInGroup(lineId, planByHardware) + 1;
+
+                    await SchedulerService.assignServiceWork(
+                        lineId,
+                        insertPosition,
+                        totalMinutes,
+                        "8",
+                        "Простой до 08:00"
+                    );
+                    successCount++;
+                }
+            } catch (error) {
+                errorCount++;
+                errors.push({ lineId, error: error.response?.data?.message || error.message });
+                console.error(`Ошибка при добавлении на линию ${lineId}:`, error);
+            }
+        }
+
+        if (errors.length > 0) {
+            console.error('Детали ошибок:', errors);
+            setMsg("Ошибки при назначении сервисных операций: " + errors.map(e => `${e.lineId}: ${e.error}`).join('; '));
+            setIsModalNotifyError(true);
+        }
+
+        if (successCount > 0) {
+            await fetchPlan();
+        }
+    }
+
+
     return (
         <>
             <div className="w-full">
@@ -886,8 +983,14 @@ function SchedulerPage() {
 
                     <div className="w-4/6 py-1 flex justify-end pr-3">
 
-                        <button onClick={dailyCleaning}
+                        <button onClick={assignAllPauses}
                                 className="mr-1 rounded border border-slate-300 hover:bg-gray-100  px-3 h-[30px] font-medium text-[0.950rem]">
+                            Добавить простои
+                            <i className="pl-2 fa-solid fa-stopwatch"></i>
+                        </button>
+
+                        <button onClick={dailyCleaning}
+                                className="mr-1 rounded border border-slate-300 hover:bg-gray-100 mx-2 px-3 h-[30px] font-medium text-[0.950rem]">
                             Добавить мойки
                             <i className="pl-2 fa-solid fa-faucet-drip"></i>
                         </button>

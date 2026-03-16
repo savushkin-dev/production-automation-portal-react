@@ -14,17 +14,26 @@ export function isMaintenanceItem(item) {
 }
 
 export const getLastItemIndexInGroup = (groupId, plan) => {
-    // Фильтруем элементы по группе и ИСКЛЮЧАЕМ мойки и фактические элементы
-    const groupItems = plan
-        .filter(item => item.group === groupId && !item.id.includes('cleaning') && !item.id.includes('delay') && !isFactItem(item))
-        .sort((a, b) => a.start_time - b.start_time);
-
+    const groupItems = filterGroupItems(groupId, plan)
     if (groupItems.length === 0) {
-        return -1;
+        return 0;
     }
-
     return groupItems.length - 1;
 };
+
+export const getLastItemInGroup = (groupId, plan) => {
+    const groupItems = filterGroupItems(groupId, plan)
+    if (groupItems.length === 0) {
+        return null;
+    }
+    return groupItems[groupItems.length-1];
+};
+
+export const filterGroupItems = (groupId, plan) => {
+    // Фильтруем элементы по группе и ИСКЛЮЧАЕМ мойки и фактические элементы
+    return plan.filter(item => item.group === groupId && !item.id.includes('cleaning') && !item.id.includes('delay') && !isFactItem(item))
+        .sort((a, b) => a.start_time - b.start_time);
+}
 
 //Определяет является ли тип сервисной операции "Фасовка" или "Выравнивание"
 export function isMaintenancePackingOrLeveling(item) {
@@ -40,3 +49,27 @@ export function isDelayItem(item) {
 export function isCleaningItem(item) {
     return item.id.includes('cleaning');
 }
+
+//Определяет сколько времени до 8 утра
+export const calculateTimeToNext8AM = (inputTime) => {
+    const startDate = new Date(inputTime);
+
+    // Устанавливаем следующие 8 утра от входного времени
+    const next8AM = new Date(startDate);
+    next8AM.setHours(8, 0, 0, 0); // 8:00:00.000
+
+    // Если входное время уже после 8 утра, берем следующие сутки
+    if (startDate > next8AM) {
+        next8AM.setDate(next8AM.getDate() + 1);
+    }
+
+    const diffMs = next8AM - startDate;
+
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    return {
+        hours: diffHours,
+        minutes: diffMinutes
+    };
+};
