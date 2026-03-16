@@ -290,15 +290,31 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             //событие при перетаскивании компонентов
             editor.on('component:drag:end', model => {
-                const el = model.target.view?.el;
-                const ready = el instanceof Element && typeof el.getBoundingClientRect === 'function';
-
-                if (ready) {
-                    moveComponentToTarget(model, false);
-                } else {
-                    model.once('view:render', () => {
+                const checkElementAndMove = () => {
+                    const el = model.target.view?.el;
+                    if (el instanceof Element && typeof el.getBoundingClientRect === 'function') {
                         moveComponentToTarget(model, false);
-                    });
+                        return true;
+                    }
+                    return false;
+                };
+
+                if (!checkElementAndMove()) {
+                    // Подписываемся на событие рендера через editor
+                    const onRender = () => {
+                        if (checkElementAndMove()) {
+                            editor.off('component:update', onRender);
+                        }
+                    };
+
+                    // Используем более общее событие
+                    editor.on('component:update', onRender);
+
+                    // Запасной вариант с таймаутом
+                    setTimeout(() => {
+                        editor.off('component:update', onRender);
+                        checkElementAndMove();
+                    }, 500);
                 }
             });
 
