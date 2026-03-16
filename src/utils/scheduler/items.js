@@ -49,3 +49,27 @@ export function isDelayItem(item) {
 export function isCleaningItem(item) {
     return item.id.includes('cleaning');
 }
+
+//Определяет сколько времени до 8 утра
+export const calculateTimeToNext8AM = (inputTime) => {
+    const startDate = new Date(inputTime);
+
+    // Устанавливаем следующие 8 утра от входного времени
+    const next8AM = new Date(startDate);
+    next8AM.setHours(8, 0, 0, 0); // 8:00:00.000
+
+    // Если входное время уже после 8 утра, берем следующие сутки
+    if (startDate > next8AM) {
+        next8AM.setDate(next8AM.getDate() + 1);
+    }
+
+    const diffMs = next8AM - startDate;
+
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    return {
+        hours: diffHours,
+        minutes: diffMinutes
+    };
+};
