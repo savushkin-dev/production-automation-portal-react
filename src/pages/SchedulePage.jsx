@@ -953,7 +953,7 @@ function SchedulerPage() {
 
     return (
         <>
-            <div className="w-full">
+            <div className="w-full text-gray-800">
 
                 {isModalInfoItem && selectedItem && <ModalInfoItem item={selectedItem} onClose={() => {
                         setSelectedItem(null);

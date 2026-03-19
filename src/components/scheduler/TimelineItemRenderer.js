@@ -87,7 +87,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
                 {!isFactEl ? (
                     <>
-                        <div className="flex px-1 justify-between font-medium text-sm text-black">
+                        <div className="flex px-1 justify-between font-medium text-sm text-gray-800">
                             {item.info?.pinned && !isFactEl ? (
                                 <>
                                     {isSelected && selectedItems.filter(item => !isFactItem(item)).length > 1 && (

@@ -175,6 +175,8 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
 
     const allAvailableSelected = availableItemsCount > 0 && selectedAvailableItemsCount === availableItemsCount;
 
+    let styleCheckbox = "w-[15px] h-[15px]";
+
     return (
         <div className="p-4">
             <div className="px-3 py-2 rounded flex flex-row justify-between align-middle text-black mb-2">
@@ -200,7 +202,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
                     </button>
                 </div>
                 <div className="w-1/3 text-center">
-                    <span className="text-xl font-medium">
+                    <span className="text-xl font-medium text-gray-800">
                          Задание {dateData}
                     </span>
                 </div>
@@ -248,6 +250,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
 
                                 <div className="w-[5%]" style={{textAlign: 'center', padding: '12px', color: '#666'}}>
                                     <input
+                                        className={styleCheckbox}
                                         type={"checkbox"}
                                         checked={checkGroupInput(productGroup)}
                                         disabled={!hasAvailableItems(productGroup)}
@@ -324,6 +327,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
                                                 <td className="w-[5%]"
                                                     style={{textAlign: 'center', padding: '12px', color: '#666'}}>
                                                     <input
+                                                        className={styleCheckbox}
                                                         disabled={!isCheckboxEnabled}
                                                         type={"checkbox"}
                                                         checked={isSelected}
@@ -341,6 +345,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
                                                 <td className="w-[10%]"
                                                     style={{textAlign: 'center', padding: '12px', color: '#666'}}>
                                                     <input
+                                                        className={styleCheckbox}
                                                         disabled={!isCheckboxEnabled}
                                                         type={"checkbox"}
                                                         checked={isLabeling}
