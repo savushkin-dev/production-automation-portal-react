@@ -375,7 +375,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
                                                 </td>
                                                 <td className="w-[6%]"
                                                     style={{padding: '12px', textAlign: 'center', color: '#666'}}>
-                                                    {item.UX || 0}
+                                                    {item.UX? item.UX+"-зам" : "0-охл"}
                                                 </td>
                                                 <td className="w-[10%]"
                                                     style={{padding: '12px', textAlign: 'center', color: '#666'}}>
