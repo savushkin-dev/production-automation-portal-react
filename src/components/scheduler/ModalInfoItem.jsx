@@ -29,7 +29,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                 className="fixed bg-black/50 top-0 z-100 right-0 left-0 bottom-0" style={{zIndex: 99}}
                 onClick={onClose}
             />
-            <div className="fixed inset-0 flex  items-center justify-center p-4 z-100 pointer-events-none"
+            <div className="fixed inset-0 flex items-center justify-center p-4 z-100 pointer-events-none"
                  style={{zIndex: 100}}>
                 <div className="w-auto min-w-[800px] max-w-[900px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
                     <div className="flex flex-row justify-between">
@@ -202,6 +202,15 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                                     <button onClick={() => determineFactPlace(item.info.snpz)}
                                             className="h-6 bg-gray-600 font-medium  rounded text-white px-2">Найти</button>
                                 }
+                            </div>
+                        </>
+                    }
+
+                    { item.info.idBatch &&
+                        <>
+                            <hr className="my-3"/>
+                            <div className="flex flex-row justify-end">
+                                <span className="text-gray-500 text-xs">idBatch: {item.info.idBatch}</span>
                             </div>
                         </>
                     }
