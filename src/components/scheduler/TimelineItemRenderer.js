@@ -109,7 +109,12 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                             {selectedItems.findIndex(el => el.id === item.id) + 1}
                                         </div>
                                     )}
-                                    <span className="">{item.title}</span>
+                                    {!isLeveling &&
+                                        <span className="">{item.title}</span>
+                                    }
+                                    {isLeveling &&
+                                        <span className="">{item.info.delayNote !== null && item.info.delayNote !== "" ? item.info.delayNote : item.title}</span>
+                                    }
                                 </>
                             )}
                         </div>
