@@ -1,7 +1,13 @@
 // components/scheduler/TimelineRenderers.js
 import React, {useEffect} from "react";
 import moment from "moment/moment";
-import {isCleaningItem, isDelayItem, isFactItem, isMaintenancePackingOrLeveling} from "../../utils/scheduler/items";
+import {
+    isCleaningItem,
+    isDelayItem,
+    isFactItem,
+    isMaintenanceItem,
+    isMaintenancePackingOrLeveling
+} from "../../utils/scheduler/items";
 
 /**
  * Фабрика для создания рендерера элементов таймлайна планировщика
@@ -163,6 +169,11 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                     </span>
 
                                     <span className="pl-1">Факт. время начала</span>
+                                </span>
+                            )}
+                            {isMaintenanceItem(item) && (
+                                <span className="px-1 rounded">
+                                    <span className="text-blue-900">{item.info.maintenanceNote}</span>
                                 </span>
                             )}
                         </div>
