@@ -99,7 +99,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                     {!isCleaningItem(item) && !isDelayItem(item) && !item.info.maintenance && isFact &&
                         <div>
                             <div className="flex flex-row px-4">
-                                <span className={styleLable}>{!isDelayItem(item)? "Линия по факту:" : "Линия"}</span>
+                                <span className={styleLable}>{!isDelayItem(item) ? "Линия по факту:" : "Линия"}</span>
                                 <span className={styleInfo}>
                                     {lines.find(line => line.id === item.info.lineIdFact)?.title || "-"}
                                 </span>
@@ -108,24 +108,24 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                     }
 
                     <div className="flex flex-row px-4">
-                        <span className={styleLable}>{!isDelayItem(item)? "Начало по плану:" : "Начало:"}</span>
+                        <span className={styleLable}>{!isDelayItem(item) ? "Начало по плану:" : "Начало:"}</span>
                         <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.start) || "-"}</span>
+                    </div>
+
+                    <div className="flex flex-row px-4">
+                        <span className={styleLable}>{!isDelayItem(item) ? "Конец по плану:" : "Конец:"}</span>
+                        <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.end) || ""}</span>
                     </div>
 
                     {!isCleaningItem(item) && !isDelayItem(item) && !item.info.maintenance && isFact &&
                         <div>
                             <div className="flex flex-row px-4">
-                                <span className={styleLable}>Начало по факту:</span>
+                                <span className={styleLable}>Начало по SCADA:</span>
                                 <span
                                     className={styleInfo}>{formatIsoToDatetimeRegex(item.info.startFact) || "-"}</span>
                             </div>
                         </div>
                     }
-
-                    <div className="flex flex-row px-4">
-                        <span className={styleLable}>{!isDelayItem(item)? "Конец по плану:" : "Конец:"}</span>
-                        <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.end) || ""}</span>
-                    </div>
 
                     {item.info.maintenance &&
                         <div className="flex flex-row px-4">
