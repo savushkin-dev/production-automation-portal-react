@@ -32,8 +32,8 @@ export function DisplayButtons({activeDisplay, setActiveDisplay}) {
     return (
         <>
             <div
-                className="flex flex-row items-center border rounded-md font-medium justify-between px-2 text-md text-gray-700 w-64 h-[32px]">
-                <div className="flex flex-col text-center w-1/3 cursor-pointer" onClick={handleChangePlanFact}>
+                className="flex flex-row items-center border rounded-md font-medium justify-between text-md text-gray-700 w-64 h-[32px]">
+                <div className="flex flex-col text-center w-1/3 cursor-pointer rounded-l-md hover:bg-gray-100 hover:border pl-2" onClick={handleChangePlanFact}>
                     <input
                         className="mt-[2px] cursor-pointer"
                         type="radio"
@@ -43,7 +43,7 @@ export function DisplayButtons({activeDisplay, setActiveDisplay}) {
                     <span className="text-xs mt-[-2px]">План и факт</span>
                 </div>
                 <span className="text-lg">|</span>
-                <div className="flex flex-col text-center w-1/3 cursor-pointer" onClick={handleChangePlan}>
+                <div className="flex flex-col text-center w-1/3 cursor-pointer hover:bg-gray-100 hover:border" onClick={handleChangePlan}>
                     <input
                         className="mt-[2px] cursor-pointer"
                         type="radio"
@@ -53,7 +53,7 @@ export function DisplayButtons({activeDisplay, setActiveDisplay}) {
                     <span className="text-xs mt-[-2px]">План</span>
                 </div>
                 <span className="text-lg">|</span>
-                <div className="flex flex-col text-center w-1/3 cursor-pointer" onClick={handleChangeFact}>
+                <div className="flex flex-col text-center w-1/3 cursor-pointer rounded-r-md hover:bg-gray-100 hover:border pr-2" onClick={handleChangeFact}>
                     <input
                         className="mt-[2px] cursor-pointer"
                         type="radio"

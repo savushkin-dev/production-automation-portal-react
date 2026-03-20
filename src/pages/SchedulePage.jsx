@@ -953,7 +953,7 @@ function SchedulerPage() {
 
     return (
         <>
-            <div className="w-full">
+            <div className="w-full text-gray-800">
 
                 {isModalInfoItem && selectedItem && <ModalInfoItem item={selectedItem} onClose={() => {
                         setSelectedItem(null);
@@ -1028,10 +1028,10 @@ function SchedulerPage() {
                     <div className="w-2/5 inline-flex justify-between">
 
                         <div
-                            className="inline-flex px-2 h-[30px] items-center border rounded-md hover:bg-gray-100 selection:border-0">
+                            className="inline-flex px-2 h-[32px] items-center border rounded-md selection:border-0">
                             <span className="py-1 font-medium text-nowrap ">Дата:</span>
                             <input
-                                className={"px-2 font-medium w-32 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:border-transparent"}
+                                className={"pl-2 font-medium cursor-pointer focus:outline-none focus:ring-0 focus:border-transparent"}
                                 type="date"
                                 value={selectDate}
                                 onChange={(e) => onChangeSelectDate(e.target.value)}

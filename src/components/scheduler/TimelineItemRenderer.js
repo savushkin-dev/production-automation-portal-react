@@ -1,7 +1,13 @@
 // components/scheduler/TimelineRenderers.js
 import React, {useEffect} from "react";
 import moment from "moment/moment";
-import {isCleaningItem, isDelayItem, isFactItem, isMaintenancePackingOrLeveling} from "../../utils/scheduler/items";
+import {
+    isCleaningItem,
+    isDelayItem,
+    isFactItem,
+    isMaintenanceItem,
+    isMaintenancePackingOrLeveling
+} from "../../utils/scheduler/items";
 
 /**
  * Фабрика для создания рендерера элементов таймлайна планировщика
@@ -81,7 +87,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
                 {!isFactEl ? (
                     <>
-                        <div className="flex px-1 justify-between font-medium text-sm text-black">
+                        <div className="flex px-1 justify-between font-medium text-sm text-gray-800">
                             {item.info?.pinned && !isFactEl ? (
                                 <>
                                     {isSelected && selectedItems.filter(item => !isFactItem(item)).length > 1 && (
@@ -103,7 +109,12 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                             {selectedItems.findIndex(el => el.id === item.id) + 1}
                                         </div>
                                     )}
-                                    <span className="">{item.title}</span>
+                                    {!isLeveling &&
+                                        <span className="">{item.title}</span>
+                                    }
+                                    {isLeveling &&
+                                        <span className="">{item.info.delayNote !== null && item.info.delayNote !== "" ? item.info.delayNote : item.title}</span>
+                                    }
                                 </>
                             )}
                         </div>
@@ -163,6 +174,11 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                     </span>
 
                                     <span className="pl-1">Факт. время начала</span>
+                                </span>
+                            )}
+                            {isMaintenanceItem(item) && (
+                                <span className="px-1 rounded">
+                                    <span className="text-blue-900">{item.info.maintenanceNote}</span>
                                 </span>
                             )}
                         </div>
