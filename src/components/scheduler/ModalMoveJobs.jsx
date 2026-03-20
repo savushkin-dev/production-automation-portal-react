@@ -86,7 +86,7 @@ export function ModalMoveJobs({
                         <div className="w-1/2 flex flex-row">
                             <div style={{display: 'flex', alignItems: 'center'}}
                                  className="font-medium w-[100%] ml-2">
-                                <input className={styleInputWithoutRounded + " w-[100%]"}
+                                <input className={styleInputWithoutRounded + " w-[100%] rounded"}
                                        type="number"
                                        min={0}
                                        value={insertIndex}
