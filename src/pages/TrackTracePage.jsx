@@ -8,7 +8,10 @@ import SchedulerService from "../services/ScheduleService";
 import moment from "moment/moment";
 import ScheduleService from "../services/ScheduleService";
 import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
-import {createTimelineRenderersTracktrace} from "../components/scheduler/TimelineItemRenderer";
+import {
+    createTimelineRenderersSheduler,
+    createTimelineRenderersTracktrace
+} from "../components/scheduler/TimelineItemRenderer";
 import {convertLines} from "../utils/scheduler/lines";
 
 
@@ -40,6 +43,10 @@ function TrackTracePage() {
     const [msg, setMsg] = useState("");
     const [isModalNotify, setIsModalNotify] = useState(false);
 
+
+    const [selectedItems, setSelectedItems] = useState([]);
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [lastSelectedItem, setLastSelectedItem] = useState(null);
 
 
     useEffect(() => {
@@ -142,9 +149,31 @@ function TrackTracePage() {
     }, []);
 
     const timelineRenderers = useMemo(
-        () => createTimelineRenderersTracktrace(),
-        []
+        () => {
+            return createTimelineRenderersTracktrace(selectedItems, selectedItem)},
+        [selectedItems, selectedItem]
     );
+
+    function onItemSelect(itemId, e, time) {
+        if (itemId.includes('cleaning')) {
+            return;
+        }
+        const clickedItem = planByHardware.find(item => item.id === itemId);
+
+        if (e.shiftKey && lastSelectedItem) {
+            // handleShiftSelect(itemId, itemsArray, clickedItem.group);
+        } else {
+            const isClickingSelected = selectedItems.includes(clickedItem);
+            if (isClickingSelected && selectedItems.length > 1) {
+                setLastSelectedItem(clickedItem);
+            } else {
+                setSelectedItem(clickedItem);
+                setSelectedItems([clickedItem]);
+                setLastSelectedItem(clickedItem);
+                // linkPlanItemToFactItem(clickedItem)
+            }
+        }
+    }
 
     return (
         <>
@@ -205,7 +234,7 @@ function TrackTracePage() {
                         items={items}
                         // onItemDoubleClick={onItemDoubleClick}
                         // onItemContextMenu={handleItemRightClick}
-                        // onItemSelect={onItemSelect}
+                        onItemSelect={onItemSelect}
                         // onCanvasContextMenu={handleCanvasRightClick}
                         ref={timelineRef}
                         onTimeChange={handleTimeChange}
@@ -215,8 +244,9 @@ function TrackTracePage() {
                         canMove={true}
                         snap={1}
                         snapGrid={1}
+                        buffer={5}
                         sidebarWidth={150}
-                        lineHeight={90}
+                        lineHeight={100}
                     >
                         <TimelineHeaders className="sticky">
                             <SidebarHeader>
@@ -225,7 +255,6 @@ function TrackTracePage() {
                                         {/* Заголовок сайдбара */}
                                         <div
                                             className="text-white font-medium text-3xl text-center h-full content-center">
-                                            {/*<i className="fa-regular fa-calendar-check"></i>*/}
                                         </div>
                                     </div>
                                 )}
