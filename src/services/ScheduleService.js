@@ -243,14 +243,14 @@ export default class ScheduleService {
             planByHardware[i].info = { //Доп информация
                 name: json.jobs[i].name,
                 start: json.jobs[i].startProductionDateTime,
-                end: endDateTime.getTime(),
-                planEndDateTime: planEndDateTime.getTime(),
+                end: endDateTime.toISOString(),
+                planEndDateTime: planEndDateTime.toISOString(),
                 line: json.jobs[i].line?.name,
                 quantity: json.jobs[i].quantity,
                 mass: json.jobs[i].mass,
                 np: json.jobs[i].np,
                 snpz: json.jobs[i].snpz,
-                duration: Math.round(new Date(planEndDateTime) - new Date(json.jobs[i].startProductionDateTime))/ 60000,
+                duration: Math.round(planEndDateTime.getTime() - new Date(json.jobs[i].startProductionDateTime).getTime())/ 60000,
 
                 fullName: json.jobs[i].product.name,
                 type: json.jobs[i].product.type,
