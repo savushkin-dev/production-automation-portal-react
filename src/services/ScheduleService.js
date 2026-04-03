@@ -250,7 +250,7 @@ export default class ScheduleService {
                 mass: json.jobs[i].mass,
                 np: json.jobs[i].np,
                 snpz: json.jobs[i].snpz,
-                duration: Math.round(new Date(endDateTime) - new Date(json.jobs[i].startProductionDateTime))/ 60000,
+                duration: Math.round(new Date(planEndDateTime) - new Date(json.jobs[i].startProductionDateTime))/ 60000,
 
                 fullName: json.jobs[i].product.name,
                 type: json.jobs[i].product.type,
