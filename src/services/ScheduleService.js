@@ -243,8 +243,8 @@ export default class ScheduleService {
             planByHardware[i].info = { //Доп информация
                 name: json.jobs[i].name,
                 start: json.jobs[i].startProductionDateTime,
-                end: endDateTime,
-                planEndDateTime: planEndDateTime,
+                end: endDateTime.getTime(),
+                planEndDateTime: planEndDateTime.getTime(),
                 line: json.jobs[i].line?.name,
                 quantity: json.jobs[i].quantity,
                 mass: json.jobs[i].mass,
