@@ -81,7 +81,7 @@ export default class ScheduleService {
         const filteredData = json.jobs.filter(item => {
             return item.delayDuration !== null;
         });
-        let cleaning = [];
+        let delayList = [];
         for (let i = 0; i < filteredData.length; i++) {
             if(!filteredData[i].line){
                 console.warn("Job with id " + filteredData[i].id + " has a null line field")
@@ -90,25 +90,25 @@ export default class ScheduleService {
             let dur = Number(filteredData[i].delayDuration) || 0;
             let endDateTime = new Date(filteredData[i].endDateTime);
             let planEndDateTime = new Date(endDateTime.getTime() - dur * 60000);
-            cleaning[i] = Object.assign({}, exampleTask);
-            cleaning[i].id = i + "delay";
-            cleaning[i].start_time = planEndDateTime.getTime();
-            cleaning[i].end_time = endDateTime.getTime();
-            cleaning[i].title = "Отклонение от плана";
-            cleaning[i].group = filteredData[i].line?.id || "NAN";
+            delayList[i] = Object.assign({}, exampleTask);
+            delayList[i].id = i + "delay";
+            delayList[i].start_time = planEndDateTime.getTime();
+            delayList[i].end_time = endDateTime.getTime();
+            delayList[i].title = "Отклонение от плана";
+            delayList[i].group = filteredData[i].line?.id || "NAN";
 
             let colorGr = "#fff2db";
-            cleaning[i].itemProps = {
+            delayList[i].itemProps = {
                 style: {
                     background: "linear-gradient(to right, #f4e9ff, " + colorGr +")",
                     border: '1px solid #dcdcdc',
                     color: "#0369a1",
                 },
             };
-            cleaning[i].info = { //Доп информация
+            delayList[i].info = { //Доп информация
                 name: "Отклонение от плана",
-                start: filteredData[i].planEndDateTime,
-                end: filteredData[i].endDateTime,
+                start: planEndDateTime,
+                end: endDateTime,
                 line: filteredData[i].line?.name || "NAN",
                 duration: dur,
                 pinned: false,
@@ -117,7 +117,7 @@ export default class ScheduleService {
                 parentJobId: filteredData[i].id
             }
         }
-        return cleaning;
+        return delayList;
     }
 
     static async parseFactItemsByHardware(json) {
@@ -243,8 +243,8 @@ export default class ScheduleService {
             planByHardware[i].info = { //Доп информация
                 name: json.jobs[i].name,
                 start: json.jobs[i].startProductionDateTime,
-                end: endDateTime.toISOString(),
-                planEndDateTime: planEndDateTime.toISOString(),
+                end: planEndDateTime,
+                planEndDateTime: planEndDateTime,
                 line: json.jobs[i].line?.name,
                 quantity: json.jobs[i].quantity,
                 mass: json.jobs[i].mass,
