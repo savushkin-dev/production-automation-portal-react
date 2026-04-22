@@ -1,5 +1,5 @@
 import "./../App.css";
-import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
 import moment from 'moment';
 import 'moment/locale/ru';
@@ -45,10 +45,13 @@ import {DisplayButtons} from "../components/scheduler/DisplayButtons";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
 import {ModalUpdateJobDelay} from "../components/scheduler/ModalUpdateJobDelay";
 import {convertHoursMinutesToMinutes} from "../utils/scheduler/serviceWork";
+import {Context} from "../index";
+import AuthLabel from "../components/AuthLabel";
 
 
 function SchedulerPage() {
 
+    const {store} = useContext(Context);
     const navigate = useNavigate();
     const from = '/'
 
@@ -956,17 +959,22 @@ function SchedulerPage() {
             <div className="w-full text-gray-800">
 
                 {isModalInfoItem && selectedItem && <ModalInfoItem item={selectedItem} onClose={() => {
-                        setSelectedItem(null);
-                        setIsModalInfoItem(false);
-                    }} lines={groups} determineFactPlace={determineFactPlace} determineCameraFact={determineCameraFact}
-                    clickedCameras={clickedCameras} setClickedCameras={setClickedCameras}/>}
+                    setSelectedItem(null);
+                    setIsModalInfoItem(false);
+                }} lines={groups} determineFactPlace={determineFactPlace} determineCameraFact={determineCameraFact}
+                                                                   clickedCameras={clickedCameras}
+                                                                   setClickedCameras={setClickedCameras}/>}
 
                 {isLoading &&
                     <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>
                 }
 
-                <div>
-                    <h1 className=" font-bold text-center text-2xl mb-4 mt-4">Планировщик задач</h1>
+                <div className="relative mb-4 mt-4">
+                    <h1 className="font-bold text-center text-2xl">Планировщик задач</h1>
+
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-3 mr-5">
+                        <AuthLabel loginPath={'/login-scheduler'} logoutPath={'/login-scheduler'}/>
+                    </div>
                 </div>
 
                 <div className="flex flex-row">
@@ -975,10 +983,6 @@ function SchedulerPage() {
                             navigate(from, {replace: true})
                         }} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Вернуться назад
                         </button>
-                        {/*<button onClick={() => {*/}
-                        {/*    navigate("/tracktrace", {replace: true})*/}
-                        {/*}} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Мониторинг*/}
-                        {/*</button>*/}
                     </div>
 
                     <div className="w-4/6 py-1 flex justify-end pr-3">
@@ -1046,7 +1050,8 @@ function SchedulerPage() {
                         </button>
 
                         <DisplayButtons activeDisplay={activeDisplay}
-                                        setActiveDisplay={(newDisplay) => {setTimelineKey(prev => prev + 1);
+                                        setActiveDisplay={(newDisplay) => {
+                                            setTimelineKey(prev => prev + 1);
                                             setActiveDisplay(newDisplay);
                                         }}
                         />
@@ -1083,7 +1088,6 @@ function SchedulerPage() {
                                 Догрузить план
                                 <i className="pl-2 fa-solid fa-arrows-rotate"></i>
                             </button>
-
 
 
                             <button onClick={() => {
@@ -1190,10 +1194,13 @@ function SchedulerPage() {
                     </Timeline>
                 </div>
 
-                {isModalDateSettings && <ModalDateSettings onClose={() => {setIsModalDateSettings(false)}}
+                {isModalDateSettings && <ModalDateSettings onClose={() => {
+                    setIsModalDateSettings(false)
+                }}
                                                            lines={startTimeLines}
                                                            setLines={setStartTimeLines}
-                                                           changeTime={assignLineStart} changeMaxEndTime={assignMaxEndDateTime}
+                                                           changeTime={assignLineStart}
+                                                           changeMaxEndTime={assignMaxEndDateTime}
                 />}
 
                 {isModalAnalyze && <ModalAnalyze onClose={() => setIsModalAnalyze(false)}
@@ -1204,7 +1211,8 @@ function SchedulerPage() {
                     <ModalNotify title={"Результат операции"} message={msg} onClose={() => setIsModalNotify(false)}/>}
 
                 {isModalNotifyError &&
-                    <ModalNotifyError title={"Ошибка операции"} message={msg} onClose={() => setIsModalNotifyError(false)}/>}
+                    <ModalNotifyError title={"Ошибка операции"} message={msg}
+                                      onClose={() => setIsModalNotifyError(false)}/>}
 
                 {isModalSendToWork &&
                     <ModalConfirmation title={"Подтверждение действия"} message={msg}
@@ -1225,8 +1233,12 @@ function SchedulerPage() {
                 {modalSortConfig.isOpen &&
                     <ModalConfirmation title={"Подтверждение действия"} message={msg}
                                        onClose={() => setModalSortConfig(prev => ({...prev, isOpen: false}))}
-                                       onAgree={() => {agreeSorting()}}
-                                       onDisagree={() => {disagreeSorting()}}/>}
+                                       onAgree={() => {
+                                           agreeSorting()
+                                       }}
+                                       onDisagree={() => {
+                                           disagreeSorting()
+                                       }}/>}
 
                 {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItems} unpin={unpinLine}
                                                              isDisplayByHardware={isDisplayByHardware}
@@ -1266,59 +1278,69 @@ function SchedulerPage() {
 
                 {isModalUpdateDelayJob &&
                     <ModalUpdateJobDelay onClose={() => setIsModalUpdateDelayJob(false)}
-                    updateDelayJob={updateDelayJob} selectedItems={selectedItems}/>
+                                         updateDelayJob={updateDelayJob} selectedItems={selectedItems}/>
                 }
-                
+
 
                 <DataTable data={pdayData.dayMinus2} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayMinus2: newData
-                }))} dateData={getDateMinus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} /> 
+                }))} dateData={getDateMinus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
+                           lines={startTimeLines}/>
 
                 <DataTable data={pdayData.dayMinus1} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayMinus1: newData
-                }))} dateData={getDateMinus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+                }))} dateData={getDateMinus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
+                           lines={startTimeLines}/>
 
                 <DataTable data={pdayData.currentDay} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     currentDay: newData
-                }))} dateData={getDateCurrent(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+                }))} dateData={getDateCurrent(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
+                           lines={startTimeLines}/>
 
                 <DataTable data={pdayData.dayPlus1} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayPlus1: newData
-                }))} dateData={getDatePlus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+                }))} dateData={getDatePlus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
+                           lines={startTimeLines}/>
 
                 <DataTable data={pdayData.dayPlus2} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayPlus2: newData
-                }))} dateData={getDatePlus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+                }))} dateData={getDatePlus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
+                           lines={startTimeLines}/>
 
                 <DataTable data={pdayData.dayPlus3} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayPlus3: newData
-                }))} dateData={getDatePlus3(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+                }))} dateData={getDatePlus3(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
+                           lines={startTimeLines}/>
 
                 <DataTable data={pdayData.dayPlus4} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayPlus4: newData
-                }))} dateData={getDatePlus4(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+                }))} dateData={getDatePlus4(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
+                           lines={startTimeLines}/>
 
                 <DataTable data={pdayData.dayPlus5} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayPlus5: newData
-                }))} dateData={getDatePlus5(selectDate)}selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+                }))} dateData={getDatePlus5(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
+                           lines={startTimeLines}/>
 
                 <DataTable data={pdayData.dayPlus6} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayPlus6: newData
-                }))} dateData={getDatePlus6(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+                }))} dateData={getDatePlus6(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
+                           lines={startTimeLines}/>
 
                 <DataTable data={pdayData.dayPlus7} setData={(newData) => setPdayData(prev => ({
                     ...prev,
                     dayPlus7: newData
-                }))} dateData={getDatePlus7(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+                }))} dateData={getDatePlus7(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
+                           lines={startTimeLines}/>
 
 
             </div>
