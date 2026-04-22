@@ -995,10 +995,8 @@ function SchedulerPage() {
                                 onClick={() => {
                                     if (store.isAuth) {
                                         store.logout();
-                                        navigate("/login-scheduler");
-                                    } else {
-                                        navigate("/login-scheduler");
                                     }
+                                    navigate("/login-scheduler");
                                 }}>
                                 {store.isAuth ? (
                                     <>

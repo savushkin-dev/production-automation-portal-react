@@ -50,74 +50,56 @@ export function Navigation(props) {
             </div>
 
             <div className="flex h-10 w-3/12 lg:h-auto lg:w-auto justify-end items-center bg-blue-800">
-                <div className="flex h-10  lg:h-auto lg:w-auto justify-end items-center bg-gray-50 rounded mr-4 ">
-                    <div className="flex flex-row lg:px-3 ">
-                        {store.isAuth &&
-                            <>
+                <div className="flex h-10 lg:h-auto lg:w-auto justify-end items-center bg-gray-50 rounded mr-4">
+                    {/* Блок пользователя */}
+                    <div
+                        className="flex items-center h-8 bg-white rounded-md border border-gray-200 shadow-sm overflow-hidden">
+                        <div className="flex items-center px-3 gap-2 border-r border-gray-200">
+                            {store.isAuth ? (
+                                <>
+                                    <i className="fa-solid fa-user-tie text-gray-700 text-sm"></i>
+                                    <span className="font-medium text-gray-700 text-sm">{store.user.username}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fa-solid fa-user text-gray-700 text-sm"></i>
+                                    <span className="font-medium text-gray-700 text-sm">Гость</span>
+                                </>
+                            )}
+                        </div>
 
-
-                                <i className="fa-solid fa-user-tie px-2 pt-[5px]" ></i>
-                                <div className="flex flex-col">
-
-
-
-                                    <span className="font-medium text-center ">{store.user.username}</span>
-
-                                    {/*/!* Только для админов *!/*/}
-                                    {/*<RoleGuard requiredRoles={['ROLE_ADMIN']}>*/}
-                                    {/*    <span className="text-xs bg-red-600">Admin</span>*/}
-                                    {/*</RoleGuard>*/}
-                                </div>
-
-                            </>
-
-                        }
-                        {!store.isAuth &&
-                            <>
-                                <i className="fa-solid fa-user px-2 pt-[5px]"></i>
-                                <span className="font-medium text-center ">Гость</span>
-                            </>
-
-                        }
-                    </div>
-
-                    <div>
-                        {store.isAuth &&
-                            <button className="pr-2 pt-1" onClick={() => {
-                                store.logout();
+                        {/* Блок входа/выхода */}
+                        <button
+                            className="px-3 h-full flex items-center justify-center gap-1.5 hover:bg-gray-50 transition-colors duration-200 group"
+                            onClick={() => {
+                                if (store.isAuth) {
+                                    store.logout();
+                                }
                                 navigate("/login");
                             }}>
-                                {/*fill="#ffffff"*/}
-                                <svg width="25px" height="25px" viewBox="0 0 24 24" >
-                                    <g strokeWidth="0"></g>
-                                    <g strokeLinecap="round" strokeLinejoin="round"></g>
-                                    <g>
-                                        <g>
-                                            <path fill="none" d="M0 0h24v24H0z"></path>
-                                            <path
-                                                d="M5 22a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3h-2V4H6v16h12v-2h2v3a1 1 0 0 1-1 1H5zm13-6v-3h-7v-2h7V8l5 4-5 4z"></path>
-                                        </g>
-                                    </g>
-                                </svg>
-                            </button>
-                        }
-                        {!store.isAuth &&
-                            <button className="pr-2 pt-1" onClick={() => navigate("/login")}>
-                                <svg width="25px" height="25px" viewBox="0 0 24 24" >
-                                    <g strokeWidth="0"></g>
-                                    <g strokeLinecap="round" strokeLinejoin="round"></g>
-                                    <g>
-                                        <g>
-                                            <path fill="none" d="M0 0h24v24H0z"></path>
-                                            <path
-                                                d="M5 22a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3h-2V4H6v16h12v-2h2v3a1 1 0 0 1-1 1H5zm13-6v-3h-7v-2h7V8l5 4-5 4z"></path>
-                                        </g>
-                                    </g>
-                                </svg>
-                            </button>
-                        }
+                            {store.isAuth ? (
+                                <>
+                                    <svg width="16px" height="16px" viewBox="0 0 24 24"
+                                         className="text-gray-700 group-hover:text-red-600 transition-colors">
+                                        <path fill="currentColor"
+                                              d="M5 22a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3h-2V4H6v16h12v-2h2v3a1 1 0 0 1-1 1H5zm13-6v-3h-7v-2h7V8l5 4-5 4z"/>
+                                    </svg>
+                                    <span
+                                        className="text-sm font-medium text-gray-700 group-hover:text-red-600 transition-colors">Выйти</span>
+                                </>
+                            ) : (
+                                <>
+                                    <svg width="16px" height="16px" viewBox="0 0 24 24"
+                                         className="text-gray-700 group-hover:text-blue-600 transition-colors">
+                                        <path fill="currentColor"
+                                              d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"/>
+                                    </svg>
+                                    <span
+                                        className="text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors">Войти</span>
+                                </>
+                            )}
+                        </button>
                     </div>
-
                 </div>
 
             </div>
