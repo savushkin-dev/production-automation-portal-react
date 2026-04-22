@@ -79,7 +79,7 @@ export default class ScheduleService {
 
     static async parseDelayByHardware(json) {
         const filteredData = json.jobs.filter(item => {
-            return item.planEndDateTime !== null;
+            return item.delayDuration !== null;
         });
         let cleaning = [];
         for (let i = 0; i < filteredData.length; i++) {
@@ -87,11 +87,13 @@ export default class ScheduleService {
                 console.warn("Job with id " + filteredData[i].id + " has a null line field")
                 continue;
             }
-            let dur = Math.round(new Date(filteredData[i].endDateTime) - new Date(filteredData[i].planEndDateTime))/ 60000;
+            let dur = Number(filteredData[i].delayDuration) || 0;
+            let endDateTime = new Date(filteredData[i].endDateTime);
+            let planEndDateTime = new Date(endDateTime.getTime() - dur * 60000);
             cleaning[i] = Object.assign({}, exampleTask);
             cleaning[i].id = i + "delay";
-            cleaning[i].start_time = new Date(filteredData[i].planEndDateTime).getTime();
-            cleaning[i].end_time = new Date(filteredData[i].endDateTime).getTime();
+            cleaning[i].start_time = planEndDateTime.getTime();
+            cleaning[i].end_time = endDateTime.getTime();
             cleaning[i].title = "Отклонение от плана";
             cleaning[i].group = filteredData[i].line?.id || "NAN";
 
@@ -222,14 +224,12 @@ export default class ScheduleService {
             planByHardware[i].id = json.jobs[i].id;
             planByHardware[i].start_time = new Date(json.jobs[i].startProductionDateTime).getTime();
 
-            let endTime;
             //Определяем было ли выравнивание
-            if(json.jobs[i].planEndDateTime !== null){
-                endTime = json.jobs[i].planEndDateTime;
-            } else {
-                endTime = json.jobs[i].endDateTime;
-            }
-            planByHardware[i].end_time = new Date(endTime).getTime();
+            const endDateTime = new Date(json.jobs[i].endDateTime);
+            let delay = Number(json.jobs[i].delayDuration) || 0;
+            let planEndDateTime = new Date(endDateTime.getTime() - delay * 60000);
+
+            planByHardware[i].end_time = planEndDateTime.getTime();
             planByHardware[i].title = json.jobs[i].name;
             planByHardware[i].group = json.jobs[i].line.id ;
 
@@ -243,14 +243,14 @@ export default class ScheduleService {
             planByHardware[i].info = { //Доп информация
                 name: json.jobs[i].name,
                 start: json.jobs[i].startProductionDateTime,
-                end: endTime,
-                planEndDateTime: json.jobs[i].planEndDateTime,
+                end: endDateTime.toISOString(),
+                planEndDateTime: planEndDateTime.toISOString(),
                 line: json.jobs[i].line?.name,
                 quantity: json.jobs[i].quantity,
                 mass: json.jobs[i].mass,
                 np: json.jobs[i].np,
                 snpz: json.jobs[i].snpz,
-                duration: Math.round(new Date(endTime) - new Date(json.jobs[i].startProductionDateTime))/ 60000,
+                duration: Math.round(planEndDateTime.getTime() - new Date(json.jobs[i].startProductionDateTime).getTime())/ 60000,
 
                 fullName: json.jobs[i].product.name,
                 type: json.jobs[i].product.type,
