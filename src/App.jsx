@@ -13,6 +13,7 @@ import TrackTracePage from "./pages/TrackTracePage";
 import {configureMomentLocale} from "./utils/date/momentConfig";
 import {TestGrid} from "./components/reportsConstruct/TestGrid";
 import {TestApp} from "./components/reportsConstruct/TestApp";
+import AuthorizationScheduler from "./pages/AuthorizationScheduler";
 
 
 function App() {
@@ -59,6 +60,7 @@ function App() {
                         <Route index element={<AdminPanelPage/>}/>
                     </Route>
 
+                    <Route path="/login-scheduler" element={<AuthorizationScheduler/>}/>
 
                     <Route path="/login" element={<Authorization/>}/>
                     <Route path="*" element={<NotFound/>}/>
