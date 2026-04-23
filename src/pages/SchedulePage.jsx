@@ -47,6 +47,7 @@ import {ModalUpdateJobDelay} from "../components/scheduler/ModalUpdateJobDelay";
 import {convertHoursMinutesToMinutes} from "../utils/scheduler/serviceWork";
 import {Context} from "../index";
 import AuthLabel from "../components/AuthLabel";
+import {ModalVersionSettings} from "../components/scheduler/ModalVersionSettings";
 
 
 function SchedulerPage() {
@@ -96,6 +97,7 @@ function SchedulerPage() {
     const [solverStatus, setSolverStatus] = useState("");
 
     const [isModalDateSettings, setIsModalDateSettings] = useState(false);
+    const [isModalVersionSettings, setIsModalVersionSettings] = useState(false);
     const [isModalAnalyze, setIsModalAnalyze] = useState(false);
 
     const [downloadedPlan, setDownloadedPlan] = useState(null);
@@ -978,23 +980,30 @@ function SchedulerPage() {
                 </div>
 
                 <div className="flex flex-row">
-                    <div className="w-2/6 ">
+                    <div className="w-1/6 ">
                         <button onClick={() => {
                             navigate(from, {replace: true})
                         }} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Вернуться назад
                         </button>
                     </div>
 
-                    <div className="w-4/6 py-1 flex justify-end pr-3">
+                    <div className="w-5/6 py-1 flex justify-end pr-3">
+
+                        <button onClick={() => {
+                            setIsModalVersionSettings(true)
+                        }}
+                                className="rounded border border-slate-300 bg-blue-800 hover:bg-blue-700 text-white px-3 h-[30px] font-medium text-[0.950rem]">
+                            Управление версиями
+                        </button>
 
                         <button onClick={assignAllPauses}
-                                className="mr-1 rounded border border-slate-300 hover:bg-gray-100  px-3 h-[30px] font-medium text-[0.950rem]">
+                                className="rounded border border-slate-300 hover:bg-gray-100 mx-2 px-3 h-[30px] font-medium text-[0.950rem]">
                             Добавить простои
                             <i className="pl-2 fa-solid fa-stopwatch"></i>
                         </button>
 
                         <button onClick={dailyCleaning}
-                                className="mr-1 rounded border border-slate-300 hover:bg-gray-100 mx-2 px-3 h-[30px] font-medium text-[0.950rem]">
+                                className="rounded border border-slate-300 hover:bg-gray-100 mx-2 px-3 h-[30px] font-medium text-[0.950rem]">
                             Добавить мойки
                             <i className="pl-2 fa-solid fa-faucet-drip"></i>
                         </button>
@@ -1279,6 +1288,10 @@ function SchedulerPage() {
                 {isModalUpdateDelayJob &&
                     <ModalUpdateJobDelay onClose={() => setIsModalUpdateDelayJob(false)}
                                          updateDelayJob={updateDelayJob} selectedItems={selectedItems}/>
+                }
+
+                {isModalVersionSettings &&
+                    <ModalVersionSettings onClose={() => setIsModalVersionSettings(false)}/>
                 }
 
 
