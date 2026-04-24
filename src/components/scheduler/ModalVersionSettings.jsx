@@ -4,7 +4,7 @@ import Select from "react-select";
 import {styleInput} from "../../data/styles";
 import SchedulerService from "../../services/ScheduleService";
 
-export function ModalVersionSettings({ date, onClose, onInit, onFetchPlan, setModalError, setErrorMsg}) {
+export function ModalVersionSettings({ date, onClose, onInit, onFetchPlan, setModalError, setErrorMsg, setPlanVersion}) {
     const [mode, setMode] = useState('save');
     const [versionName, setVersionName] = useState('');
     const [selectedVersion, setSelectedVersion] = useState(null);
@@ -16,12 +16,23 @@ export function ModalVersionSettings({ date, onClose, onInit, onFetchPlan, setMo
         saveVersion(date, versionName.trim())
     };
 
+    //нужно придумать как откатывать название версии если ошибка или фиксировать новую в случаи успеха
     const handleLoad = () => {
-        if(selectedVersion.value === "#main_plan#"){
-            onInit(date);
-        } else {
-            initVersion(date, selectedVersion.value);
+        try {
+            if(selectedVersion.value === "#main_plan#"){
+                onInit(date);
+            } else {
+                initVersion(date, selectedVersion.value);
+            }
+        } catch (e){
+            console.log("Ошибка")
+            if(selectedVersion?.value){
+                setPlanVersion(selectedVersion.value);
+            }
+        } finally {
+
         }
+
     };
 
     useEffect(()=>{

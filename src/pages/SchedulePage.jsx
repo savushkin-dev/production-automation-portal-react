@@ -103,7 +103,8 @@ function SchedulerPage() {
     const [downloadedPlan, setDownloadedPlan] = useState(null);
     const [analyzeObj, setAnalyzeObj] = useState(null);
 
-    const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0])
+    const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0]);
+    const [planVersion, setPlanVersion] = useState("Основной план");
 
     const [modalSortConfig, setModalSortConfig] = useState({
         isOpen: false,
@@ -971,80 +972,93 @@ function SchedulerPage() {
                     <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>
                 }
 
-                <div className="relative mb-4 mt-4">
-                    <h1 className="font-bold text-center text-2xl">Планировщик задач</h1>
+                <div className="flex items-center justify-between mb-4 mt-4 px-4">
+                    <button onClick={() => {
+                        navigate(from, {replace: true})
+                    }} className="py-1 px-2 rounded text-blue-800 hover:bg-blue-50 whitespace-nowrap">
+                        Вернуться назад
+                    </button>
 
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-3 mr-5">
+                    <h1 className="font-bold text-center text-2xl absolute left-1/2 -translate-x-1/2">Планировщик задач</h1>
+
+                    <div className="flex items-center gap-3">
                         <AuthLabel loginPath={'/login-scheduler'} logoutPath={'/login-scheduler'}/>
                     </div>
                 </div>
 
                 <div className="flex flex-row">
-                    <div className="w-1/6 ">
-                        <button onClick={() => {
-                            navigate(from, {replace: true})
-                        }} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Вернуться назад
-                        </button>
+                    <div className="w-2/6 flex justify-end">
+
+                        <div
+                            className="ml-4 flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-gray-200 shadow-sm">
+                            <i className="fa-solid fa-code-branch text-gray-400 text-sm"></i>
+                            <span className="text-sm text-gray-400">Версия:</span>
+                            <span className="text-sm font-medium text-gray-700 max-w-[180px] truncate">
+                                {planVersion}
+                            </span>
+                            <button
+                                onClick={() => {
+                                    setIsModalVersionSettings(true)
+                                }}
+                                className="ml-1 px-2.5 h-6 rounded-full bg-gray-100 hover:bg-blue-700 text-gray-500 hover:text-white flex items-center justify-center gap-1.5 transition-all duration-200"
+                                title="Управление версиями"
+                            >
+                                <i className="fa-solid fa-pen text-xs"></i>
+                                <span className="text-xs font-medium hidden sm:inline">Управлять</span>
+                            </button>
+                        </div>
+
                     </div>
 
-                    <div className="w-5/6 py-1 flex justify-end pr-3">
-
-                        <button onClick={() => {
-                            setIsModalVersionSettings(true)
-                        }}
-                                className="rounded border border-slate-300 bg-blue-800 hover:bg-blue-700 text-white px-3 h-[30px] font-medium text-[0.950rem]">
-                            Управление версиями
-                        </button>
-
+                    <div className="w-4/6 py-1 flex justify-end pr-3 gap-1">
                         <button onClick={assignAllPauses}
-                                className="rounded border border-slate-300 hover:bg-gray-100 mx-2 px-3 h-[30px] font-medium text-[0.950rem]">
+                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
                             Добавить простои
                             <i className="pl-2 fa-solid fa-stopwatch"></i>
                         </button>
 
                         <button onClick={dailyCleaning}
-                                className="rounded border border-slate-300 hover:bg-gray-100 mx-2 px-3 h-[30px] font-medium text-[0.950rem]">
+                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
                             Добавить мойки
                             <i className="pl-2 fa-solid fa-faucet-drip"></i>
                         </button>
 
                         <button onClick={sortSchedule}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
+                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
                             Отсортировать
                             <i className="pl-2 fa-solid fa-sort"></i>
                         </button>
 
                         <button onClick={alignPlan}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
+                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
                             Выровнять план
                             <i className="pl-2 fa-solid fa-align-right"></i>
                         </button>
 
                         <button onClick={clickSavePlan}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
+                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
                             Сохранить
                             <i className="pl-2 fa-solid fa-floppy-disk"></i>
                         </button>
 
                         <button onClick={reloadDirectory}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
+                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
                             Обновить справочные данные
                             <i className="pl-2 fa-solid fa-cloud-arrow-down"></i>
                         </button>
-
-
                     </div>
                 </div>
 
                 <div className="flex flex-row justify-between my-4 px-4">
 
-                    <div className="w-2/5 inline-flex justify-between">
+                    <div className="w-2/5 inline-flex justify-between pr-10">
 
-                        <div
-                            className="inline-flex px-2 h-[32px] items-center border rounded-md selection:border-0">
-                            <span className="py-1 font-medium text-nowrap ">Дата:</span>
+                        <div className="inline-flex items-center h-[30px] border border-gray-200 rounded-md">
+                            <span className="px-3 text-[0.950rem] font-medium text-gray-600 border-r border-gray-200">
+                                Дата:
+                            </span>
                             <input
-                                className={"pl-2 font-medium cursor-pointer focus:outline-none focus:ring-0 focus:border-transparent"}
+                                className="px-2 text-[0.950rem] font-medium text-gray-700 cursor-pointer focus:outline-none bg-transparent"
                                 type="date"
                                 value={selectDate}
                                 onChange={(e) => onChangeSelectDate(e.target.value)}
@@ -1054,8 +1068,9 @@ function SchedulerPage() {
                         <button onClick={() => {
                             setIsModalDateSettings(true)
                         }}
-                                className={"ml-3 mr-3 rounded border border-slate-300 bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px] font-medium text-[0.950rem]"}>
+                                className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md bg-blue-800 hover:bg-blue-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]">
                             Настройка линий
+                            <i className="pl-2 fa-solid fa-gears"></i>
                         </button>
 
                         <DisplayButtons activeDisplay={activeDisplay}
@@ -1070,71 +1085,64 @@ function SchedulerPage() {
 
                     <div className="flex flex-row w-3/5 justify-between" style={{zIndex: 20}}>
 
-                        <div className="inline-flex">
+                        <div className="inline-flex items-center gap-3">
                             {!isSolve &&
-                                <div onClick={solve}>
-                                    <button disabled={isLoadingSolve}
-                                            className="rounded text-white px-1 bg-green-600 hover:bg-green-500 h-[30px] w-36 font-medium text-[0.950rem]">
-                                        <i className="fa-solid fa-play"></i>
-                                        <span className="pl-1">Планировать</span>
-                                    </button>
-                                </div>
+                                <button onClick={solve} disabled={isLoadingSolve}
+                                        className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md bg-green-600 hover:bg-green-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-1">
+                                    <i className="fa-solid fa-play text-xs pt-0.5"></i>
+                                    <span>Планировать</span>
+                                </button>
                             }
                             {isSolve &&
-                                <div onClick={stopSolving}>
-                                    <button disabled={isLoadingSolve}
-                                            className="rounded text-white px-1 bg-red-600 hover:bg-red-500 h-[30px] w-36 font-medium text-[0.950rem]">
-                                        <i className="fa-solid fa-stop"></i>
-                                        <span className="pl-1">Остановить</span>
-                                    </button>
-                                </div>
+                                <button onClick={stopSolving} disabled={isLoadingSolve}
+                                        className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md bg-red-600 hover:bg-red-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-1">
+                                    <i className="fa-solid fa-stop text-xs pt-0.5"></i>
+                                    <span>Остановить</span>
+                                </button>
                             }
 
                             <button onClick={() => {
-                                ClickReloadPlan();
+                                ClickReloadPlan()
                             }}
-                                    className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
-                                Догрузить план
-                                <i className="pl-2 fa-solid fa-arrows-rotate"></i>
+                                    className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md border border-gray-200 hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600 transition-all duration-200 flex items-center gap-1">
+                                <span>Догрузить план</span>
+                                <i className="fa-solid fa-arrows-rotate text-xs pt-0.5"></i>
                             </button>
-
 
                             <button onClick={() => {
                                 clickSendToWork()
                             }}
-                                    className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-cyan-500 bg-cyan-600 text-white font-medium text-[0.950rem]">
-                                Отправить в работу
-                                <i className="pl-2 fa-solid fa-paper-plane"></i>
+                                    className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md bg-cyan-600 hover:bg-cyan-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-1">
+                                <span>Отправить в работу</span>
+                                <i className="fa-solid fa-paper-plane text-xs pt-0.5"></i>
                             </button>
                         </div>
 
-
-                        <div className="flex items-center border rounded-md ml-2 ">
+                        <div className="flex items-center border border-gray-200 rounded-md overflow-hidden h-[30px]">
                             <div
-                                className="font-medium flex flex-row justify-between px-2 text-md text-gray-700 w-96 h-[30px]">
-                                <div className="flex flex-col text-center w-1/3">
-                                    <span className="px-1 mt-[-3px]">{score.hard}</span>
-                                    <span className="text-xs mt-[-6px]">Ошибки</span>
+                                className="flex items-center justify-between px-2 text-md font-medium text-gray-700 w-96 h-full">
+                                <div className="flex flex-col items-center justify-center flex-1">
+                                    <span className="text-[0.900rem] px-1 mt-[-3px] text-gray-800">{score.hard}</span>
+                                    <span className="text-[0.750rem] mt-[-8px] text-gray-500">Ошибки</span>
                                 </div>
-                                <span className="text-lg">|</span>
-                                <div className="flex flex-col text-center w-1/3">
-                                    <span className="px-1 mt-[-3px]">{score.medium}</span>
-                                    <span className="text-xs my-1 mt-[-6px]">Время простоя</span>
+                                <span className="text-gray-500 text-lg leading-none">|</span>
+                                <div className="flex flex-col items-center justify-center flex-1">
+                                    <span className="text-[0.900rem] px-1 mt-[-3px] text-gray-800">{score.medium}</span>
+                                    <span className="text-[0.750rem] mt-[-8px] text-gray-500">Время простоя</span>
                                 </div>
-                                <span className="text-lg">|</span>
-                                <div className="flex flex-col text-center w-1/3">
-                                    <span className="px-1 mt-[-3px]">{score.soft}</span>
-                                    <span className="text-xs my-1 mt-[-6px]">Время выполнения</span>
+                                <span className="text-gray-500 text-lg leading-none">|</span>
+                                <div className="flex flex-col items-center justify-center flex-1">
+                                    <span className="text-[0.900rem] px-1 mt-[-3px] text-gray-800">{score.soft}</span>
+                                    <span className="text-[0.750rem] text-xs mt-[-8px] text-gray-500">Время выполнения</span>
                                 </div>
                             </div>
                             <button onClick={() => {
-                                fetchAnalyze();
+                                fetchAnalyze()
                             }}
-                                    className={" h-full rounded-r px-2 bg-blue-800 hover:bg-blue-700 text-white font-medium text-[0.950rem]"}>
+                                    className="h-full px-2 bg-blue-800 hover:bg-blue-700 text-white font-medium text-[0.950rem] transition-all duration-200">
                                 Подробнее
                             </button>
                         </div>
-
 
                     </div>
 
@@ -1291,7 +1299,10 @@ function SchedulerPage() {
                 }
 
                 {isModalVersionSettings &&
-                    <ModalVersionSettings onClose={() => setIsModalVersionSettings(false)}/>
+                    <ModalVersionSettings date={selectDate} onInit={init} onFetchPlan={fetchPlan}
+                                          onClose={() => setIsModalVersionSettings(false)}
+                                          setModalError={setIsModalNotifyError} setErrorMsg={setMsg}
+                                          setPlanVersion={setPlanVersion}/>
                 }
 
 
