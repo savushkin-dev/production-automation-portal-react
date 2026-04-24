@@ -1,33 +1,76 @@
-import React, { useState } from 'react'
+import React, {useEffect, useState} from 'react'
 import {CustomStyle} from "../../data/styleForSelect";
 import Select from "react-select";
-import {styleInput, styleInputWithoutRounded} from "../../data/styles";
+import {styleInput} from "../../data/styles";
+import SchedulerService from "../../services/ScheduleService";
 
-export function ModalVersionSettings({ onClose, onSaveVersion, onLoadVersion, versionsList = [] }) {
+export function ModalVersionSettings({ date, onClose, onInit, onFetchPlan, setModalError, setErrorMsg}) {
     const [mode, setMode] = useState('save');
     const [versionName, setVersionName] = useState('');
-    const [selectedVersion, setSelectedVersion] = useState(null); // ← null вместо {}
-
-    const demoVersions = [
-        { value: 'План на апрель 2026 (v1)', label: 'План на апрель 2026 (v1)' },
-        { value: 'Версия от 20.04.2026', label: 'Версия от 20.04.2026' },
-    ];
-
-    const actualVersionsList = versionsList.length > 0 ? versionsList : demoVersions;
+    const [selectedVersion, setSelectedVersion] = useState(null);
+    const [versionList, setVersionList] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [notification, setNotification] = useState({ message: '', type: '' });
 
     const handleSave = () => {
-        if (versionName.trim()) {
-            onSaveVersion?.(versionName);
-            onClose();
-        }
+        saveVersion(date, versionName.trim())
     };
 
     const handleLoad = () => {
-        if (selectedVersion?.value) {  // ← проверка наличия value
-            onLoadVersion?.(selectedVersion.value);
-            onClose();
+        if(selectedVersion.value === "#main_plan#"){
+            onInit(date);
+        } else {
+            initVersion(date, selectedVersion.value);
         }
     };
+
+    useEffect(()=>{
+        fetchVersionList();
+    },[])
+
+    async function fetchVersionList() {
+        try {
+            const response = await SchedulerService.getVersionList(date)
+
+            setVersionList([
+                { value: '#main_plan#', label: 'Основной план' },
+                ...response.data.map(v => ({ value: v, label: v }))
+            ]);
+        } catch (e) {
+            setErrorMsg("Не удалось получить список версий плана: " + e.response.data.message)
+            setModalError(true);
+        }
+    }
+
+    async function saveVersion(date, versionName) {
+        try {
+            setIsLoading(true);
+            await SchedulerService.saveVersion(date, versionName)
+            setNotification({ message: 'Версия успешно сохранена!', type: 'success' });
+            setTimeout(() => {setNotification({ message: '', type: '' })}, 3000);
+        } catch (e) {
+            setErrorMsg("Не удалось сохранить план: " + e.response.data.message)
+            setModalError(true);
+        } finally {
+            setIsLoading(false);
+            await fetchVersionList();
+        }
+    }
+
+    async function initVersion(date, versionName) {
+        try {
+            setIsLoading(true);
+            await SchedulerService.initVersion(date, versionName)
+            setNotification({ message: 'Версия успешно загружена!', type: 'success' });
+            setTimeout(() => {setNotification({ message: '', type: '' })}, 3000);
+        } catch (e) {
+            setErrorMsg("Не удалось загрузить план: " + e.response.data.message)
+            setModalError(true);
+        } finally {
+            await onFetchPlan();
+            setIsLoading(false);
+        }
+    }
 
     return (
         <>
@@ -35,10 +78,10 @@ export function ModalVersionSettings({ onClose, onSaveVersion, onLoadVersion, ve
                 className="fixed inset-0 bg-black/50 backdrop-blur-sm" style={{zIndex: 99}}
                 onClick={onClose}
             />
+
             <div className="fixed inset-0 flex items-center justify-center p-4 z-100 pointer-events-none" style={{zIndex: 100}}>
                 <div className="w-[520px] bg-white rounded-2xl shadow-2xl pointer-events-auto overflow-hidden animate-in fade-in zoom-in duration-200">
 
-                    {/* Header с градиентом */}
                     <div className="relative px-6 py-5 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200">
                         <div className="pr-8">
                             <h2 className="text-xl font-bold text-slate-800">Управление версиями планов</h2>
@@ -54,7 +97,6 @@ export function ModalVersionSettings({ onClose, onSaveVersion, onLoadVersion, ve
                         </button>
                     </div>
 
-                    {/* Toggle Switch стиль */}
                     <div className="px-6 pt-6 pb-3">
                         <div className="bg-slate-100 rounded-xl p-1 flex">
                             <button
@@ -90,7 +132,6 @@ export function ModalVersionSettings({ onClose, onSaveVersion, onLoadVersion, ve
                         </div>
                     </div>
 
-                    {/* Content */}
                     <div className="px-6 pb-6">
                         {mode === 'save' ? (
                             <div className="space-y-3">
@@ -100,11 +141,11 @@ export function ModalVersionSettings({ onClose, onSaveVersion, onLoadVersion, ve
                                 <input className={styleInput + " font-medium mr-0 w-full"}
                                        value={versionName}
                                        onChange={(e) => setVersionName(e.target.value)}
-                                       placeholder="Например: План v4"
+                                       placeholder="Пример: План v4"
                                        // autoFocus
                                 />
                                 <p className="text-xs text-slate-400 flex items-center gap-1">
-                                    Сохраните текущую версию плана с уникальным названием
+                                    Сохраните текущую версию плана или перезапишите существующую
                                 </p>
                             </div>
                         ) : (
@@ -119,16 +160,17 @@ export function ModalVersionSettings({ onClose, onSaveVersion, onLoadVersion, ve
                                         value={selectedVersion}
                                         onChange={(option) => setSelectedVersion(option)}
                                         styles={CustomStyle}
-                                        options={actualVersionsList}
+                                        options={versionList}
                                         isClearable={true}
                                         isSearchable={false}
                                         noOptionsMessage={() => "Нет сохраненных версий"}
+                                        menuPosition="fixed"
                                     />
                                 </div>
                                 <p className="text-xs text-slate-400 flex items-center gap-1">
                                     Выберите версию для работы с соответствующим планом
                                 </p>
-                                {actualVersionsList.length === 0 && (
+                                {versionList.length === 1 && (
                                     <p className="text-xs text-amber-600 flex items-center gap-1">
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -141,39 +183,88 @@ export function ModalVersionSettings({ onClose, onSaveVersion, onLoadVersion, ve
                         )}
                     </div>
 
-                    {/* Footer Actions */}
-                    <div className="flex justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
-                        <button
-                            onClick={onClose}
-                            className="px-5 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors duration-200"
-                        >
-                            Отмена
-                        </button>
-                        <button
-                            onClick={mode === 'save' ? handleSave : handleLoad}
-                            disabled={mode === 'save' ? !versionName.trim() : !selectedVersion?.value}
-                            className={`px-6 py-2 text-sm font-medium text-white rounded-xl transition-all duration-200 shadow-sm ${
-                                (mode === 'save' ? !versionName.trim() : !selectedVersion?.value)
-                                    ? 'bg-slate-300 cursor-not-allowed shadow-none'
-                                    : 'bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 hover:shadow-md active:scale-[0.98]'
-                            }`}
-                        >
-                            {mode === 'save' ? (
-                                <span className="flex items-center gap-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    Сохранить
-                                </span>
-                            ) : (
-                                <span className="flex items-center gap-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                    </svg>
-                                    Загрузить
-                                </span>
+                    <div className="flex justify-between  px-6 py-4 bg-slate-50 border-t border-slate-100">
+                        <div>
+                            {/* Уведомление */}
+                            {notification.message && (
+                                <div className={` rounded-lg text-sm ${
+                                    notification.type === 'success'
+                                        ? 'text-green-700'
+                                        : 'text-red-700'
+                                }`}>
+                                    <span className="flex items-center gap-2 my-2 ">
+                                        {notification.type === 'success' ? (
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        )}
+                                        {notification.message}
+                                    </span>
+                                </div>
                             )}
-                        </button>
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={onClose}
+                                className="px-5 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors duration-200"
+                            >
+                                Закрыть
+                            </button>
+                            <button
+                                onClick={mode === 'save' ? handleSave : handleLoad}
+                                disabled={mode === 'save' ? !versionName.trim() : !selectedVersion?.value}
+                                className={`px-6 py-2 text-sm font-medium text-white rounded-xl transition-all duration-200 shadow-sm ${
+                                    (mode === 'save' ? !versionName.trim() : !selectedVersion?.value)
+                                        ? 'bg-slate-300 cursor-not-allowed shadow-none'
+                                        : 'bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 hover:shadow-md active:scale-[0.98]'
+                                }`}
+                            >
+                                {mode === 'save' ? (
+                                    <span className="flex items-center gap-2">
+
+                                    {isLoading ? (
+                                        <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor"
+                                             viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                                    strokeWidth="4" fill="none"/>
+                                            <path className="opacity-75" fill="currentColor"
+                                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                  d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                    )}
+                                        Сохранить
+                                </span>
+                                ) : (
+                                    <span className="flex items-center gap-2">
+                                    {isLoading ? (
+                                        <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor"
+                                             viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                                    strokeWidth="4" fill="none"/>
+                                            <path className="opacity-75" fill="currentColor"
+                                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                        </svg>
+                                    )}
+                                        Загрузить
+                                </span>
+                                )}
+                            </button>
+                        </div>
+
                     </div>
                 </div>
             </div>
