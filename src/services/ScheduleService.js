@@ -491,4 +491,16 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/delayNote`, {lineId, index, delayNote})
     }
 
+    static async getVersionList(startDate) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/versionsByDate`, {startDate})
+    }
+
+    static async saveVersion(startDate, version) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/saveVersion`, {startDate, version})
+    }
+
+    static async initVersion(startDate, version) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/initVersion`, {startDate, version})
+    }
+
 }
