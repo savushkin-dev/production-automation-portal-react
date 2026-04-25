@@ -174,7 +174,7 @@ export default class ScheduleService {
                 placeFactInfo: filteredData[i].placeFactInfo,
                 placePlan: filteredData[i].placePlan,
                 dti: filteredData[i].dti,
-                idBatch: json.jobs[i].idBatch,
+                idBatch: filteredData[i].idBatch,
             }
         }
         return factList;
