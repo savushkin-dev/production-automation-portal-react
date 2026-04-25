@@ -18,7 +18,13 @@ export function ModalVersionSettings({ date, onClose, onInit, onFetchPlan, setMo
 
     const handleLoad = async () => {
         let success;
-        selectedVersion.value === "#main_plan#" ? success = await onInit(date) : success = await initVersion(date, selectedVersion.value);
+        if(selectedVersion.value === "#main_plan#") {
+            setIsLoading(true)
+            success = await onInit(date)
+            setIsLoading(false)
+        } else {
+            success = await initVersion(date, selectedVersion.value);
+        }
 
         if (success && selectedVersion?.value) {
             setPlanVersion(selectedVersion.label); // Обновляем название версии при успехе
