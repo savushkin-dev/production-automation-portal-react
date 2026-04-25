@@ -1,6 +1,6 @@
 import {styleInputWithoutRounded} from "./styles";
 
-const targetHeight = 28;
+const targetHeight = 32;
 
 export const CustomStyle = {
     option: (base, state) => ({
@@ -33,10 +33,17 @@ export const CustomStyle = {
 
 
     }),
+
+    placeholder: (base) => ({
+        ...base,
+        color: "#9ca3af",  // синий цвет
+        // fontSize: '12px',
+    }),
+
     noOptionsMessage: (base, state) => ({
         ...base,
-        height: "20px",
-        lineHeight: '12px',
+        height: "24px",
+        lineHeight: '7px',
         fontSize: '12px',
     }),
     loadingMessage: (base, state) => ({
