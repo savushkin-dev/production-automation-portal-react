@@ -12,27 +12,17 @@ export function ModalVersionSettings({ date, onClose, onInit, onFetchPlan, setMo
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState({ message: '', type: '' });
 
-    const handleSave = () => {
-        saveVersion(date, versionName.trim())
+    const handleSave = async () => {
+        await saveVersion(date, versionName.trim())
     };
 
-    //нужно придумать как откатывать название версии если ошибка или фиксировать новую в случаи успеха
-    const handleLoad = () => {
-        try {
-            if(selectedVersion.value === "#main_plan#"){
-                onInit(date);
-            } else {
-                initVersion(date, selectedVersion.value);
-            }
-        } catch (e){
-            console.log("Ошибка")
-            if(selectedVersion?.value){
-                setPlanVersion(selectedVersion.value);
-            }
-        } finally {
+    const handleLoad = async () => {
+        let success;
+        selectedVersion.value === "#main_plan#" ? success = await onInit(date) : success = await initVersion(date, selectedVersion.value);
 
+        if (success && selectedVersion?.value) {
+            setPlanVersion(selectedVersion.label); // Обновляем название версии при успехе
         }
-
     };
 
     useEffect(()=>{
@@ -74,9 +64,11 @@ export function ModalVersionSettings({ date, onClose, onInit, onFetchPlan, setMo
             await SchedulerService.initVersion(date, versionName)
             setNotification({ message: 'Версия успешно загружена!', type: 'success' });
             setTimeout(() => {setNotification({ message: '', type: '' })}, 3000);
+            return true;
         } catch (e) {
             setErrorMsg("Не удалось загрузить план: " + e.response.data.message)
             setModalError(true);
+            return false;
         } finally {
             await onFetchPlan();
             setIsLoading(false);

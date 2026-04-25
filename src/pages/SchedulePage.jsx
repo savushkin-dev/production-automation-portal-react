@@ -173,6 +173,7 @@ function SchedulerPage() {
             setPdayData(groupedData);
 
             setSelectJobs(groupedData.selectJobs);
+            return true;
         } catch (e) {
             console.error(e)
             setMsg("Ошибка инициализации: " + e.response.data.message)
@@ -190,8 +191,8 @@ function SchedulerPage() {
                 dayPlus5: [],
                 dayPlus6: [],
                 dayPlus7: [],
-                // selectJobs: []
             });
+            return false;
         }
     }
 
@@ -979,7 +980,7 @@ function SchedulerPage() {
                         Вернуться назад
                     </button>
 
-                    <h1 className="font-bold text-center text-2xl absolute left-1/2 -translate-x-1/2">Планировщик задач</h1>
+                    <h1 className="font-bold text-gray-800 text-center text-2xl absolute left-1/2 -translate-x-1/2">Планировщик задач</h1>
 
                     <div className="flex items-center gap-3">
                         <AuthLabel loginPath={'/login-scheduler'} logoutPath={'/login-scheduler'}/>
@@ -1000,7 +1001,7 @@ function SchedulerPage() {
                                 onClick={() => {
                                     setIsModalVersionSettings(true)
                                 }}
-                                className="ml-1 px-2.5 h-6 rounded-full bg-gray-100 hover:bg-blue-700 text-gray-500 hover:text-white flex items-center justify-center gap-1.5 transition-all duration-200"
+                                className="ml-1 px-2.5 h-6 rounded-full bg-gray-100 hover:bg-gray-600 text-gray-500 hover:text-white flex items-center justify-center gap-1.5 transition-all duration-200"
                                 title="Управление версиями"
                             >
                                 <i className="fa-solid fa-pen text-xs"></i>
@@ -1133,7 +1134,8 @@ function SchedulerPage() {
                                 <span className="text-gray-500 text-lg leading-none">|</span>
                                 <div className="flex flex-col items-center justify-center flex-1">
                                     <span className="text-[0.900rem] px-1 mt-[-3px] text-gray-800">{score.soft}</span>
-                                    <span className="text-[0.750rem] text-xs mt-[-8px] text-gray-500">Время выполнения</span>
+                                    <span
+                                        className="text-[0.750rem] text-xs mt-[-8px] text-gray-500">Время выполнения</span>
                                 </div>
                             </div>
                             <button onClick={() => {

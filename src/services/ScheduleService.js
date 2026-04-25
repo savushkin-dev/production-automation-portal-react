@@ -500,7 +500,7 @@ export default class ScheduleService {
     }
 
     static async initVersion(startDate, version) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/initVersion2`, {startDate, version})
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/initVersion`, {startDate, version})
     }
 
 }
