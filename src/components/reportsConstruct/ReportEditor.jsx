@@ -1431,37 +1431,44 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
 
                 } else {
-                    const PADDING = 70; // Дополнительное пространство вокруг
+                    const PADDING_HORIZONTAL = 170; // Отступы по горизонтали
+                    const PADDING_VERTICAL = 30;   // Отступы по вертикали
 
-                    // 1. canvasElement - больше чем body, с padding
-                    canvasElement.style.width = `${1123 + (PADDING * 2)}px`;  // 1263px
-                    canvasElement.style.height = `${794 + (PADDING * 2)}px`;  // 934px
-                    canvasElement.style.marginLeft = '5%';
-                    // canvasElement.style.padding = `${PADDING}px`;  // Отступы внутри canvasElement
-                    // canvasElement.style.boxSizing = 'border-box';
-                    // canvasElement.style.backgroundColor = '#dfdfdf';  // Серый фон для отступов
+                    // 1. canvasElement - больше чем body
+                    canvasElement.style.width = `${1123 + (PADDING_HORIZONTAL * 2)}px`;
+                    canvasElement.style.height = `${794 + (PADDING_VERTICAL * 2)}px`;
+                    canvasElement.style.marginLeft = '2%';
+                    canvasElement.style.marginTop = '20px';
 
                     // 2. body - точный размер страницы
                     editorView.Canvas.getBody().style.width = '1123px';
                     editorView.Canvas.getBody().style.height = '794px';
                     editorView.Canvas.getBody().style.backgroundColor = '#ffffff';
-                    editorView.Canvas.getBody().style.margin = '0 auto';  // Центрируем
+                    editorView.Canvas.getBody().style.margin = '0 auto';
                     editorView.Canvas.getBody().style.display = 'block';
 
-                    // 3. КЛЮЧЕВОЙ МОМЕНТ: сдвигаем систему координат
-                    // Добавляем CSS правило внутри iframe
+                    // 3. Переопределяем дефолтные стили wrapper'а GrapesJS
                     editorView.Css.addRules(`
                         html {
-                            padding: ${PADDING}px;
-                            background-color: #dfdfdf;
+                            padding: ${PADDING_VERTICAL}px ${PADDING_HORIZONTAL}px;
+                            background-color: #ffffff;
                             box-sizing: border-box;
                         }
                         
                         body {
                             position: relative;
-                            /* Координаты будут отсчитываться от body */
+                        }
+                        
+                        /* Переопределяем стандартный стиль GrapesJS */
+                        [data-gjs-type="wrapper"] {
+                            min-height: auto !important;
+                            height: 794px !important;
+                            max-height: 794px !important;
+                            padding-top: 0 !important;
+                            overflow: hidden !important;
                         }
                     `);
+
                 }
             }
         }, [isBookOrientation])

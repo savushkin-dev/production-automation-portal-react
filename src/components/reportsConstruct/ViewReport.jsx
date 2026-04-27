@@ -43,9 +43,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                             body, html {
                                 /*font-family: Arial, 'Times New Roman', sans-serif;*/
                                 margin: 0;
-                                /*padding: 20px;*/
-                                /*padding: 0;*/
-                               
+                                padding: 0 !important;
                                 left: 0;
                                 right: 0;
                                 display: flex;
@@ -53,19 +51,18 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                 flex-direction: column;
                             }
                             .page-container {
-                                 position: relative;
-                                 page-break-after: always;
-                                 height: ${heightPage};
-                                 overflow: hidden;
-                                 margin: 0;
-                                  padding-left: 20px;
+                                position: relative;
+                                page-break-after: always;
+                                height: ${heightPage};
+                                overflow: hidden;
+                                margin: 0;
+                                padding-left: 20px;
                                 padding-right: 20px;
-                                /*Надо учитывать высоту при рендере еще*/
                                 padding-top: 10px; 
                                 padding-bottom: 10px;
-                                 left: 0;
-                                 right: 0;
-                                 box-sizing: border-box;
+                                left: 0;
+                                right: 0;
+                                box-sizing: border-box;
                             }
                             hr {
                                 margin-top: 20px;
