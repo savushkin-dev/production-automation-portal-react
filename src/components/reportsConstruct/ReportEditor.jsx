@@ -152,23 +152,23 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                 // Устанавливаем размеры канваса (формат A4)
                 if (isBookOrientation) {
-                    canvasElement.style.width = '794px';
+                    canvasElement.style.width = '824px';
                     canvasElement.style.height = '1123px';
                     canvasElement.style.marginLeft = '15%';
                     editor.Canvas.getBody().style.width = '794px';
                     editor.Canvas.getBody().style.height = '1123px';
                 } else {
-                    canvasElement.style.width = '1123px';
+                    canvasElement.style.width = '1263px';
                     canvasElement.style.height = '794px';
-                    canvasElement.style.padding = '20px'
+                    // canvasElement.style.padding = '20px'
                     editor.Canvas.getBody().style.width = '1123px';
                     editor.Canvas.getBody().style.height = '794px';
                     editor.Canvas.getBody().style.margin = '20px';
 
                 }
 
-                canvasElement.style.backgroundColor = '#949494';
-                canvasElement.style.border = '5px';
+                // canvasElement.style.backgroundColor = '#c55858';
+                // canvasElement.style.border = '5px';
                 canvasElement.style.overflow = 'hidden';
 
                 editor.Canvas.getBody().style.backgroundColor = '#9a9a9a';
@@ -181,17 +181,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             // Добавляем стили для блоков
             editor.Css.addRules(`
-                .report-page {
-                  width: 297mm;
-                  height: 210mm;
-                  padding: 20mm;
-                  border: 1px solid #000;
-                  margin-bottom: 20px;
-                  background: #fff;
-               
-                  display: flex;
-                  flex-direction: column;
-                }
+
                 .band {
                   width: 100%;
                   padding: 10px;
@@ -1429,17 +1419,49 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             const canvasElement = editorView?.Canvas?.getElement()
             if (canvasElement) {
                 if (isBookOrientation) {
-                    canvasElement.style.width = '794px';
+                    canvasElement.style.width = '864px';
                     canvasElement.style.height = '1123px';
                     editorView.Canvas.getBody().style.width = '794px';
                     editorView.Canvas.getBody().style.height = '1123px';
                     canvasElement.style.marginLeft = '15%';
+
+                    //центруем
+                    editorView.Canvas.getBody().style.margin = '0 auto';
+                    editorView.Canvas.getBody().style.display = 'block';
+
+
                 } else {
-                    canvasElement.style.width = '1123px';
-                    canvasElement.style.height = '794px';
+                    const PADDING = 70; // Дополнительное пространство вокруг
+
+                    // 1. canvasElement - больше чем body, с padding
+                    canvasElement.style.width = `${1123 + (PADDING * 2)}px`;  // 1263px
+                    canvasElement.style.height = `${794 + (PADDING * 2)}px`;  // 934px
+                    canvasElement.style.marginLeft = '5%';
+                    // canvasElement.style.padding = `${PADDING}px`;  // Отступы внутри canvasElement
+                    // canvasElement.style.boxSizing = 'border-box';
+                    // canvasElement.style.backgroundColor = '#dfdfdf';  // Серый фон для отступов
+
+                    // 2. body - точный размер страницы
                     editorView.Canvas.getBody().style.width = '1123px';
                     editorView.Canvas.getBody().style.height = '794px';
-                    canvasElement.style.marginLeft = '5%';
+                    editorView.Canvas.getBody().style.backgroundColor = '#ffffff';
+                    editorView.Canvas.getBody().style.margin = '0 auto';  // Центрируем
+                    editorView.Canvas.getBody().style.display = 'block';
+
+                    // 3. КЛЮЧЕВОЙ МОМЕНТ: сдвигаем систему координат
+                    // Добавляем CSS правило внутри iframe
+                    editorView.Css.addRules(`
+                        html {
+                            padding: ${PADDING}px;
+                            background-color: #dfdfdf;
+                            box-sizing: border-box;
+                        }
+                        
+                        body {
+                            position: relative;
+                            /* Координаты будут отсчитываться от body */
+                        }
+                    `);
                 }
             }
         }, [isBookOrientation])
