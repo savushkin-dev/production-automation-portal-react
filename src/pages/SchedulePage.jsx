@@ -48,6 +48,7 @@ import {convertHoursMinutesToMinutes} from "../utils/scheduler/serviceWork";
 import {Context} from "../index";
 import AuthLabel from "../components/AuthLabel";
 import {ModalVersionSettings} from "../components/scheduler/ModalVersionSettings";
+import {SchedulerDataTables} from "../components/scheduler/SchedulerDataTables";
 
 
 function SchedulerPage() {
@@ -138,7 +139,7 @@ function SchedulerPage() {
     const [selectedItems, setSelectedItems] = useState([]);
     const [lastSelectedItem, setLastSelectedItem] = useState(null);
 
-    const heightGroupScheduler = activeDisplay.fact || activeDisplay.plan? 100 : 164;
+    const heightGroupScheduler = activeDisplay.fact || activeDisplay.plan ? 100 : 164;
 
     const [clickedCameras, setClickedCameras] = useState({});
 
@@ -199,7 +200,7 @@ function SchedulerPage() {
     useEffect(() => {
         setPlanByHardware([])
         if (startTimeLines) {
-             init(selectDate);
+            init(selectDate);
         }
     }, [selectDate])
 
@@ -226,35 +227,43 @@ function SchedulerPage() {
         }
     }
 
-    async function agreeSorting(){
+    async function agreeSorting() {
         setModalSortConfig(prevState => ({...prevState, isOpen: false}))
         await sortSchedule();
         await modalSortConfig.onConfirm?.();
     }
 
-    async function disagreeSorting(){
+    async function disagreeSorting() {
         setModalSortConfig(prevState => ({...prevState, isOpen: false}))
         await modalSortConfig.onConfirm?.();
     }
 
-    function openModalSendToWork(){
+    function openModalSendToWork() {
         setMsg("Вы уверены что хотите отправить план в работу?")
         setIsModalSendToWork(true);
     }
 
-    function openModalSavePlan(){
+    function openModalSavePlan() {
         setMsg("Вы уверены что хотите сохранить план?")
         setIsModalSavePlan(true);
     }
 
     function clickSendToWork() {
         setMsg("Вы хотите отсортировать план перед отправкой в работу?")
-        modalSortConfig.isSort? openModalSendToWork() : setModalSortConfig(prevState => ({...prevState, isOpen: true, onConfirm: ()=> openModalSendToWork()}));
+        modalSortConfig.isSort ? openModalSendToWork() : setModalSortConfig(prevState => ({
+            ...prevState,
+            isOpen: true,
+            onConfirm: () => openModalSendToWork()
+        }));
     }
 
-    function clickSavePlan(){
+    function clickSavePlan() {
         setMsg("Вы хотите отсортировать план перед сохранением?")
-        modalSortConfig.isSort? openModalSavePlan() : setModalSortConfig(prevState => ({...prevState, isOpen: true, onConfirm: ()=> openModalSavePlan()}));
+        modalSortConfig.isSort ? openModalSavePlan() : setModalSortConfig(prevState => ({
+            ...prevState,
+            isOpen: true,
+            onConfirm: () => openModalSavePlan()
+        }));
     }
 
     async function savePlan() {
@@ -402,10 +411,10 @@ function SchedulerPage() {
     }, [downloadedPlan]);
 
     async function solve() {
-        (isValidLinesDate(startTimeLines))? await fetchSolve() : setLinesDateError();
+        (isValidLinesDate(startTimeLines)) ? await fetchSolve() : setLinesDateError();
     }
 
-    function setLinesDateError(){
+    function setLinesDateError() {
         setMsg("Перед началом планирования или дозагрузки требуется настроить время начала и максимальное время линий в разделе \"Настройка линий\")")
         setIsModalNotifyError(true);
     }
@@ -503,7 +512,7 @@ function SchedulerPage() {
     };
 
     const handleCanvasRightClick = (groupId, time, e) => {
-        if(activeDisplay.fact){
+        if (activeDisplay.fact) {
             return
         }
         setSelectedItems([]);
@@ -637,18 +646,18 @@ function SchedulerPage() {
         let idFact = null;
         const prefix = "fact_camera";
 
-        if(!isPackagedItem(clickedItem)){
+        if (!isPackagedItem(clickedItem)) {
             return
         }
 
-        if(!isFactItem(clickedItem)){
+        if (!isFactItem(clickedItem)) {
             idFact = clickedItem.id + prefix;
         } else {
             idFact = clickedItem.id.slice(0, -prefix.length);
         }
 
         const clickedFactItem = itemsArray.find(item => item.id === idFact);
-        if(clickedFactItem){
+        if (clickedFactItem) {
             setSelectedItems([clickedItem, clickedFactItem]);
         }
     }
@@ -695,7 +704,7 @@ function SchedulerPage() {
 
     async function assignServiceWork(lineId, insertIndex, time, duration, type, description, isEmptyLine) {
         try {
-            if(isEmptyLine){
+            if (isEmptyLine) {
                 await SchedulerService.assignServiceWorkEmptyLine(lineId, time, duration, type, description);
             } else {
                 await SchedulerService.assignServiceWork(lineId, insertIndex, duration, type, description);
@@ -772,8 +781,8 @@ function SchedulerPage() {
         }
     }
 
-    async function ClickReloadPlan(){
-        (isValidLinesDate(startTimeLines))? await reloadPlan() : setLinesDateError();
+    async function ClickReloadPlan() {
+        (isValidLinesDate(startTimeLines)) ? await reloadPlan() : setLinesDateError();
     }
 
     async function reloadPlan() {
@@ -826,12 +835,12 @@ function SchedulerPage() {
         const sortedSelected = filteredItems
             .sort((a, b) => a.start_time - b.start_time);
         const firstItem = sortedSelected[0];
-        const firstItemIndex = firstItem.info.groupIndex-1;
+        const firstItemIndex = firstItem.info.groupIndex - 1;
 
         sortRangeScheduler(firstItemIndex, filteredItems.length, groupId, sortUp)
     }
 
-    async function sortRangeScheduler(fromIndex, sortCount, lineId, sortUp){
+    async function sortRangeScheduler(fromIndex, sortCount, lineId, sortUp) {
         try {
             await SchedulerService.sortRangeScheduler(fromIndex, sortCount, lineId, sortUp);
             await fetchPlan()
@@ -842,7 +851,7 @@ function SchedulerPage() {
         }
     }
 
-    async function dailyCleaning(){
+    async function dailyCleaning() {
         try {
             await SchedulerService.dailyCleaning();
             await fetchPlan()
@@ -853,7 +862,7 @@ function SchedulerPage() {
         }
     }
 
-    async function updateDelayJob(lineId, index, delayNote){
+    async function updateDelayJob(lineId, index, delayNote) {
         try {
             await SchedulerService.updateDelayJob(lineId, index, delayNote);
             await fetchPlan();
@@ -866,7 +875,8 @@ function SchedulerPage() {
 
     const timelineRenderers = useMemo(
         () => {
-            return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay)},
+            return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay)
+        },
         [selectedItems, selectedItem, activeDisplay]
     );
 
@@ -941,7 +951,7 @@ function SchedulerPage() {
                 }
             } catch (error) {
                 errorCount++;
-                errors.push({ lineId, error: error.response?.data?.message || error.message });
+                errors.push({lineId, error: error.response?.data?.message || error.message});
                 console.error(`Ошибка при добавлении на линию ${lineId}:`, error);
             }
         }
@@ -1308,77 +1318,15 @@ function SchedulerPage() {
                                           setPlanVersion={setPlanVersion}/>
                 }
 
-
-                {planVersion !== "Основной план" &&
-                    <p className="text-sm text-amber-500 flex items-center mx-8">
-                        <i className="fa-solid fa-triangle-exclamation mr-1"></i>
-                        Для управления заданиями необходимо переключиться на основной план
-                    </p>
-                }
-
-                <div className={`${planVersion !== "Основной план" ? 'opacity-50 pointer-events-none' : ''}`}>
-
-                    <DataTable data={pdayData.dayMinus2} setData={(newData) => setPdayData(prev => ({
-                        ...prev,
-                        dayMinus2: newData
-                    }))} dateData={getDateMinus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
-                               lines={startTimeLines}/>
-
-                    <DataTable data={pdayData.dayMinus1} setData={(newData) => setPdayData(prev => ({
-                        ...prev,
-                        dayMinus1: newData
-                    }))} dateData={getDateMinus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
-                               lines={startTimeLines}/>
-
-                    <DataTable data={pdayData.currentDay} setData={(newData) => setPdayData(prev => ({
-                        ...prev,
-                        currentDay: newData
-                    }))} dateData={getDateCurrent(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
-                               lines={startTimeLines}/>
-
-                    <DataTable data={pdayData.dayPlus1} setData={(newData) => setPdayData(prev => ({
-                        ...prev,
-                        dayPlus1: newData
-                    }))} dateData={getDatePlus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
-                               lines={startTimeLines}/>
-
-                    <DataTable data={pdayData.dayPlus2} setData={(newData) => setPdayData(prev => ({
-                        ...prev,
-                        dayPlus2: newData
-                    }))} dateData={getDatePlus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
-                               lines={startTimeLines}/>
-
-                    <DataTable data={pdayData.dayPlus3} setData={(newData) => setPdayData(prev => ({
-                        ...prev,
-                        dayPlus3: newData
-                    }))} dateData={getDatePlus3(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
-                               lines={startTimeLines}/>
-
-                    <DataTable data={pdayData.dayPlus4} setData={(newData) => setPdayData(prev => ({
-                        ...prev,
-                        dayPlus4: newData
-                    }))} dateData={getDatePlus4(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
-                               lines={startTimeLines}/>
-
-                    <DataTable data={pdayData.dayPlus5} setData={(newData) => setPdayData(prev => ({
-                        ...prev,
-                        dayPlus5: newData
-                    }))} dateData={getDatePlus5(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
-                               lines={startTimeLines}/>
-
-                    <DataTable data={pdayData.dayPlus6} setData={(newData) => setPdayData(prev => ({
-                        ...prev,
-                        dayPlus6: newData
-                    }))} dateData={getDatePlus6(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
-                               lines={startTimeLines}/>
-
-                    <DataTable data={pdayData.dayPlus7} setData={(newData) => setPdayData(prev => ({
-                        ...prev,
-                        dayPlus7: newData
-                    }))} dateData={getDatePlus7(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs}
-                               lines={startTimeLines}/>
-                </div>
-
+                <SchedulerDataTables
+                    pdayData={pdayData}
+                    setPdayData={setPdayData}
+                    selectDate={selectDate}
+                    selectJobs={selectJobs}
+                    setSelectJobs={setSelectJobs}
+                    lines={startTimeLines}
+                    isReadOnly={planVersion !== "Основной план"}
+                />
 
             </div>
         </>
