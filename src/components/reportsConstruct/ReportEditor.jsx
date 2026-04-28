@@ -176,6 +176,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                       outline: 2px solid #325ee1 !important;
                       outline-offset: -2px;
                 }
+                
+
               `);
 
             // Добавляем блоки для перетаскивания
@@ -227,7 +229,89 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     style.left = style.left || '0px';
                     component.setStyle(style);
                 }
+
+                // Включаем изменение размеров (тянуть за стороны) для всех новых компонентов
+                component.set('resizable', true);
+
+                // // Добавляем CSS стили для ресайза
+                // component.addStyle({
+                //     // 'resize': 'both',           // Можно тянуть в обе стороны
+                //     'overflow': 'auto',         // Нужно для работы resize
+                //     'min-width': '20px',        // Минимальная ширина
+                //     'min-height': '20px'        // Минимальная высота
+                // });
+
             });
+
+            editor.on('component:resize', (data) => {
+                console.log('Type:', data.type);
+                console.log('Style left:', data.component.getStyle().left);
+                console.log('Style top:', data.component.getStyle().top);
+                console.log('el style left:', data.el.style.left);
+                console.log('el style top:', data.el.style.top);
+                console.log('Bounding rect:', data.el.getBoundingClientRect());
+                console.log('---');
+            });
+            
+            //Изменение размера с помощью мыши с учетом отступов канваса
+            editor.on('component:resize', (data) => {
+                const component = data.component;
+                const el = data.el;
+                const type = data.type;
+
+                if (!el || !component) return;
+
+                if (type === 'start') {
+                    const style = component.getStyle();
+                    el.dataset.resizeStartLeft = parseFloat(style.left) || 0;
+                    el.dataset.resizeStartTop = parseFloat(style.top) || 0;
+
+                    // Сохраняем также последнюю скорректированную позицию
+                    el.dataset.lastCorrectedLeft = el.dataset.resizeStartLeft;
+                    el.dataset.lastCorrectedTop = el.dataset.resizeStartTop;
+                    return;
+                }
+
+                if (type === 'move') {
+                    if (el.dataset.resizeStartLeft !== undefined) {
+                        const currentLeft = parseFloat(component.getStyle().left) || 0;
+                        const currentTop = parseFloat(component.getStyle().top) || 0;
+
+                        // Всегда корректируем, без порога
+                        const correctedLeft = currentLeft - CANVAS_PADDING_HORIZONTAL;
+                        const correctedTop = currentTop - CANVAS_PADDING_VERTICAL;
+
+                        // Применяем плавно, без скачков
+                        component.addStyle({
+                            left: correctedLeft + 'px',
+                            top: correctedTop + 'px'
+                        });
+
+                        el.dataset.lastCorrectedLeft = correctedLeft;
+                        el.dataset.lastCorrectedTop = correctedTop;
+                    }
+                    return;
+                }
+
+                if (type === 'end') {
+                    const finalLeft = parseFloat(component.getStyle().left) || 0;
+                    const finalTop = parseFloat(component.getStyle().top) || 0;
+
+                    const correctedLeft = finalLeft - CANVAS_PADDING_HORIZONTAL;
+                    const correctedTop = finalTop - CANVAS_PADDING_VERTICAL;
+
+                    component.addStyle({
+                        left: correctedLeft + 'px',
+                        top: correctedTop + 'px'
+                    });
+
+                    delete el.dataset.resizeStartLeft;
+                    delete el.dataset.resizeStartTop;
+                    delete el.dataset.lastCorrectedLeft;
+                    delete el.dataset.lastCorrectedTop;
+                }
+            });
+
 
 
             //для того чтобы сдвигать описание футера страницы при изменении высоты
@@ -632,11 +716,11 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     background-color: #ffffff;
                     box-sizing: border-box;
                 }
-                
+
                 body {
                     position: relative;
                 }
-                
+
                 [data-gjs-type="wrapper"] {
                     min-height: auto !important;
                     height: ${height}px !important;
@@ -646,6 +730,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
             `);
         };
+
+
 
         useEffect(() => {
             if (!editorView) return;

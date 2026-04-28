@@ -3,6 +3,18 @@
     --gjs-color-blue: #325ee1 !important;
 }
 
+/*.gjs-resizer-h {*/
+/*    pointer-events: all;*/
+/*    position: absolute;*/
+/*    border: 3px solid var(--gjs-color-blue);*/
+/*    width: 8px !important;*/
+/*    height: 8px !important;*/
+/*    background-color: #fff;*/
+/*    margin: var(--gjs-handle-margin)*/
+/*    -5px*/
+/*;*/
+/*}*/
+
 .gjs-pn-devices-c {
     /*display: none !important;*/
 }
