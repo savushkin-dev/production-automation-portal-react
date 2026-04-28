@@ -1,4 +1,5 @@
 import React, {forwardRef, useEffect, useRef, useState} from 'react';
+
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./../reportsConstruct/ReportEditor.css";
 
@@ -110,6 +111,9 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [isBookOrientation, setIsBookOrientation] = useState(true);
         const widthPage = isBookOrientation ? "794" : "1123";
 
+        const CANVAS_PADDING_HORIZONTAL = 100;
+        const CANVAS_PADDING_VERTICAL = 30;
+
 
         pdfMake.addVirtualFileSystem(pdfFonts);
 
@@ -147,33 +151,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
 
             setTimeout(() => {
-
-                const canvasElement = editor.Canvas.getElement()
-
-                // Устанавливаем размеры канваса (формат A4)
-                if (isBookOrientation) {
-                    canvasElement.style.width = '824px';
-                    canvasElement.style.height = '1123px';
-                    canvasElement.style.marginLeft = '15%';
-                    editor.Canvas.getBody().style.width = '794px';
-                    editor.Canvas.getBody().style.height = '1123px';
-                } else {
-                    canvasElement.style.width = '1263px';
-                    canvasElement.style.height = '794px';
-                    // canvasElement.style.padding = '20px'
-                    editor.Canvas.getBody().style.width = '1123px';
-                    editor.Canvas.getBody().style.height = '794px';
-                    editor.Canvas.getBody().style.margin = '20px';
-
-                }
-
-                // canvasElement.style.backgroundColor = '#c55858';
-                // canvasElement.style.border = '5px';
-                canvasElement.style.overflow = 'hidden';
-
-                editor.Canvas.getBody().style.backgroundColor = '#9a9a9a';
-                editor.Canvas.getBody().style.backgroundColor = '#ffffff';
-                editor.Canvas.getBody().style.overflow = 'hidden';
+                const { width, height } = getPageDimensions(isBookOrientation);
+                setupCanvas(editor, width, height);
             }, 200);
 
             editor.setComponents(pages[0].content);
@@ -628,6 +607,57 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             });
         };
+
+        const getPageDimensions = (isBookOrientation) => {
+            return isBookOrientation
+                ? { width: 794, height: 1123 }
+                : { width: 1123, height: 794 };
+        };
+
+        const setupCanvas = (editor, width, height) => {
+            const canvasElement = editor.Canvas.getElement();
+            if (!canvasElement) return;
+
+            canvasElement.style.width = `${width + (CANVAS_PADDING_HORIZONTAL * 2)}px`;
+            canvasElement.style.height = `${height + (CANVAS_PADDING_VERTICAL * 2)}px`;
+            canvasElement.style.marginLeft = '2%';
+            canvasElement.style.marginTop = '20px';
+            canvasElement.style.overflow = 'hidden';
+
+            const body = editor.Canvas.getBody();
+            body.style.width = `${width}px`;
+            body.style.height = `${height}px`;
+            body.style.backgroundColor = '#ffffff';
+            body.style.margin = '0 auto';
+            body.style.display = 'block';
+            body.style.overflow = 'hidden';
+
+            editor.Css.addRules(`
+                html {
+                    padding: ${CANVAS_PADDING_VERTICAL}px ${CANVAS_PADDING_HORIZONTAL}px;
+                    background-color: #ffffff;
+                    box-sizing: border-box;
+                }
+                
+                body {
+                    position: relative;
+                }
+                
+                [data-gjs-type="wrapper"] {
+                    min-height: auto !important;
+                    height: ${height}px !important;
+                    max-height: ${height}px !important;
+                    padding-top: 0 !important;
+                    overflow: hidden !important;
+                }
+            `);
+        };
+
+        useEffect(() => {
+            if (!editorView) return;
+            const { width, height } = getPageDimensions(isBookOrientation);
+            setupCanvas(editorView, width, height);
+        }, [isBookOrientation]);
 
         const exportYAML = async () => {
             saveCurrentPage(editorView).then((updatedPages) => {
@@ -1414,64 +1444,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
             }
         }
-
-        useEffect(() => {
-            const canvasElement = editorView?.Canvas?.getElement()
-            if (canvasElement) {
-                if (isBookOrientation) {
-                    canvasElement.style.width = '864px';
-                    canvasElement.style.height = '1123px';
-                    editorView.Canvas.getBody().style.width = '794px';
-                    editorView.Canvas.getBody().style.height = '1123px';
-                    canvasElement.style.marginLeft = '15%';
-
-                    //центруем
-                    editorView.Canvas.getBody().style.margin = '0 auto';
-                    editorView.Canvas.getBody().style.display = 'block';
-
-
-                } else {
-                    const PADDING_HORIZONTAL = 170; // Отступы по горизонтали
-                    const PADDING_VERTICAL = 30;   // Отступы по вертикали
-
-                    // 1. canvasElement - больше чем body
-                    canvasElement.style.width = `${1123 + (PADDING_HORIZONTAL * 2)}px`;
-                    canvasElement.style.height = `${794 + (PADDING_VERTICAL * 2)}px`;
-                    canvasElement.style.marginLeft = '2%';
-                    canvasElement.style.marginTop = '20px';
-
-                    // 2. body - точный размер страницы
-                    editorView.Canvas.getBody().style.width = '1123px';
-                    editorView.Canvas.getBody().style.height = '794px';
-                    editorView.Canvas.getBody().style.backgroundColor = '#ffffff';
-                    editorView.Canvas.getBody().style.margin = '0 auto';
-                    editorView.Canvas.getBody().style.display = 'block';
-
-                    // 3. Переопределяем дефолтные стили wrapper'а GrapesJS
-                    editorView.Css.addRules(`
-                        html {
-                            padding: ${PADDING_VERTICAL}px ${PADDING_HORIZONTAL}px;
-                            background-color: #ffffff;
-                            box-sizing: border-box;
-                        }
-                        
-                        body {
-                            position: relative;
-                        }
-                        
-                        /* Переопределяем стандартный стиль GrapesJS */
-                        [data-gjs-type="wrapper"] {
-                            min-height: auto !important;
-                            height: 794px !important;
-                            max-height: 794px !important;
-                            padding-top: 0 !important;
-                            overflow: hidden !important;
-                        }
-                    `);
-
-                }
-            }
-        }, [isBookOrientation])
 
 
         return (
