@@ -252,7 +252,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 console.log('Bounding rect:', data.el.getBoundingClientRect());
                 console.log('---');
             });
-            
+
             //Изменение размера с помощью мыши с учетом отступов канваса
             editor.on('component:resize', (data) => {
                 const component = data.component;
@@ -261,27 +261,39 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                 if (!el || !component) return;
 
+                // Проверяем, является ли элемент вложенным (имеет родителя с position relative/absolute)
+                const parent = component.parent();
+                const isNested = parent && parent.getStyle &&
+                    (parent.getStyle().position === 'relative' || parent.getStyle().position === 'absolute');
+
+                // Для вложенных элементов padding компенсировать не нужно
+                const shouldCompensate = !isNested;
+
                 if (type === 'start') {
                     const style = component.getStyle();
                     el.dataset.resizeStartLeft = parseFloat(style.left) || 0;
                     el.dataset.resizeStartTop = parseFloat(style.top) || 0;
-
-                    // Сохраняем также последнюю скорректированную позицию
                     el.dataset.lastCorrectedLeft = el.dataset.resizeStartLeft;
                     el.dataset.lastCorrectedTop = el.dataset.resizeStartTop;
+                    el.dataset.isNested = isNested ? 'true' : 'false';
                     return;
                 }
 
                 if (type === 'move') {
                     if (el.dataset.resizeStartLeft !== undefined) {
-                        const currentLeft = parseFloat(component.getStyle().left) || 0;
-                        const currentTop = parseFloat(component.getStyle().top) || 0;
+                        let currentLeft = parseFloat(component.getStyle().left) || 0;
+                        let currentTop = parseFloat(component.getStyle().top) || 0;
 
-                        // Всегда корректируем, без порога
-                        const correctedLeft = currentLeft - CANVAS_PADDING_HORIZONTAL;
-                        const correctedTop = currentTop - CANVAS_PADDING_VERTICAL;
+                        let correctedLeft = currentLeft;
+                        let correctedTop = currentTop;
 
-                        // Применяем плавно, без скачков
+                        // Компенсируем padding только для корневых элементов
+                        if (shouldCompensate) {
+                            correctedLeft = currentLeft - CANVAS_PADDING_HORIZONTAL;
+                            correctedTop = currentTop - CANVAS_PADDING_VERTICAL;
+                        }
+
+                        // Для вложенных элементов не вычитаем padding
                         component.addStyle({
                             left: correctedLeft + 'px',
                             top: correctedTop + 'px'
@@ -294,11 +306,17 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
 
                 if (type === 'end') {
-                    const finalLeft = parseFloat(component.getStyle().left) || 0;
-                    const finalTop = parseFloat(component.getStyle().top) || 0;
+                    let finalLeft = parseFloat(component.getStyle().left) || 0;
+                    let finalTop = parseFloat(component.getStyle().top) || 0;
 
-                    const correctedLeft = finalLeft - CANVAS_PADDING_HORIZONTAL;
-                    const correctedTop = finalTop - CANVAS_PADDING_VERTICAL;
+                    let correctedLeft = finalLeft;
+                    let correctedTop = finalTop;
+
+                    // Компенсируем padding только для корневых элементов
+                    if (shouldCompensate) {
+                        correctedLeft = finalLeft - CANVAS_PADDING_HORIZONTAL;
+                        correctedTop = finalTop - CANVAS_PADDING_VERTICAL;
+                    }
 
                     component.addStyle({
                         left: correctedLeft + 'px',
@@ -309,6 +327,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     delete el.dataset.resizeStartTop;
                     delete el.dataset.lastCorrectedLeft;
                     delete el.dataset.lastCorrectedTop;
+                    delete el.dataset.isNested;
                 }
             });
 
