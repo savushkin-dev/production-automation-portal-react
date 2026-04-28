@@ -1,3 +1,8 @@
+
+:root {
+    --gjs-color-blue: #325ee1 !important;
+}
+
 .gjs-pn-devices-c {
     /*display: none !important;*/
 }
@@ -114,6 +119,20 @@ svg {
     align-content: center;
     width: 22px;
 }
+
+/*Меню над выделенным элементом*/
+.gjs-toolbar {
+    /*position: absolute;*/
+    /*background-color: #0a53be !important;*/
+    /*white-space: nowrap;*/
+    /*color: #fff;*/
+    /*z-index: 10;*/
+    /*top: 0;*/
+    /*left: 0;*/
+}
+
+/* overrides.css - добавьте после импорта grapesjs */
+
 
 
 

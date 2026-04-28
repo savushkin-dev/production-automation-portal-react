@@ -4,18 +4,9 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./../reportsConstruct/ReportEditor.css";
 
 import plugin from 'grapesjs-blocks-basic';
-
-
-import * as XLSX from "xlsx";
-import html2canvas from "html2canvas";
-
-import jsPDF from "jspdf";
 import grapesjs from "grapesjs";
-
 import grapesjspresetwebpage from 'grapesjs-preset-webpage/dist/index.js';
-
 import ru from 'grapesjs/locale/ru';
-
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import Dropdown from "../dropdown/Dropdown";
@@ -132,20 +123,17 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     localeFallback: 'ru',
                     messages: {ru},
                 },
-                dragMode: 'absolute',  //https://github.com/GrapesJS/grapesjs/issues/1936 почитать, полезные вещи
+                dragMode: 'absolute',
                 selectorManager: {componentFirst: true},
                 storageManager: false, // Отключаем сохранение
-
                 plugins: [grapesjspresetwebpage, plugin],
-
                 blockManager: {
                     blocks: []
                 },
-                style: [],
+                style: ` `,
                 canvas: {},
-                // Очищаем список устройств
                 deviceManager: {
-                    devices: [], // Полностью убираем все предустановленные размеры
+                    devices: [], // Очищаем список устройств
                 },
             });
 
@@ -181,6 +169,12 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 .droppable-hover {
                   border: 2px solid #00ff00 !important; /* Зеленая рамка при наведении */
                   background-color: rgba(0, 255, 0, 0.2);
+                }
+                
+                /* Стиль для выделенного элемента */
+                .gjs-selected {
+                      outline: 2px solid #325ee1 !important;
+                      outline-offset: -2px;
                 }
               `);
 
