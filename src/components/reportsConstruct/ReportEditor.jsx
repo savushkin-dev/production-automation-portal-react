@@ -235,22 +235,12 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                 // // Добавляем CSS стили для ресайза
                 // component.addStyle({
-                //     // 'resize': 'both',           // Можно тянуть в обе стороны
-                //     'overflow': 'auto',         // Нужно для работы resize
+                //     // 'resize': 'both',           // Можно тянуть за угол
+                //     'overflow': 'auto',         // Если не вмещается, то будет прокрутка
                 //     'min-width': '20px',        // Минимальная ширина
                 //     'min-height': '20px'        // Минимальная высота
                 // });
 
-            });
-
-            editor.on('component:resize', (data) => {
-                console.log('Type:', data.type);
-                console.log('Style left:', data.component.getStyle().left);
-                console.log('Style top:', data.component.getStyle().top);
-                console.log('el style left:', data.el.style.left);
-                console.log('el style top:', data.el.style.top);
-                console.log('Bounding rect:', data.el.getBoundingClientRect());
-                console.log('---');
             });
 
             //Изменение размера с помощью мыши с учетом отступов канваса если элемент не вложенный
@@ -261,23 +251,14 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                 if (!el || !component) return;
 
-                // Проверяем, является ли элемент вложенным (имеет родителя с position relative/absolute)
                 const parent = component.parent();
                 const isNested = parent && parent.getStyle &&
                     (parent.getStyle().position === 'relative' || parent.getStyle().position === 'absolute');
-
-                // Для вложенных элементов padding компенсировать не нужно
-                const shouldCompensate = !isNested;
 
                 if (type === 'start') {
                     const style = component.getStyle();
                     el.dataset.resizeStartLeft = parseFloat(style.left) || 0;
                     el.dataset.resizeStartTop = parseFloat(style.top) || 0;
-                    el.dataset.resizeStartWidth = parseFloat(style.width) || el.offsetWidth;
-                    el.dataset.resizeStartHeight = parseFloat(style.height) || el.offsetHeight;
-                    el.dataset.lastCorrectedLeft = el.dataset.resizeStartLeft;
-                    el.dataset.lastCorrectedTop = el.dataset.resizeStartTop;
-                    el.dataset.isNested = isNested ? 'true' : 'false';
                     return;
                 }
 
@@ -288,73 +269,27 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         let currentWidth = parseFloat(component.getStyle().width) || el.offsetWidth;
                         let currentHeight = parseFloat(component.getStyle().height) || el.offsetHeight;
 
-                        // Получаем границы body
-                        const body = editor.Canvas.getBody();
-                        const bodyRect = body.getBoundingClientRect();
-
                         let newLeft = currentLeft;
                         let newTop = currentTop;
-                        let newWidth = currentWidth;
-                        let newHeight = currentHeight;
 
-                        if (shouldCompensate) {
-                            // Для корневых элементов - компенсируем padding и ограничиваем
-                            const realLeft = currentLeft - CANVAS_PADDING_HORIZONTAL;
-                            const realTop = currentTop - CANVAS_PADDING_VERTICAL;
-
-                            // Ограничиваем left (не меньше 0)
-                            newLeft = realLeft;
-                            if (newLeft < 0) newLeft = 0;
-
-                            // Ограничиваем top (не меньше 0)
-                            newTop = realTop;
-                            if (newTop < 0) newTop = 0;
-
-                            // Ограничиваем width (не выходит за правую границу)
-                            const maxWidth = bodyRect.width - newLeft;
-                            if (newWidth > maxWidth) newWidth = maxWidth;
-
-                            // Ограничиваем height (не выходит за нижнюю границу)
-                            const maxHeight = bodyRect.height - newTop;
-                            if (newHeight > maxHeight) newHeight = maxHeight;
+                        if (isNested) {
+                            // Для вложенных - компенсируем смещение на 1px влево и вверх
+                            newLeft = currentLeft + 1;
+                            newTop = currentTop + 1;
                         } else {
-                            // Для вложенных элементов - ограничиваем относительно родителя
-                            const parentEl = parent.view?.el;
-                            if (parentEl) {
-                                const parentRect = parentEl.getBoundingClientRect();
-
-                                // Ограничиваем left (не меньше 0 относительно родителя)
-                                if (newLeft < 0) newLeft = 0;
-
-                                // Ограничиваем top (не меньше 0 относительно родителя)
-                                if (newTop < 0) newTop = 0;
-
-                                // Ограничиваем width (не выходит за правую границу родителя)
-                                const maxWidth = parentRect.width - newLeft;
-                                if (newWidth > maxWidth) newWidth = maxWidth;
-
-                                // Ограничиваем height (не выходит за нижнюю границу родителя)
-                                const maxHeight = parentRect.height - newTop;
-                                if (newHeight > maxHeight) newHeight = maxHeight;
-                            }
+                            // Для корневых - компенсируем padding
+                            newLeft = currentLeft - CANVAS_PADDING_HORIZONTAL;
+                            newTop = currentTop - CANVAS_PADDING_VERTICAL;
+                            if (newLeft < 0) newLeft = 0;
+                            if (newTop < 0) newTop = 0;
                         }
 
-                        // Минимальные размеры
-                        const minWidth = 20;
-                        const minHeight = 20;
-                        if (newWidth < minWidth) newWidth = minWidth;
-                        if (newHeight < minHeight) newHeight = minHeight;
-
-                        // Применяем ограничения
                         component.addStyle({
                             left: newLeft + 'px',
                             top: newTop + 'px',
-                            width: newWidth + 'px',
-                            height: newHeight + 'px'
+                            width: currentWidth + 'px',
+                            height: currentHeight + 'px'
                         });
-
-                        el.dataset.lastCorrectedLeft = newLeft;
-                        el.dataset.lastCorrectedTop = newTop;
                     }
                     return;
                 }
@@ -367,65 +302,28 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                     let correctedLeft = finalLeft;
                     let correctedTop = finalTop;
-                    let correctedWidth = finalWidth;
-                    let correctedHeight = finalHeight;
 
-                    if (shouldCompensate) {
-                        // Для корневых элементов
-                        const body = editor.Canvas.getBody();
-                        const bodyRect = body.getBoundingClientRect();
-
+                    if (isNested) {
+                        correctedLeft = finalLeft + 1;
+                        correctedTop = finalTop + 1;
+                    } else {
                         correctedLeft = finalLeft - CANVAS_PADDING_HORIZONTAL;
                         correctedTop = finalTop - CANVAS_PADDING_VERTICAL;
-
                         if (correctedLeft < 0) correctedLeft = 0;
                         if (correctedTop < 0) correctedTop = 0;
-
-                        const maxWidth = bodyRect.width - correctedLeft;
-                        const maxHeight = bodyRect.height - correctedTop;
-
-                        if (correctedWidth > maxWidth) correctedWidth = maxWidth;
-                        if (correctedHeight > maxHeight) correctedHeight = maxHeight;
-                    } else {
-                        // Для вложенных элементов
-                        const parentEl = parent.view?.el;
-                        if (parentEl) {
-                            const parentRect = parentEl.getBoundingClientRect();
-
-                            if (correctedLeft < 0) correctedLeft = 0;
-                            if (correctedTop < 0) correctedTop = 0;
-
-                            const maxWidth = parentRect.width - correctedLeft;
-                            const maxHeight = parentRect.height - correctedTop;
-
-                            if (correctedWidth > maxWidth) correctedWidth = maxWidth;
-                            if (correctedHeight > maxHeight) correctedHeight = maxHeight;
-                        }
                     }
-
-                    // Минимальные размеры
-                    const minWidth = 20;
-                    const minHeight = 20;
-                    if (correctedWidth < minWidth) correctedWidth = minWidth;
-                    if (correctedHeight < minHeight) correctedHeight = minHeight;
 
                     component.addStyle({
                         left: correctedLeft + 'px',
                         top: correctedTop + 'px',
-                        width: correctedWidth + 'px',
-                        height: correctedHeight + 'px'
+                        width: finalWidth + 'px',
+                        height: finalHeight + 'px'
                     });
 
                     delete el.dataset.resizeStartLeft;
                     delete el.dataset.resizeStartTop;
-                    delete el.dataset.resizeStartWidth;
-                    delete el.dataset.resizeStartHeight;
-                    delete el.dataset.lastCorrectedLeft;
-                    delete el.dataset.lastCorrectedTop;
-                    delete el.dataset.isNested;
                 }
             });
-
 
 
             //для того чтобы сдвигать описание футера страницы при изменении высоты
