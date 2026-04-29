@@ -30,9 +30,6 @@ import {ModalErrorScriptCompile} from "./ModalErrorScriptCompile";
 import {defaultScript} from "../../data/report";
 
 
-// Добавляем шрифт Roboto в виртуальную файловую систему pdfmake
-// pdfMake.vfs = pdfFonts.pdfMake.vfs;
-
 const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
         const [isLoading, setIsLoading] = useState(true);
@@ -1284,7 +1281,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
         async function enterPreviewMode(params) {
             params = ReportService.addDefaultParameters(params, parameters);
-            let startTime = performance.now();
             setIsModalParameter(false);
             const data = await fetchReportData("", "", settingDB.url, settingDB.username,
                 settingDB.password, settingDB.driverClassName, sql, "", "", params, script, isSqlMode)
@@ -1301,12 +1297,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             setTimeout(() => {
                 setIsLoading(false)
-
-                let endTime = performance.now();
-                const seconds = (endTime - startTime) / 1000; // Преобразуем миллисекунды в секунды
-                // console.log("Рендер + данные: " + seconds.toFixed(3))
             }, 1300)
-
         }
 
 
