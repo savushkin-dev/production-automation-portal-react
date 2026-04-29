@@ -136,7 +136,11 @@ svg {
     /*left: 0;*/
 }
 
-
+body.alt-zoom-active {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+}
 
 
 
