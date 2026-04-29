@@ -3,17 +3,14 @@
     --gjs-color-blue: #325ee1 !important;
 }
 
-/*.gjs-resizer-h {*/
-/*    pointer-events: all;*/
-/*    position: absolute;*/
-/*    border: 3px solid var(--gjs-color-blue);*/
-/*    width: 8px !important;*/
-/*    height: 8px !important;*/
-/*    background-color: #fff;*/
-/*    margin: var(--gjs-handle-margin)*/
-/*    -5px*/
-/*;*/
-/*}*/
+
+/* Стиль для квадратиков перетаскивания */
+.gjs-resizer-h {
+    border: 3px solid var(--gjs-color-blue) !important;
+    width: 10px !important;
+    height: 10px !important;
+    background-color: #ffffff !important;
+}
 
 .gjs-pn-devices-c {
     /*display: none !important;*/
@@ -92,10 +89,6 @@
     /*Выделение при наведении*/
     outline: 0 solid #b5b5b5 !important;
 }
-.gjs-selected {
-    /*outline: 2px solid #dd118a !important;*/
-    /*outline-offset: 2px !important;*/
-}
 
 .gjs-three-bg {
     background-color: #9a9a9a !important;
@@ -142,8 +135,6 @@ svg {
     /*top: 0;*/
     /*left: 0;*/
 }
-
-/* overrides.css - добавьте после импорта grapesjs */
 
 
 
