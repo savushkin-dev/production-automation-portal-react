@@ -391,22 +391,12 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     return;
                 }
 
-                const parentEl = modelEl.parentElement;
-                const parentRect = parentEl.getBoundingClientRect();
-                const modelRect = modelEl.getBoundingClientRect();
-
-                const initialTop = modelRect.top - parentRect.top;
-                // console.log("initialTop " + initialTop)
-
                 const modelRectBefore = modelEl.getBoundingClientRect();
 
                 const x = modelRectBefore.left + modelRectBefore.width / 2;
                 const y = modelRectBefore.top + modelRectBefore.height / 2;
 
-                // console.log("modelRectBefore.top " + modelRectBefore.top)
-
                 const target = findTargetComponentAtPoint(editor.DomComponents.getComponents(), x, y, modelEl);
-
 
                 if (target && target !== param.parent) {
                     const targetEl = target.view?.el;
@@ -415,12 +405,14 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         const modelTopBefore = modelRectBefore.top;
                         const modelLeftBefore = modelRectBefore.left;
 
-                        if ((targetEl.getAttribute('data-band') === 'true') || (targetEl.getAttribute('band') === 'true')
-                            || (targetEl.getAttribute('data-band-child') === 'true')) {
+                        if ((targetEl.getAttribute('data-band') === 'true') ||
+                            (targetEl.getAttribute('band') === 'true') ||
+                            (targetEl.getAttribute('data-band-child') === 'true')) {
+
                             // Вставляем модель внутрь нового родителя
                             target.append(model);
 
-                            //Компенсация отступа сверху при перетаскивании
+                            // Компенсация отступа при перетаскивании
                             requestAnimationFrame(() => {
                                 const modelElAfter = model.view?.el;
                                 if (!modelElAfter) return;
@@ -430,37 +422,29 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                 const modelLeftAfter = modelRectAfter.left;
 
                                 // Вычисляем разницу между старым и новым положением
-                                const deltaY = modelTopBefore - (modelTopAfter);
-                                const deltaX = modelLeftBefore - (modelLeftAfter);
+                                const deltaY = modelTopBefore - modelTopAfter;
+                                const deltaX = modelLeftBefore - modelLeftAfter;
 
-                                // // Применяем компенсацию через CSS-трансформацию (менее затратно, чем top/left)
-                                // model.target.addStyle({
-                                //     transform: `translate(${deltaX}px, ${deltaY}px)`,
-                                // });
+                                // Получаем текущие стили компонента
+                                const currentStyle = model.getStyle();
+                                let currentLeft = parseFloat(currentStyle.left) || 0;
+                                let currentTop = parseFloat(currentStyle.top) || 0;
 
-                                // console.log("modelTopBefore: " + modelTopBefore)
-                                // console.log("modelTopAfter: " + modelTopAfter)
-                                // console.log("deltaY: " + deltaY)
+                                // Если элемент позиционирован не абсолютно, устанавливаем
+                                if (currentStyle.position !== 'absolute') {
+                                    model.addStyle({ position: 'absolute' });
+                                }
+
+                                // Применяем компенсацию, добавляя дельту к текущей позиции
                                 model.addStyle({
-                                    // position: 'relative',
-                                    // top: `${deltaY}px`
-                                    top: `20%`
+                                    left: (currentLeft + deltaX) + 'px',
+                                    top: (currentTop + deltaY) + 'px'
                                 });
-
-                                // Через 1 кадр убираем компенсацию (после завершения анимации)
-                                requestAnimationFrame(() => {
-                                    model.addStyle({
-                                        transform: 'none',
-                                    });
-                                });
-
-                                // console.log(`Компенсировано смещение: X=${deltaX}px, Y=${deltaY}px`);
                             });
                         }
                     }
                 }
             }
-
 
             function findTargetComponentAtPoint(components, x, y, ignoreEl) {
                 let target = null;
