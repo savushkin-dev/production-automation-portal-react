@@ -398,51 +398,104 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                 const target = findTargetComponentAtPoint(editor.DomComponents.getComponents(), x, y, modelEl);
 
-                if (target && target !== param.parent) {
-                    const targetEl = target.view?.el;
+                // Получаем текущего родителя модели
+                const currentParent = model.parent();
 
-                    if (targetEl) {
+                // Проверяем, является ли цель бэндом
+                const isTargetBand = target && target.view?.el && (
+                    target.view.el.hasAttribute('data-band') ||
+                    target.view.el.hasAttribute('band') ||
+                    target.view.el.hasAttribute('data-band-child')
+                );
+
+                // Проверяем, является ли текущий родитель бэндом
+                const isCurrentParentBand = currentParent && currentParent.view?.el && (
+                    currentParent.view.el.hasAttribute('data-band') ||
+                    currentParent.view.el.hasAttribute('band') ||
+                    currentParent.view.el.hasAttribute('data-band-child')
+                );
+
+                // Случай 1: Перетаскивание НАД бэндом, который НЕ является текущим родителем
+                if (isTargetBand && target !== currentParent) {
+                    const modelTopBefore = modelRectBefore.top;
+                    const modelLeftBefore = modelRectBefore.left;
+
+                    // Вставляем модель внутрь нового бэнда
+                    target.append(model);
+
+                    // Компенсация отступа при перетаскивании
+                    requestAnimationFrame(() => {
+                        const modelElAfter = model.view?.el;
+                        if (!modelElAfter) return;
+
+                        const modelRectAfter = modelElAfter.getBoundingClientRect();
+                        const deltaY = modelTopBefore - modelRectAfter.top;
+                        const deltaX = modelLeftBefore - modelRectAfter.left;
+
+                        const currentStyle = model.getStyle();
+                        let currentLeft = parseFloat(currentStyle.left) || 0;
+                        let currentTop = parseFloat(currentStyle.top) || 0;
+
+                        if (currentStyle.position !== 'absolute') {
+                            model.addStyle({ position: 'absolute' });
+                        }
+
+                        model.addStyle({
+                            left: (currentLeft + deltaX) + 'px',
+                            top: (currentTop + deltaY) + 'px'
+                        });
+                    });
+                    return;
+                }
+
+                // Случай 2: Перетаскивание НЕ над бэндом И элемент находится внутри бэнда
+                if (!isTargetBand && isCurrentParentBand) {
+                    // Перемещаем в корень (wrapper)
+                    const wrapper = editor.getWrapper();
+                    if (wrapper && currentParent !== wrapper) {
                         const modelTopBefore = modelRectBefore.top;
                         const modelLeftBefore = modelRectBefore.left;
+                        const canvasRect = editor.Canvas.getBody().getBoundingClientRect();
 
-                        if ((targetEl.getAttribute('data-band') === 'true') ||
-                            (targetEl.getAttribute('band') === 'true') ||
-                            (targetEl.getAttribute('data-band-child') === 'true')) {
+                        wrapper.append(model);
 
-                            // Вставляем модель внутрь нового родителя
-                            target.append(model);
+                        requestAnimationFrame(() => {
+                            const modelElAfter = model.view?.el;
+                            if (!modelElAfter) return;
 
-                            // Компенсация отступа при перетаскивании
-                            requestAnimationFrame(() => {
-                                const modelElAfter = model.view?.el;
-                                if (!modelElAfter) return;
+                            // Вычисляем позицию относительно canvas
+                            let newLeft = modelLeftBefore - canvasRect.left;
+                            let newTop = modelTopBefore - canvasRect.top;
 
-                                const modelRectAfter = modelElAfter.getBoundingClientRect();
-                                const modelTopAfter = modelRectAfter.top;
-                                const modelLeftAfter = modelRectAfter.left;
+                            if (newLeft < 0) newLeft = 0;
+                            if (newTop < 0) newTop = 0;
 
-                                // Вычисляем разницу между старым и новым положением
-                                const deltaY = modelTopBefore - modelTopAfter;
-                                const deltaX = modelLeftBefore - modelLeftAfter;
-
-                                // Получаем текущие стили компонента
-                                const currentStyle = model.getStyle();
-                                let currentLeft = parseFloat(currentStyle.left) || 0;
-                                let currentTop = parseFloat(currentStyle.top) || 0;
-
-                                // Если элемент позиционирован не абсолютно, устанавливаем
-                                if (currentStyle.position !== 'absolute') {
-                                    model.addStyle({ position: 'absolute' });
-                                }
-
-                                // Применяем компенсацию, добавляя дельту к текущей позиции
-                                model.addStyle({
-                                    left: (currentLeft + deltaX) + 'px',
-                                    top: (currentTop + deltaY) + 'px'
-                                });
+                            model.addStyle({
+                                position: 'absolute',
+                                left: newLeft + 'px',
+                                top: newTop + 'px'
                             });
-                        }
+                        });
                     }
+                    return;
+                }
+
+                // Случай 3: Перетаскивание внутри того же бэнда - ничего не делаем
+                if (isTargetBand && target === currentParent) {
+                    // Элемент уже в этом бэнде, просто обновляем позицию
+                    const parentRect = currentParent.view.el.getBoundingClientRect();
+                    let newLeft = modelRectBefore.left - parentRect.left;
+                    let newTop = modelRectBefore.top - parentRect.top;
+
+                    if (newLeft < 0) newLeft = 0;
+                    if (newTop < 0) newTop = 0;
+
+                    model.addStyle({
+                        position: 'absolute',
+                        left: newLeft + 'px',
+                        top: newTop + 'px'
+                    });
+                    return;
                 }
             }
 
