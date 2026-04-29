@@ -73,7 +73,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
         const [optReportsName, setOptReportsName] = useState([]);
 
-        const [reportName, setReportName] = useState("");
+        const [reportName, setReportName] = useState("report");
         const [reportCategory, setReportCategory] = useState("");
         const [parameters, setParameters] = useState([]);
         const [layoutParam, setLayoutParam] = useState("");
@@ -585,7 +585,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             // Событие начала перетаскивания компонента
             editor.on("component:drag:start", (model) => {
-                // console.log("Началось перетаскивание компонента:", model);
                 // Убираем индикаторы с возможных контейнеров
                 editor.getComponents().forEach((comp) => {
                     comp.removeClass("droppable-hover");
@@ -594,7 +593,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             // Обработчик события перемещения компонента
             editor.on("component:drag:stop", (model) => {
-                // console.log("Перетаскивание завершено:", model);
                 // Убираем индикатор с контейнера
                 editor.getComponents().forEach((comp) => {
                     comp.removeClass("droppable-hover");
@@ -685,8 +683,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             editor.on("component:drag:end", (event => {
                 restrictDragToCanvas(event.target);
             }));
-
-            // console.log(editor.Panels.getPanel('options'))
 
             editor.Panels.removeButton('options', 'preview');
             editor.Panels.removeButton('options', 'gjs-open-import-webpage');
@@ -779,8 +775,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
             `);
         };
-
-
 
         useEffect(() => {
             if (!editorView) return;
