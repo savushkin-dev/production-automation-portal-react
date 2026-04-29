@@ -731,7 +731,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             canvasElement.style.width = `${width + (CANVAS_PADDING_HORIZONTAL * 2)}px`;
             canvasElement.style.height = `${height + (CANVAS_PADDING_VERTICAL * 2)}px`;
-            canvasElement.style.marginLeft = '2%';
+            isBookOrientation? canvasElement.style.marginLeft = '15%' : canvasElement.style.marginLeft = '5%';
             canvasElement.style.marginTop = '20px';
             canvasElement.style.overflow = 'hidden';
 
@@ -904,13 +904,14 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             document.body.removeChild(fileInput);
         };
 
+
         const updateCanvasZoom = (newZoom) => {
             if (!editorView) return;
             const frame = editorView.Canvas.getElement();
             if (frame) {
-                const scaleValue = newZoom / 100; // Преобразуем проценты в scale
+                const scaleValue = newZoom / 100;
                 frame.style.transform = `scale(${scaleValue})`;
-                frame.style.transformOrigin = "center top"; // Фиксируем точку начала
+                frame.style.transformOrigin = "0 0";  // ВАЖНО: левый верхний угол
             }
         };
 
