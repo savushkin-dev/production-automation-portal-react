@@ -1573,26 +1573,45 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             setIsModalParameter(true);
         }
 
-        async function enterPreviewMode(params) {
-            params = ReportService.addDefaultParameters(params, parameters);
-            setIsModalParameter(false);
-            const data = await fetchReportData("", "", settingDB.url, settingDB.username,
-                settingDB.password, settingDB.driverClassName, sql, "", "", params, script, isSqlMode)
-            if (!data) {
-                return
-            }
-            setDataParam(params)
-            setData(data)
-            setHtml(editorView.getHtml())
-            setCss(editorView.getCss())
+    async function enterPreviewMode(params) {
+        params = ReportService.addDefaultParameters(params, parameters);
+        setIsModalParameter(false);
 
-            setIsJavaEditor(false)
-            setIsViewMode(true)
+        const data = await fetchReportData("", "", settingDB.url, settingDB.username,
+            settingDB.password, settingDB.driverClassName, sql, "", "", params, script, isSqlMode)
 
-            setTimeout(() => {
-                setIsLoading(false)
-            }, 1300)
+        if (!data) {
+            return
         }
+
+        // 👇 ДОБАВЛЯЕМ ТЕСТОВЫЕ ДАННЫЕ В globalVar
+        data.globalVar = {
+            dynamicLabels: ['Янв', 'Фев', 'Март', 'Апр', 'Май'],
+            dynamicData: [100, 200, 150, 180, 220]
+        };
+
+        // Также добавляем данные в каждую строку таблицы
+        if (data.tableData && data.tableData.length > 0) {
+            data.tableData = data.tableData.map(row => ({
+                ...row,
+                dynamicLabels: ['Янв', 'Фев', 'Март', 'Апр', 'Май'],
+                dynamicData: [row.number_field, row.number_field + 10, row.number_field + 20, row.number_field + 15, row.number_field + 5]
+            }));
+        }
+        // 👆 ДО СЮДА
+
+        setDataParam(params)
+        setData(data)
+        setHtml(editorView.getHtml())
+        setCss(editorView.getCss())
+
+        setIsJavaEditor(false)
+        setIsViewMode(true)
+
+        setTimeout(() => {
+            setIsLoading(false)
+        }, 1300)
+    }
 
 
         function defineBands(html) {
