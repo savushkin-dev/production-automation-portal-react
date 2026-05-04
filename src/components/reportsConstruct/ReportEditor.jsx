@@ -126,6 +126,24 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 selectorManager: {componentFirst: true},
                 storageManager: false, // Отключаем сохранение
                 plugins: [grapesjspresetwebpage, plugin, chartjsPlugin],
+                pluginsOpts: {
+                    [chartjsPlugin]: {
+                        // Выбираем только нужные типы графиков
+                        blocks: ['chartjs-bar', 'chartjs-pie', 'chartjs-line'],
+
+                        // Настройка категории
+                        category: {
+                            id: 'chartjs',
+                            label: 'Графики'
+                        },
+
+                        // Chart.js опции
+                        chartjsOptions: {
+                            maintainAspectRatio: false,
+                            responsive: true
+                        }
+                    }
+                },
                 blockManager: {
                     blocks: []
                 },
@@ -135,6 +153,103 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     devices: [], // Очищаем список устройств
                 },
             });
+
+            // === НАСТРОЙКА ГРАФИКОВ ===
+
+            editor.on('load', () => {
+                const names = {
+                    'chartjs-bar': 'Столбчатая диаграмма',
+                    'chartjs-line': 'Линейный график',
+                    'chartjs-pie': 'Круговая диаграмма',
+                };
+                editor.BlockManager.getAll().forEach(b => {
+                    if (names[b.get('id')]) {
+                        b.set('label', `<i class="fa-solid fa-chart-simple"></i> ${names[b.get('id')]}`);
+                        b.set('category', 'Графики');
+                    }
+                });
+                editor.BlockManager.render();
+            });
+
+            const DI = {
+                'cjs-chart-labels': 'Подписи данных',
+                'cjs-chart-title': 'Заголовок графика',
+                'cjs-chart-subtitle': 'Подзаголовок',
+                'cjs-chart-width': 'Ширина графика',
+                'cjs-chart-height': 'Высота графика',
+                'cjs-add-dataset': 'Добавить набор данных',
+                'dataset-label': 'Название набора',
+                'dataset-data': 'Данные набора',
+                'add-background-color': 'Добавить цвет фона',
+                'add-border-color': 'Добавить цвет границы',
+                'dataset-border-width': 'Толщина границы',
+                'remove-dataset': 'Удалить набор',
+                'dataset-background-color': 'Цвет фона',
+                'dataset-border-color': 'Цвет границы',
+                'dataset-custom-fill': 'Заливка',
+                'dataset-custom-tension': 'Натяжение',
+            };
+
+            function t(key, num) { return num ? `${DI[key]} ${num}` : DI[key]; }
+
+            function fix(c) {
+                if (!c || c.get?.('type') !== 'chartjs') return;
+                (c.get('traits') || []).forEach(tr => {
+                    const n = tr.get('name');
+                    if (!n) return;
+                    const num = n.match(/(\d+)$/)?.[1] || '';
+                    let l = '';
+                    if (DI[n]) l = t(n);
+                    else if (n.startsWith('cjs-dataset-label-')) l = t('dataset-label', num);
+                    else if (n.startsWith('cjs-dataset-data-')) l = t('dataset-data', num);
+                    else if (n.startsWith('cjs-add-background-color-')) l = t('add-background-color', num);
+                    else if (n.startsWith('cjs-add-border-color-')) l = t('add-border-color', num);
+                    else if (n.startsWith('cjs-dataset-border-width-')) l = t('dataset-border-width', num);
+                    else if (n.startsWith('cjs-remove-dataset-')) l = t('remove-dataset', num);
+                    else if (n.startsWith('cjs-dataset-background-color-')) l = t('dataset-background-color', num);
+                    else if (n.startsWith('cjs-dataset-border-color-')) l = t('dataset-border-color', num);
+                    else if (n.startsWith('cjs-dataset-custom-fill-')) l = t('dataset-custom-fill', num);
+                    else if (n.startsWith('cjs-dataset-custom-tension-')) l = t('dataset-custom-tension', num);
+
+                    if (l) {
+                        tr.set('label', l);
+                        tr.set('text', l);
+                        // 🔥 Для button типа текст берется из value!
+                        if (n.includes('add-') || n.includes('remove-')) {
+                            tr.set('value', l);
+                        }
+                    }
+                });
+            }
+
+
+// Будем вызывать fix КАЖДЫЕ 300мс для выбранного компонента
+            let intervalId = null;
+            editor.on('component:selected', (c) => {
+                if (intervalId) clearInterval(intervalId);
+                if (c?.get?.('type') === 'chartjs') {
+                    fix(c);
+                    intervalId = setInterval(() => fix(c), 300);
+                }
+            });
+
+            editor.on('component:add', (c) => {
+                if (c.get?.('type') === 'chartjs') setTimeout(() => fix(c), 500);
+            });
+
+// === КОНЕЦ ===
+
+            // // Временно добавьте этот код для отладки
+            // editor.on('component:selected', (component) => {
+            //     if (component.get('type') === 'chartjs') {
+            //         console.log('=== ВСЕ TRAITS ===');
+            //         const traits = component.get('traits');
+            //         traits.forEach((trait, index) => {
+            //             console.log(`${index}: name="${trait.get('name')}", label="${trait.get('label')}", value="${trait.get('value')}"`);
+            //         });
+            //         console.log('================');
+            //     }
+            // });
 
 
             setTimeout(() => {
