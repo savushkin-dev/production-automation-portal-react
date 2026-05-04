@@ -22,6 +22,7 @@
     "env-cmd": "^11.0.0",
     "grapesjs": "^0.22.15",
     "grapesjs-blocks-basic": "^1.0.2",
+    "grapesjs-chartjs-plugin": "^0.2.0",
     "grapesjs-preset-webpage": "^1.0.3",
     "grapesjs-table": "^1.0.8",
     "html-to-pdfmake": "^2.5.20",

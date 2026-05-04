@@ -6,6 +6,8 @@ import "./../reportsConstruct/ReportEditor.css";
 import plugin from 'grapesjs-blocks-basic';
 import grapesjs from "grapesjs";
 import grapesjspresetwebpage from 'grapesjs-preset-webpage/dist/index.js';
+
+import chartjsPlugin from 'grapesjs-chartjs-plugin'; // 👈 ДОБАВЬТЕ ЭТУ СТРОКУ
 import ru from 'grapesjs/locale/ru';
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
@@ -123,7 +125,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 dragMode: 'absolute',
                 selectorManager: {componentFirst: true},
                 storageManager: false, // Отключаем сохранение
-                plugins: [grapesjspresetwebpage, plugin],
+                plugins: [grapesjspresetwebpage, plugin, chartjsPlugin],
                 blockManager: {
                     blocks: []
                 },
