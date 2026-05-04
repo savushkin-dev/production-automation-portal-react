@@ -129,7 +129,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 pluginsOpts: {
                     [chartjsPlugin]: {
                         // Выбираем только нужные типы графиков
-                        blocks: ['chartjs-bar', 'chartjs-pie', 'chartjs-line'],
+                        blocks: ['chartjs-bar', 'chartjs-pie', 'chartjs-line', 'chartjs-doughnut', 'chartjs-polarArea',
+                            'chartjs-radar', 'chartjs-bubble', 'chartjs-scatter'],
 
                         // Настройка категории
                         category: {
@@ -161,10 +162,15 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     'chartjs-bar': 'Столбчатая диаграмма',
                     'chartjs-line': 'Линейный график',
                     'chartjs-pie': 'Круговая диаграмма',
+                    'chartjs-doughnut': 'Кольцевая диаграмма',
+                    'chartjs-polarArea': 'Полярная диаграмма',
+                    'chartjs-radar': 'Радарная диаграмма',
+                    'chartjs-bubble': 'Пузырьковая диаграмма',
+                    'chartjs-scatter': 'Точечная диаграмма',
                 };
                 editor.BlockManager.getAll().forEach(b => {
                     if (names[b.get('id')]) {
-                        b.set('label', `<i class="fa-solid fa-chart-simple"></i> ${names[b.get('id')]}`);
+                        b.set('label', `${names[b.get('id')]}`);
                         b.set('category', 'Графики');
                     }
                 });
@@ -190,15 +196,56 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 'dataset-custom-tension': 'Натяжение',
             };
 
-            function t(key, num) { return num ? `${DI[key]} ${num}` : DI[key]; }
+            function t(key, num) {
+                return num ? `${DI[key]} ${num}` : DI[key];
+            }
+
+            function fixCategoryLabels(editor) {
+                // Исправляем заголовки категорий (они находятся вне компонента)
+                setTimeout(() => {
+                    const traitCategories = document.querySelectorAll('.gjs-trait-category .gjs-title');
+                    traitCategories.forEach(category => {
+                        const titleText = category.innerText || category.textContent;
+                        // Проверяем, содержит ли заголовок "#X undefined"
+                        if (titleText && titleText.includes('undefined')) {
+                            const match = titleText.match(/#(\d+)/);
+                            if (match) {
+                                const num = match[1];
+                                // Заменяем на правильный текст
+                                if (titleText.includes('add-background-color') || titleText.includes('add-border-color')) {
+                                    // Это категория цвета
+                                    const newText = `Цветовые настройки #${num}`;
+                                    if (category.childNodes.length > 1) {
+                                        // Сохраняем иконку, меняем только текст
+                                        const icon = category.querySelector('.gjs-caret-icon');
+                                        if (icon && icon.nextSibling) {
+                                            icon.nextSibling.textContent = ` Цветовые настройки #${num}`;
+                                        } else {
+                                            category.childNodes[category.childNodes.length - 1].textContent = ` Цветовые настройки #${num}`;
+                                        }
+                                    } else {
+                                        category.textContent = newText;
+                                        // Восстанавливаем иконку
+                                        const icon = document.createElement('i');
+                                        icon.className = 'gjs-caret-icon fa fa-caret-down';
+                                        category.prepend(icon);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }, 100);
+            }
 
             function fix(c) {
                 if (!c || c.get?.('type') !== 'chartjs') return;
+
                 (c.get('traits') || []).forEach(tr => {
                     const n = tr.get('name');
                     if (!n) return;
                     const num = n.match(/(\d+)$/)?.[1] || '';
                     let l = '';
+
                     if (DI[n]) l = t(n);
                     else if (n.startsWith('cjs-dataset-label-')) l = t('dataset-label', num);
                     else if (n.startsWith('cjs-dataset-data-')) l = t('dataset-data', num);
@@ -214,14 +261,76 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     if (l) {
                         tr.set('label', l);
                         tr.set('text', l);
-                        // 🔥 Для button типа текст берется из value!
+                        // Для button типа текст берется из value!
                         if (n.includes('add-') || n.includes('remove-')) {
                             tr.set('value', l);
                         }
                     }
                 });
+
+                // Дополнительно исправляем кнопки в DOM после обновления traits
+                setTimeout(() => {
+                    fixButtonsAndLabelsInDOM();
+                }, 50);
             }
 
+            function fixButtonsAndLabelsInDOM() {
+                // Исправляем кнопки "Удалить набор"
+                const removeButtons = document.querySelectorAll('.gjs-trt-trait--button button');
+                removeButtons.forEach(btn => {
+                    if (btn.textContent === 'undefined' || btn.textContent === 'undefined undefined') {
+                        const parentTrait = btn.closest('.gjs-trt-trait__wrp');
+                        if (parentTrait) {
+                            const className = parentTrait.className;
+                            const match = className.match(/cjs-remove-dataset-(\d+)/);
+                            if (match) {
+                                const num = match[1];
+                                btn.textContent = `Удалить набор ${num}`;
+                            } else {
+                                btn.textContent = 'Удалить набор';
+                            }
+                        }
+                    }
+                });
+
+                // Исправляем title у кнопок цветов
+                const colorButtons = document.querySelectorAll('.cjs-button');
+                colorButtons.forEach(btn => {
+                    if (btn.title === 'undefined') {
+                        const wrapper = btn.closest('[data-cjs-wrapper]');
+                        if (wrapper) {
+                            const isRemoveBtn = btn.hasAttribute('data-cjs-remove-color');
+                            const id = wrapper.id;
+                            const match = id ? id.match(/-(\d+)$/) : null;
+                            const num = match ? match[1] : '';
+
+                            if (isRemoveBtn) {
+                                btn.title = num ? `Удалить цвет #${num}` : 'Удалить цвет';
+                            } else {
+                                btn.title = num ? `Добавить цвет #${num}` : 'Добавить цвет';
+                            }
+                        }
+                    }
+                });
+
+                // Исправляем текстовые метки у контейнеров цветов
+                const colorLabels = document.querySelectorAll('[data-cjs-label]');
+                colorLabels.forEach(label => {
+                    const span = label.querySelector('span') || label;
+                    if (span.textContent === '' || span.textContent === 'undefined' || span.textContent.includes('undefined')) {
+                        const wrapper = label.closest('[data-cjs-wrapper]');
+                        if (wrapper) {
+                            const id = wrapper.id;
+                            const match = id ? id.match(/cjs-(add-background-color|add-border-color)-(\d+)/) : null;
+                            if (match) {
+                                const type = match[1] === 'add-background-color' ? 'фона' : 'границы';
+                                const num = match[2];
+                                span.textContent = `Добавить цвет ${type} ${num}`;
+                            }
+                        }
+                    }
+                });
+            }
 
 // Будем вызывать fix КАЖДЫЕ 300мс для выбранного компонента
             let intervalId = null;
@@ -229,12 +338,48 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 if (intervalId) clearInterval(intervalId);
                 if (c?.get?.('type') === 'chartjs') {
                     fix(c);
-                    intervalId = setInterval(() => fix(c), 300);
+                    fixCategoryLabels(editor);
+                    intervalId = setInterval(() => {
+                        fix(c);
+                        fixCategoryLabels(editor);
+                    }, 300);
                 }
             });
 
             editor.on('component:add', (c) => {
-                if (c.get?.('type') === 'chartjs') setTimeout(() => fix(c), 500);
+                if (c.get?.('type') === 'chartjs') {
+                    setTimeout(() => {
+                        fix(c);
+                        fixCategoryLabels(editor);
+                    }, 500);
+                }
+            });
+
+// Также запускаем фикс после рендера компонента
+            editor.on('component:update', (c) => {
+                if (c?.get?.('type') === 'chartjs') {
+                    setTimeout(() => {
+                        fix(c);
+                        fixCategoryLabels(editor);
+                    }, 100);
+                }
+            });
+
+// Мониторим изменения DOM для новых кнопок
+            const observer = new MutationObserver(() => {
+                fixButtonsAndLabelsInDOM();
+                fixCategoryLabels(editor);
+            });
+
+            editor.on('load', () => {
+                setTimeout(() => {
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true,
+                        attributes: true,
+                        attributeFilter: ['title', 'textContent']
+                    });
+                }, 1000);
             });
 
 // === КОНЕЦ ===
