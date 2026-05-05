@@ -611,7 +611,7 @@ function SchedulerPage() {
     }
 
     function onItemSelect(itemId, e, time) {
-        if (itemId.includes('cleaning')) {
+        if (itemId.includes('cleaning') && !itemId.includes('cleaning-delay')) {
             return;
         }
         const itemsArray = planByHardware;
