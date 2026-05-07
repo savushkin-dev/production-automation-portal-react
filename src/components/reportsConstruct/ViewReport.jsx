@@ -155,7 +155,13 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                         }
                                     } else {
                                         // Для обычных графиков
-                                        parsedData = datasetData.split(',').map(Number);
+                                        // Очищаем данные от квадратных скобок и пробелов
+                                        let cleanData = datasetData;
+                                        if (cleanData.startsWith('[') && cleanData.endsWith(']')) {
+                                            cleanData = cleanData.slice(1, -1);
+                                        }
+                                        parsedData = cleanData.split(',').map(Number);
+                                        console.log('Parsed data length:', parsedData.length);
                                     }
                                     
                                     const dataset = {
@@ -270,16 +276,42 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
     function replaceChartDataInHtml(html, rowData) {
         let result = html;
 
-        // Заменяем cjs-chart-labels
-        if (rowData.dynamicLabels) {
+        console.log('dynamicData2:', rowData.dynamicData2);
+        console.log('dynamicData2 length:', rowData.dynamicData2?.length);
+
+        // Найдем атрибуты графика
+        const labelsMatch = html.match(/cjs-chart-labels="([^"]*)"/);
+        const dataMatch = html.match(/cjs-dataset-data-1="([^"]*)"/);
+
+        console.log('=== Current HTML values ===');
+        console.log('Current labels in HTML:', labelsMatch ? labelsMatch[1] : 'not found');
+        console.log('Current data1 in HTML:', dataMatch ? dataMatch[1] : 'not found');
+
+        console.log('=== replaceChartDataInHtml ===');
+        console.log('rowData:', rowData);
+
+        // Заменяем labels ТОЛЬКО если есть плейсхолдер
+        if (rowData.dynamicLabels && result.includes('cjs-chart-labels="{{dynamicLabels}}"')) {
             const labelsValue = Array.isArray(rowData.dynamicLabels) ? rowData.dynamicLabels.join(',') : String(rowData.dynamicLabels);
+            console.log('Labels to set:', labelsValue);
             result = result.replace(/cjs-chart-labels="[^"]*"/, `cjs-chart-labels="${labelsValue}"`);
+            console.log('Labels replaced');
         }
 
-        // Заменяем cjs-dataset-data-1
-        if (rowData.dynamicData) {
-            const dataValue = Array.isArray(rowData.dynamicData) ? rowData.dynamicData.join(',') : String(rowData.dynamicData);
-            result = result.replace(/cjs-dataset-data-1="[^"]*"/, `cjs-dataset-data-1="${dataValue}"`);
+        // Заменяем датасеты ТОЛЬКО если есть плейсхолдер
+        let dsIndex = 1;
+        while (true) {
+            const dataValue = rowData[`dynamicData${dsIndex}`];
+            if (!dataValue) break;
+
+            const placeholder = `cjs-dataset-data-${dsIndex}="{{dynamicData${dsIndex}}}"`;
+            if (result.includes(placeholder)) {
+                const dataStr = Array.isArray(dataValue) ? dataValue.join(',') : String(dataValue);
+                const regex = new RegExp(`cjs-dataset-data-${dsIndex}="[^"]*"`);
+                result = result.replace(regex, `cjs-dataset-data-${dsIndex}="${dataStr}"`);
+                console.log(`Data${dsIndex} replaced`);
+            }
+            dsIndex++;
         }
 
         return result;

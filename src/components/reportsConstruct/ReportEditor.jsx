@@ -1584,21 +1584,26 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             return
         }
 
-        // 👇 ДОБАВЛЯЕМ ТЕСТОВЫЕ ДАННЫЕ В globalVar
+        // 👇 ТЕСТОВЫЕ ДАННЫЕ С ТРЕМЯ ДАТАСЕТАМИ
         data.globalVar = {
             dynamicLabels: ['Янв', 'Фев', 'Март', 'Апр', 'Май'],
-            dynamicData: [100, 200, 150, 180, 220]
+            dynamicData1: [100, 200, 150, 180, 220],
+            dynamicData2: [50, 80, 120, 90, 60],
+            dynamicData3: [30, 40, 60, 50, 45]
         };
 
-        // Также добавляем данные в каждую строку таблицы
+// Также добавляем данные в каждую строку таблицы
         if (data.tableData && data.tableData.length > 0) {
             data.tableData = data.tableData.map(row => ({
                 ...row,
                 dynamicLabels: ['Янв', 'Фев', 'Март', 'Апр', 'Май'],
-                dynamicData: [row.number_field, row.number_field + 10, row.number_field + 20, row.number_field + 15, row.number_field + 5]
+                dynamicData1: [row.number_field, row.number_field + 100, row.number_field + 200, row.number_field + 150, row.number_field + 50],
+                dynamicData2: [row.number_field + 50, row.number_field + 15, row.number_field + 25, row.number_field + 20, row.number_field + 10],
+                dynamicData3: [row.number_field + 70, row.number_field + 45, row.number_field + 65, row.number_field + 80, row.number_field + 30],
+                dynamicData4: [row.number_field + 2, row.number_field + 7, row.number_field + 12, row.number_field + 9, row.number_field + 4]
             }));
         }
-        // 👆 ДО СЮДА
+// 👆 ДО СЮДА
 
         setDataParam(params)
         setData(data)
