@@ -1,4 +1,5 @@
 import React from 'react'
+import {formatIsoToDatetimeWithoutSeconds} from "../../utils/date/date";
 
 export function ModalDateSettings({lines, setLines, onClose,
                                   changeTime, changeMaxEndTime}) {
@@ -29,6 +30,14 @@ export function ModalDateSettings({lines, setLines, onClose,
         changeMaxEndTime(line, newTime);
     };
 
+    // Преобразуем, чтобы исключить секунды
+    const formatForInput = (dateTimeString) => {
+        if (!dateTimeString) return '';
+        const formatted = formatIsoToDatetimeWithoutSeconds(dateTimeString);
+        // Заменяем пробел на T для совместимости с input type="datetime-local"
+        return formatted.replace(' ', 'T');
+    };
+
     return (
         <>
             <div
@@ -55,14 +64,14 @@ export function ModalDateSettings({lines, setLines, onClose,
 
                                 <div  className="flex flex-row w-[35%] justify-center">
                                     <input className="py-1 px-2 font-medium " type={"datetime-local"}
-                                           value={line.startDateTime}
+                                           value={formatForInput(line.startDateTime)}
                                            onChange={(e) => handleTimeChange(line.id, e.target.value)}
                                     />
                                 </div>
                                 <div  className="flex flex-row w-[35%] justify-center">
 
                                     <input className="py-1 px-2 font-medium " type={"datetime-local"}
-                                           value={line.maxEndDateTime}
+                                           value={formatForInput(line.maxEndDateTime)}
                                            onChange={(e) => handleMaxTimeChange(line.id, e.target.value)}
                                     />
                                 </div>
