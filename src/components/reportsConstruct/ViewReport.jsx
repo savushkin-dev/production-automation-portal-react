@@ -72,6 +72,9 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                 return;
                             }
                             
+                            // ВРЕМЕННО: выводим атрибуты цветов для отладки
+
+                            
                             const chartDivs = document.querySelectorAll('[data-gjs-type="chartjs"]');
                             
                             chartDivs.forEach(function(div) {
@@ -86,6 +89,17 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                     const datasets = [];
                                     let datasetIndex = 1;
                                     
+                                    if (datasetIndex === 1) {
+
+                                    }
+                                    
+                                    //Логи всех атрибутов для разработки
+                                    const div2 = document.querySelector('[data-gjs-type="chartjs"]');
+                                    Array.from(div2.attributes).forEach(attr => {
+                                        console.log(attr.name, '=', attr.value);
+                                    });
+
+
                                     while (true) {
                                         const datasetData = div.getAttribute(\`cjs-dataset-data-\${datasetIndex}\`);
                                         if (!datasetData) break;
@@ -93,14 +107,44 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                         const datasetLabel = div.getAttribute(\`cjs-dataset-label-\${datasetIndex}\`);
                                         const borderWidth = div.getAttribute(\`cjs-dataset-border-width-\${datasetIndex}\`);
                                         
-                                        let backgroundColor = div.getAttribute(\`cjs-dataset-background-color-\${datasetIndex}\`);
-                                        let borderColor = div.getAttribute(\`cjs-dataset-border-color-\${datasetIndex}\`);
-                                        
-                                        if (!backgroundColor) {
-                                            backgroundColor = div.getAttribute(\`cjs-dataset-background-color-0-\${datasetIndex}\`);
+                                        // Собираем все цвета фона в массив (для всех типов графиков)
+                                        const bgColors = [];
+                                        let pos = 0;
+                                        while (true) {
+                                            const color = div.getAttribute(\`cjs-dataset-background-color-\${pos}-\${datasetIndex}\`);
+                                            if (!color) break;
+                                            bgColors.push(color);
+                                            pos++;
                                         }
-                                        if (!borderColor) {
-                                            borderColor = div.getAttribute(\`cjs-dataset-border-color-0-\${datasetIndex}\`);
+                                        
+                                        let backgroundColor = null;
+                                        if (bgColors.length > 0) {
+                                            backgroundColor = bgColors;
+                                        } else {
+                                            backgroundColor = div.getAttribute(\`cjs-dataset-background-color-\${datasetIndex}\`);
+                                            if (!backgroundColor) {
+                                                backgroundColor = div.getAttribute(\`cjs-dataset-background-color-0-\${datasetIndex}\`);
+                                            }
+                                        }
+                                        
+                                        // Собираем все цвета границ в массив
+                                        const brdColors = [];
+                                        pos = 0;
+                                        while (true) {
+                                            const color = div.getAttribute(\`cjs-dataset-border-color-\${pos}-\${datasetIndex}\`);
+                                            if (!color) break;
+                                            brdColors.push(color);
+                                            pos++;
+                                        }
+                                        
+                                        let borderColor = null;
+                                        if (brdColors.length > 0) {
+                                            borderColor = brdColors;
+                                        } else {
+                                            borderColor = div.getAttribute(\`cjs-dataset-border-color-\${datasetIndex}\`);
+                                            if (!borderColor) {
+                                                borderColor = div.getAttribute(\`cjs-dataset-border-color-0-\${datasetIndex}\`);
+                                            }
                                         }
                                         
                                         const dataset = {
