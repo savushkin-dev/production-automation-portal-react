@@ -81,7 +81,7 @@ export default class ScheduleService {
             };
 
             cleaningDelayList[i].info = { //Доп информация
-                name: "Задержка мойки",
+                name: "Отклонение мойки от плана",
                 start: cleaningDelayStartDateTime,
                 end: cleaningDelayEndDateTime,
                 line: filteredData[i].line?.name || "NAN",
