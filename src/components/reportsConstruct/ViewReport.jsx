@@ -65,157 +65,178 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
             <body>
                 ${printContent}
                 <script>
-                    (function() {
-                        function initCharts() {
-                            if (typeof Chart === 'undefined') {
-                                setTimeout(initCharts, 100);
-                                return;
-                            }
-                            
-                            // ВРЕМЕННО: выводим атрибуты цветов для отладки
-
-                            
-                            const chartDivs = document.querySelectorAll('[data-gjs-type="chartjs"]');
-                            
-                            chartDivs.forEach(function(div) {
-                                try {
-                                    const chartType = div.getAttribute('cjs-chart-type');
-                                    const chartLabels = div.getAttribute('cjs-chart-labels');
-                                    const chartTitle = div.getAttribute('cjs-chart-title');
-                                    const chartSubtitle = div.getAttribute('cjs-chart-subtitle');
-                                    
-                                    if (!chartType || !chartLabels) return;
-                                    
-                                    const datasets = [];
-                                    let datasetIndex = 1;
-                                    
-                                    if (datasetIndex === 1) {
-
-                                    }
-                                    
-                                    //Логи всех атрибутов для разработки
-                                    const div2 = document.querySelector('[data-gjs-type="chartjs"]');
-                                    Array.from(div2.attributes).forEach(attr => {
-                                        console.log(attr.name, '=', attr.value);
-                                    });
-
-
-                                    while (true) {
-                                        const datasetData = div.getAttribute(\`cjs-dataset-data-\${datasetIndex}\`);
-                                        if (!datasetData) break;
-                                        
-                                        const datasetLabel = div.getAttribute(\`cjs-dataset-label-\${datasetIndex}\`);
-                                        const borderWidth = div.getAttribute(\`cjs-dataset-border-width-\${datasetIndex}\`);
-                                        
-                                        // Собираем все цвета фона в массив (для всех типов графиков)
-                                        const bgColors = [];
-                                        let pos = 0;
-                                        while (true) {
-                                            const color = div.getAttribute(\`cjs-dataset-background-color-\${pos}-\${datasetIndex}\`);
-                                            if (!color) break;
-                                            bgColors.push(color);
-                                            pos++;
-                                        }
-                                        
-                                        let backgroundColor = null;
-                                        if (bgColors.length > 0) {
-                                            backgroundColor = bgColors;
-                                        } else {
-                                            backgroundColor = div.getAttribute(\`cjs-dataset-background-color-\${datasetIndex}\`);
-                                            if (!backgroundColor) {
-                                                backgroundColor = div.getAttribute(\`cjs-dataset-background-color-0-\${datasetIndex}\`);
-                                            }
-                                        }
-                                        
-                                        // Собираем все цвета границ в массив
-                                        const brdColors = [];
-                                        pos = 0;
-                                        while (true) {
-                                            const color = div.getAttribute(\`cjs-dataset-border-color-\${pos}-\${datasetIndex}\`);
-                                            if (!color) break;
-                                            brdColors.push(color);
-                                            pos++;
-                                        }
-                                        
-                                        let borderColor = null;
-                                        if (brdColors.length > 0) {
-                                            borderColor = brdColors;
-                                        } else {
-                                            borderColor = div.getAttribute(\`cjs-dataset-border-color-\${datasetIndex}\`);
-                                            if (!borderColor) {
-                                                borderColor = div.getAttribute(\`cjs-dataset-border-color-0-\${datasetIndex}\`);
-                                            }
-                                        }
-                                        
-                                        const dataset = {
-                                            label: datasetLabel || \`Набор \${datasetIndex}\`,
-                                            data: datasetData.split(',').map(Number),
-                                            borderWidth: borderWidth ? parseInt(borderWidth) : 1
-                                        };
-                                        
-                                        if (backgroundColor) dataset.backgroundColor = backgroundColor;
-                                        if (borderColor) dataset.borderColor = borderColor;
-                                        
-                                        datasets.push(dataset);
-                                        datasetIndex++;
-                                    }
-                                    
-                                    if (datasets.length === 0) return;
-                                    
-                                    // Сохраняем исходные размеры div (как в редакторе)
-                                    const originalWidth = div.style.width;
-                                    const originalHeight = div.style.height;
-                                    
-                                    // Создаем canvas
-                                    const canvas = document.createElement('canvas');
-                                    
-                                    // Очищаем div
-                                    div.innerHTML = '';
-                                    div.appendChild(canvas);
-                                    
-                                    // Восстанавливаем размеры
-                                    if (originalWidth) div.style.width = originalWidth;
-                                    if (originalHeight) div.style.height = originalHeight;
-                                    
-                                    canvas.style.width = '100%';
-                                    canvas.style.height = '100%';
-                                    
-                                    const labels = chartLabels.split(',');
-                                    
-                                    new Chart(canvas, {
-                                        type: chartType,
-                                        data: {
-                                            labels: labels,
-                                            datasets: datasets
-                                        },
-                                        options: {
-                                            responsive: true,
-                                            maintainAspectRatio: false,
-                                            plugins: {
-                                                title: {
-                                                    display: !!(chartTitle && chartTitle !== 'undefined' && chartTitle !== ''),
-                                                    text: (chartTitle && chartTitle !== 'undefined') ? chartTitle : ''
-                                                },
-                                                subtitle: {
-                                                    display: !!(chartSubtitle && chartSubtitle !== 'undefined' && chartSubtitle !== ''),
-                                                    text: (chartSubtitle && chartSubtitle !== 'undefined') ? chartSubtitle : ''
-                                                }
-                                            }
-                                        }
-                                    });
-                                } catch(e) {
-                                    console.error('Chart init error:', e);
-                                }
-                            });
+                (function() {
+                    function initCharts() {
+                        if (typeof Chart === 'undefined') {
+                            setTimeout(initCharts, 100);
+                            return;
                         }
                         
-                        if (document.readyState === 'loading') {
-                            document.addEventListener('DOMContentLoaded', initCharts);
-                        } else {
-                            initCharts();
-                        }
-                    })();
-                </script>
+                        const chartDivs = document.querySelectorAll('[data-gjs-type="chartjs"]');
+                        
+                        chartDivs.forEach(function(div) {
+                            try {
+                                const chartType = div.getAttribute('cjs-chart-type');
+                                const chartLabels = div.getAttribute('cjs-chart-labels');
+                                const chartTitle = div.getAttribute('cjs-chart-title');
+                                const chartSubtitle = div.getAttribute('cjs-chart-subtitle');
+                                
+                                if (!chartType) return;
+                                
+                                const isBubbleOrScatter = chartType === 'bubble' || chartType === 'scatter';
+                                const datasets = [];
+                                let datasetIndex = 1;
+                                
+                                while (true) {
+                                    const datasetData = div.getAttribute(\`cjs-dataset-data-\${datasetIndex}\`);
+                                    if (!datasetData) break;
+                                    
+                                    const datasetLabel = div.getAttribute(\`cjs-dataset-label-\${datasetIndex}\`);
+                                    const borderWidth = div.getAttribute(\`cjs-dataset-border-width-\${datasetIndex}\`);
+                                    
+                                    // Собираем цвета в массив
+                                    const bgColors = [];
+                                    let pos = 0;
+                                    while (true) {
+                                        const color = div.getAttribute(\`cjs-dataset-background-color-\${pos}-\${datasetIndex}\`);
+                                        if (!color) break;
+                                        bgColors.push(color);
+                                        pos++;
+                                    }
+                                    
+                                    let backgroundColor = null;
+                                    if (bgColors.length > 0) {
+                                        backgroundColor = bgColors;
+                                    } else {
+                                        backgroundColor = div.getAttribute(\`cjs-dataset-background-color-\${datasetIndex}\`);
+                                        if (!backgroundColor) {
+                                            backgroundColor = div.getAttribute(\`cjs-dataset-background-color-0-\${datasetIndex}\`);
+                                        }
+                                    }
+                                    
+                                    // Собираем цвета границ
+                                    const brdColors = [];
+                                    pos = 0;
+                                    while (true) {
+                                        const color = div.getAttribute(\`cjs-dataset-border-color-\${pos}-\${datasetIndex}\`);
+                                        if (!color) break;
+                                        brdColors.push(color);
+                                        pos++;
+                                    }
+                                    
+                                    let borderColor = null;
+                                    if (brdColors.length > 0) {
+                                        borderColor = brdColors;
+                                    } else {
+                                        borderColor = div.getAttribute(\`cjs-dataset-border-color-\${datasetIndex}\`);
+                                        if (!borderColor) {
+                                            borderColor = div.getAttribute(\`cjs-dataset-border-color-0-\${datasetIndex}\`);
+                                        }
+                                    }
+                                    
+                                    let parsedData;
+                                    let parsedLabels = null;
+                                    
+                                    if (isBubbleOrScatter) {
+                                        // Для bubble/scatter - преобразуем числа в объекты
+                                        const numbers = datasetData.split(',').map(Number);
+                                        
+                                        if (chartType === 'scatter') {
+                                            parsedData = numbers.map((y, index) => ({ x: index, y: y }));
+                                        } else {
+                                            parsedData = numbers.map((value, index) => ({ x: index, y: value, r: Math.abs(value / 2) }));
+                                        }
+                                        
+                                        // Лейблы для осей
+                                        let labelsAttr = div.getAttribute(\`cjs-chart-labels-\${datasetIndex}\`);
+                                        if (!labelsAttr) labelsAttr = chartLabels;
+                                        if (labelsAttr) {
+                                            parsedLabels = labelsAttr.split(',').map(Number);
+                                        }
+                                    } else {
+                                        // Для обычных графиков
+                                        parsedData = datasetData.split(',').map(Number);
+                                    }
+                                    
+                                    const dataset = {
+                                        label: datasetLabel || \`Набор \${datasetIndex}\`,
+                                        data: parsedData,
+                                        borderWidth: borderWidth ? parseInt(borderWidth) : 1
+                                    };
+                                    
+                                    if (backgroundColor) dataset.backgroundColor = backgroundColor;
+                                    if (borderColor) dataset.borderColor = borderColor;
+                                    
+                                    datasets.push(dataset);
+                                    datasetIndex++;
+                                }
+                                
+                                if (datasets.length === 0) return;
+                                
+                                // Сохраняем размеры
+                                const originalWidth = div.style.width;
+                                const originalHeight = div.style.height;
+                                
+                                // Создаем canvas
+                                const canvas = document.createElement('canvas');
+                                div.innerHTML = '';
+                                div.appendChild(canvas);
+                                
+                                if (originalWidth) div.style.width = originalWidth;
+                                if (originalHeight) div.style.height = originalHeight;
+                                
+                                canvas.style.width = '100%';
+                                canvas.style.height = '100%';
+                                
+                                // Конфиг графика
+                                const chartConfig = {
+                                    type: chartType,
+                                    data: {
+                                        datasets: datasets
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        plugins: {
+                                            title: {
+                                                display: !!(chartTitle && chartTitle !== 'undefined' && chartTitle !== ''),
+                                                text: (chartTitle && chartTitle !== 'undefined') ? chartTitle : ''
+                                            },
+                                            subtitle: {
+                                                display: !!(chartSubtitle && chartSubtitle !== 'undefined' && chartSubtitle !== ''),
+                                                text: (chartSubtitle && chartSubtitle !== 'undefined') ? chartSubtitle : ''
+                                            }
+                                        }
+                                    }
+                                };
+                                
+                                // Добавляем лейблы для обычных графиков
+                                if (!isBubbleOrScatter && chartLabels) {
+                                    chartConfig.data.labels = chartLabels.split(',');
+                                }
+                                
+                                // Для bubble/scatter добавляем оси
+                                if (isBubbleOrScatter) {
+                                    chartConfig.options.scales = {
+                                        x: { type: 'linear', position: 'bottom', title: { display: true, text: 'X' } },
+                                        y: { type: 'linear', title: { display: true, text: 'Y' } }
+                                    };
+                                }
+                                
+                                new Chart(canvas, chartConfig);
+                            } catch(e) {
+                                console.error('Chart init error:', e);
+                            }
+                        });
+                    }
+                    
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', initCharts);
+                    } else {
+                        initCharts();
+                    }
+                })();
+            </script>
             </body>
             </html>
         `;
