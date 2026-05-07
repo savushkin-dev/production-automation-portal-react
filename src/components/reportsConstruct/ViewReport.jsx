@@ -16,6 +16,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
     let size = isBookOrientation ? "A4" : "A4 landscape"
 
     useEffect(() => {
+        console.log(data)
         render(data, dataParam, html, css)
     }, [])
 
@@ -276,40 +277,40 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
     function replaceChartDataInHtml(html, rowData) {
         let result = html;
 
-        console.log('dynamicData2:', rowData.dynamicData2);
-        console.log('dynamicData2 length:', rowData.dynamicData2?.length);
-
-        // Найдем атрибуты графика
-        const labelsMatch = html.match(/cjs-chart-labels="([^"]*)"/);
-        const dataMatch = html.match(/cjs-dataset-data-1="([^"]*)"/);
-
-        console.log('=== Current HTML values ===');
-        console.log('Current labels in HTML:', labelsMatch ? labelsMatch[1] : 'not found');
-        console.log('Current data1 in HTML:', dataMatch ? dataMatch[1] : 'not found');
-
-        console.log('=== replaceChartDataInHtml ===');
-        console.log('rowData:', rowData);
-
-        // Заменяем labels ТОЛЬКО если есть плейсхолдер
-        if (rowData.dynamicLabels && result.includes('cjs-chart-labels="{{dynamicLabels}}"')) {
-            const labelsValue = Array.isArray(rowData.dynamicLabels) ? rowData.dynamicLabels.join(',') : String(rowData.dynamicLabels);
-            console.log('Labels to set:', labelsValue);
-            result = result.replace(/cjs-chart-labels="[^"]*"/, `cjs-chart-labels="${labelsValue}"`);
-            console.log('Labels replaced');
+        // Заменяем labels
+        const labelsMatch = result.match(/cjs-chart-labels="([^"]*)"/);
+        if (labelsMatch) {
+            const placeholder = labelsMatch[1];
+            const fieldMatch = placeholder.match(/\{\{(\w+)\}\}/);
+            if (fieldMatch) {
+                const fieldName = fieldMatch[1];
+                const dataValue = rowData[fieldName];
+                if (dataValue && Array.isArray(dataValue)) {
+                    const labelsValue = dataValue.join(',');
+                    result = result.replace(/cjs-chart-labels="[^"]*"/, `cjs-chart-labels="${labelsValue}"`);
+                    console.log(`Labels replaced from field ${fieldName}:`, labelsValue);
+                }
+            }
         }
 
-        // Заменяем датасеты ТОЛЬКО если есть плейсхолдер
+        // Заменяем датасеты
         let dsIndex = 1;
         while (true) {
-            const dataValue = rowData[`dynamicData${dsIndex}`];
-            if (!dataValue) break;
+            const datasetMatch = result.match(new RegExp(`cjs-dataset-data-${dsIndex}="([^"]*)"`));
+            if (!datasetMatch) break;
 
-            const placeholder = `cjs-dataset-data-${dsIndex}="{{dynamicData${dsIndex}}}"`;
-            if (result.includes(placeholder)) {
-                const dataStr = Array.isArray(dataValue) ? dataValue.join(',') : String(dataValue);
-                const regex = new RegExp(`cjs-dataset-data-${dsIndex}="[^"]*"`);
-                result = result.replace(regex, `cjs-dataset-data-${dsIndex}="${dataStr}"`);
-                console.log(`Data${dsIndex} replaced`);
+            const placeholder = datasetMatch[1];
+            const fieldMatch = placeholder.match(/\{\{(\w+)\}\}/);
+
+            if (fieldMatch) {
+                const fieldName = fieldMatch[1];
+                const dataValue = rowData[fieldName];
+                if (dataValue && Array.isArray(dataValue)) {
+                    const dataStr = dataValue.join(',');
+                    const regex = new RegExp(`cjs-dataset-data-${dsIndex}="[^"]*"`);
+                    result = result.replace(regex, `cjs-dataset-data-${dsIndex}="${dataStr}"`);
+                    console.log(`Dataset ${dsIndex} replaced from field ${fieldName}:`, dataStr);
+                }
             }
             dsIndex++;
         }
