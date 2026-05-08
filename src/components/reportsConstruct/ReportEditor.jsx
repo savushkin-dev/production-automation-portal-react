@@ -1033,6 +1033,13 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         }, [isBookOrientation]);
 
         const exportYAML = async () => {
+
+            // Добавляем data-gjs-type всем графикам перед сохранением
+            const charts = editorView.getWrapper().find('[cjs-chart-type]');
+            charts.forEach(chart => {
+                chart.addAttributes({ 'data-gjs-type': 'chartjs' });
+            });
+
             saveCurrentPage(editorView).then((updatedPages) => {
                 let css = cleanCSS(updatedPages[0].styles).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -1706,6 +1713,12 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
         async function saveReport(reportName) {
             showModalSaveReport();
+
+            // Добавляем data-gjs-type всем графикам перед сохранением
+            const charts = editorView.getWrapper().find('[cjs-chart-type]');
+            charts.forEach(chart => {
+                chart.addAttributes({ 'data-gjs-type': 'chartjs' });
+            });
 
             saveCurrentPage(editorView).then(async (updatedPages) => {
                 let css = cleanCSS(updatedPages[0].styles)

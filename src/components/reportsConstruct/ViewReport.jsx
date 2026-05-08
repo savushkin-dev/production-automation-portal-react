@@ -73,7 +73,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                             return;
                         }
                         
-                        const chartDivs = document.querySelectorAll('[data-gjs-type="chartjs"]');
+                        const chartDivs = document.querySelectorAll('[cjs-chart-type]');
                         
                         chartDivs.forEach(function(div) {
                             try {
