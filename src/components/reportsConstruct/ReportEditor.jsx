@@ -1913,10 +1913,10 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                         if (updatedChartjsOptions) chart.set('chartjsOptions', updatedChartjsOptions);
                         chart.trigger('rerender');
-                    }, 100);
+                    }, 50);
                 });
-                editorView.render();
-            }, 300);
+                // editorView.render();
+            }, 100);
 
             // Устанавливаем состояния
             setReportName(response.data.reportName);
