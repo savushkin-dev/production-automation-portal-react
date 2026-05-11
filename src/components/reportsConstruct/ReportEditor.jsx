@@ -1741,8 +1741,92 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         async function downloadReport(reportName) {
             try {
                 const response = await ReportService.getReportTemplateByReportName(reportName);
-                editorView.setComponents(response.data.content);
+                console.log('=== DOWNLOAD REPORT START ===');
+
+                let content = response.data.content;
+
+                // Сохраняем оригинальные плейсхолдеры из HTML перед загрузкой
+                const placeholderMap = new Map(); // key: атрибут, value: плейсхолдер
+
+                // Ищем все атрибуты cjs-dataset-data-* с плейсхолдерами
+                const dataAttrRegex = /(cjs-dataset-data-\d+)="({{[^}]+}})"/g;
+                let match;
+                while ((match = dataAttrRegex.exec(content)) !== null) {
+                    placeholderMap.set(match[1], match[2]);
+                    console.log(`Found placeholder: ${match[1]} = ${match[2]}`);
+                }
+
+                // Ищем плейсхолдеры для labels
+                const labelsMatch = content.match(/cjs-chart-labels="({{[^}]+}})"/);
+                if (labelsMatch) {
+                    placeholderMap.set('cjs-chart-labels', labelsMatch[1]);
+                    console.log(`Found labels placeholder: ${labelsMatch[1]}`);
+                }
+
+                editorView.setComponents(content);
                 editorView.setStyle(response.data.styles);
+
+                // Восстанавливаем плейсхолдеры после загрузки
+                setTimeout(() => {
+                    const charts = editorView.getWrapper().find('[cjs-chart-type]');
+                    console.log('Found charts:', charts.length);
+
+                    charts.forEach(chart => {
+                        const attrs = chart.getAttributes();
+                        const traits = chart.get('traits');
+
+                        // Восстанавливаем все сохраненные плейсхолдеры
+                        for (const [attrName, placeholder] of placeholderMap.entries()) {
+                            // Восстанавливаем атрибут
+                            if (attrs[attrName] !== placeholder) {
+                                chart.addAttributes({ [attrName]: placeholder });
+                                console.log(`Restored attribute: ${attrName} = ${placeholder}`);
+                            }
+
+                            // Восстанавливаем trait, если он существует
+                            const trait = traits?.find(t => t.get('name') === attrName);
+                            if (trait && trait.getValue() !== placeholder) {
+                                trait.set('value', placeholder);
+                                console.log(`Restored trait: ${attrName} = ${placeholder}`);
+                            }
+                        }
+
+                        // Восстанавливаем chartjsOptions для всех датасетов
+                        const chartjsOptions = chart.get('chartjsOptions');
+                        if (chartjsOptions && chartjsOptions.data) {
+                            // Восстанавливаем labels
+                            if (placeholderMap.has('cjs-chart-labels')) {
+                                const labelsPlaceholder = placeholderMap.get('cjs-chart-labels');
+                                if (chartjsOptions.data.labels !== labelsPlaceholder) {
+                                    chartjsOptions.data.labels = labelsPlaceholder;
+                                }
+                            }
+
+                            // Восстанавливаем данные для каждого датасета
+                            if (chartjsOptions.data.datasets) {
+                                for (let i = 0; i < chartjsOptions.data.datasets.length; i++) {
+                                    const attrName = `cjs-dataset-data-${i + 1}`;
+                                    if (placeholderMap.has(attrName)) {
+                                        const placeholder = placeholderMap.get(attrName);
+                                        if (chartjsOptions.data.datasets[i].data !== placeholder) {
+                                            chartjsOptions.data.datasets[i].data = placeholder;
+                                            console.log(`Restored dataset ${i + 1} data placeholder: ${placeholder}`);
+                                        }
+                                    }
+                                }
+                            }
+
+                            chart.set('chartjsOptions', chartjsOptions);
+                        }
+
+                        // chart.trigger('rerender');
+                    });
+                    // editorView.render();
+                }, 200);
+
+
+
+
                 setReportName(response.data.reportName);
                 setReportCategory(response.data.reportCategory)
                 setSettingDB({
