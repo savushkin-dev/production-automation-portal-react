@@ -1738,161 +1738,213 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             })
         }
 
-        async function downloadReport(reportName) {
-            try {
-                const response = await ReportService.getReportTemplateByReportName(reportName);
-                let content = response.data.content;
+    async function downloadReport(reportName) {
+        try {
+            const response = await ReportService.getReportTemplateByReportName(reportName);
+            let content = response.data.content;
 
-                // Удаляем пустые атрибуты датасетов, чтобы плагин не создавал лишние датасеты
-                content = content.replace(/cjs-dataset-data-\d+=""/g, '');
-                content = content.replace(/cjs-dataset-label-\d+=""/g, '');
-                content = content.replace(/cjs-remove-dataset-\d+=""/g, '');
-                content = content.replace(/cjs-add-background-color-\d+=""/g, '');
-                content = content.replace(/cjs-add-border-color-\d+=""/g, '');
-                content = content.replace(/cjs-dataset-border-width-\d+=""/g, '');
+            // Удаляем пустые атрибуты датасетов
+            content = content.replace(/cjs-dataset-data-\d+=""/g, '');
+            content = content.replace(/cjs-dataset-label-\d+=""/g, '');
+            content = content.replace(/cjs-remove-dataset-\d+=""/g, '');
+            content = content.replace(/cjs-add-background-color-\d+=""/g, '');
+            content = content.replace(/cjs-add-border-color-\d+=""/g, '');
+            content = content.replace(/cjs-dataset-border-width-\d+=""/g, '');
 
-                // Сохраняем все плейсхолдеры для датасетов и labels
-                const datasetPlaceholders = new Map(); // key: datasetIndex, value: { data: placeholder, label?: placeholder }
-                let labelsPlaceholder = null;
+            // Сохраняем плейсхолдеры
+            const datasetPlaceholders = new Map();
+            let labelsPlaceholder = null;
 
-                // Ищем все датасеты с плейсхолдерами
-                const dataAttrRegex = /cjs-dataset-data-(\d+)="({{[^}]+}})"/g;
-                let match;
-                while ((match = dataAttrRegex.exec(content)) !== null) {
-                    const datasetIndex = parseInt(match[1]);
-                    if (!datasetPlaceholders.has(datasetIndex)) {
-                        datasetPlaceholders.set(datasetIndex, {});
-                    }
-                    datasetPlaceholders.get(datasetIndex).data = match[2];
+            const dataAttrRegex = /cjs-dataset-data-(\d+)="({{[^}]+}})"/g;
+            let match;
+            while ((match = dataAttrRegex.exec(content)) !== null) {
+                const datasetIndex = parseInt(match[1]);
+                if (!datasetPlaceholders.has(datasetIndex)) {
+                    datasetPlaceholders.set(datasetIndex, {});
                 }
+                datasetPlaceholders.get(datasetIndex).data = match[2];
+            }
 
-                // Ищем лейблы для датасетов
-                const labelAttrRegex = /cjs-dataset-label-(\d+)="([^"]*)"/g;
-                while ((match = labelAttrRegex.exec(content)) !== null) {
+            const labelAttrRegex = /cjs-dataset-label-(\d+)="([^"]*)"/g;
+            while ((match = labelAttrRegex.exec(content)) !== null) {
+                if (match[2] && match[2] !== '') {
                     const datasetIndex = parseInt(match[1]);
                     if (!datasetPlaceholders.has(datasetIndex)) {
                         datasetPlaceholders.set(datasetIndex, {});
                     }
                     datasetPlaceholders.get(datasetIndex).label = match[2];
                 }
+            }
 
-                // Ищем плейсхолдер для общих labels
-                const labelsMatch = content.match(/cjs-chart-labels="({{[^}]+}})"/);
-                if (labelsMatch) {
-                    labelsPlaceholder = labelsMatch[1];
+            const labelsMatch = content.match(/cjs-chart-labels="({{[^}]+}})"/);
+            if (labelsMatch) {
+                labelsPlaceholder = labelsMatch[1];
+            }
+
+            console.log('Found dataset placeholders:', Array.from(datasetPlaceholders.entries()));
+
+            editorView.setComponents(content);
+            editorView.setStyle(response.data.styles);
+
+            // Функция для принудительного создания color trait И установки цвета
+            function forceAddColorTrait(component, traitName, label, datasetId, colorValue) {
+                let trait = component.getTrait(traitName);
+
+                if (!trait) {
+                    const category = {
+                        id: `cjs-dataset-options-${datasetId}`,
+                        label: `#${datasetId} Набор данных`
+                    };
+
+                    component.addTrait({
+                        type: 'color',
+                        name: traitName,
+                        label: label,
+                        category: category,
+                        changeProp: true
+                    });
+
+                    trait = component.getTrait(traitName);
+                    console.log(`Created color trait: ${traitName}`);
                 }
 
-                console.log('Found dataset placeholders:', Array.from(datasetPlaceholders.entries()));
-                console.log('Labels placeholder:', labelsPlaceholder);
+                if (trait && colorValue) {
+                    trait.set('value', colorValue);
+                    trait.setValue(colorValue);
 
-                editorView.setComponents(content);
-                editorView.setStyle(response.data.styles);
+                    // Также обновляем атрибут
+                    component.addAttributes({ [traitName]: colorValue });
 
-                setTimeout(() => {
-                    const charts = editorView.getWrapper().find('[cjs-chart-type]');
+                    console.log(`Set color value for ${traitName}: ${colorValue}`);
+                }
 
-                    charts.forEach(chart => {
-                        // Получаем текущее количество датасетов в компоненте
-                        const currentDatasets = chart.get('chartjsOptions')?.data?.datasets || [];
-                        const currentCount = currentDatasets.length;
+                return trait;
+            }
 
-                        // Находим максимальный индекс из плейсхолдеров
-                        const maxNeededIndex = Math.max(...Array.from(datasetPlaceholders.keys()), 0);
-                        const neededCount = maxNeededIndex;
+            setTimeout(() => {
+                const charts = editorView.getWrapper().find('[cjs-chart-type]');
 
-                        // Добавляем недостающие датасеты
-                        for (let i = currentCount; i < neededCount; i++) {
-                            console.log(`Adding dataset ${i + 1} via addNewDatasetTraitsGroup`);
-                            chart.addNewDatasetTraitsGroup();
+                charts.forEach(chart => {
+                    const currentDatasets = chart.get('chartjsOptions')?.data?.datasets || [];
+                    const currentCount = currentDatasets.length;
+                    const maxNeededIndex = Math.max(...Array.from(datasetPlaceholders.keys()), 0);
+                    const neededCount = maxNeededIndex;
+
+                    for (let i = currentCount; i < neededCount; i++) {
+                        console.log(`Adding dataset ${i + 1}`);
+                        chart.addNewDatasetTraitsGroup();
+                    }
+
+                    setTimeout(() => {
+                        const updatedAttrs = chart.getAttributes();
+                        const updatedChartjsOptions = chart.get('chartjsOptions');
+                        const updatedTraits = chart.get('traits');
+
+                        // Восстанавливаем labels
+                        if (labelsPlaceholder && updatedAttrs['cjs-chart-labels'] !== labelsPlaceholder) {
+                            chart.addAttributes({ 'cjs-chart-labels': labelsPlaceholder });
+                            const labelsTrait = updatedTraits?.find(t => t.get('name') === 'cjs-chart-labels');
+                            if (labelsTrait) labelsTrait.set('value', labelsPlaceholder);
+                            if (updatedChartjsOptions?.data) updatedChartjsOptions.data.labels = labelsPlaceholder;
                         }
 
-                        // Небольшая задержка, чтобы датасеты создались
-                        setTimeout(() => {
-                            // Обновляем ссылки после добавления
-                            const updatedAttrs = chart.getAttributes();
-                            const updatedChartjsOptions = chart.get('chartjsOptions');
-                            const updatedTraits = chart.get('traits');
+                        // Восстанавливаем датасеты
+                        for (const [idx, placeholders] of datasetPlaceholders.entries()) {
+                            const dataAttr = `cjs-dataset-data-${idx}`;
+                            const labelAttr = `cjs-dataset-label-${idx}`;
 
-                            // Восстанавливаем общие labels
-                            if (labelsPlaceholder && updatedAttrs['cjs-chart-labels'] !== labelsPlaceholder) {
-                                chart.addAttributes({ 'cjs-chart-labels': labelsPlaceholder });
-                                const labelsTrait = updatedTraits?.find(t => t.get('name') === 'cjs-chart-labels');
-                                if (labelsTrait) labelsTrait.set('value', labelsPlaceholder);
-                                if (updatedChartjsOptions?.data) updatedChartjsOptions.data.labels = labelsPlaceholder;
+                            if (placeholders.data) chart.addAttributes({ [dataAttr]: placeholders.data });
+                            if (placeholders.label) chart.addAttributes({ [labelAttr]: placeholders.label });
+
+                            const dataTrait = updatedTraits?.find(t => t.get('name') === dataAttr);
+                            if (dataTrait && placeholders.data) dataTrait.set('value', placeholders.data);
+                            const labelTrait = updatedTraits?.find(t => t.get('name') === labelAttr);
+                            if (labelTrait && placeholders.label) labelTrait.set('value', placeholders.label);
+
+                            // Цвета фона
+                            const bgColors = [];
+                            let pos = 0;
+                            while (true) {
+                                const bgColorAttr = `cjs-dataset-background-color-${pos}-${idx}`;
+                                const bgColorValue = updatedAttrs[bgColorAttr];
+                                if (!bgColorValue || bgColorValue === '') break;
+                                bgColors.push(bgColorValue);
+
+                                // Принудительно создаем trait и устанавливаем цвет
+                                forceAddColorTrait(chart, bgColorAttr, `Цвет фона ${pos + 1}`, idx, bgColorValue);
+
+                                pos++;
                             }
 
-                            // Восстанавливаем каждый датасет
-                            for (const [idx, placeholders] of datasetPlaceholders.entries()) {
-                                const dataAttr = `cjs-dataset-data-${idx}`;
-                                const labelAttr = `cjs-dataset-label-${idx}`;
+// Цвета границ
+                            const brdColors = [];
+                            pos = 0;
+                            while (true) {
+                                const brdColorAttr = `cjs-dataset-border-color-${pos}-${idx}`;
+                                const brdColorValue = updatedAttrs[brdColorAttr];
+                                if (!brdColorValue || brdColorValue === '') break;
+                                brdColors.push(brdColorValue);
 
-                                // Восстанавливаем атрибуты
-                                if (placeholders.data) {
-                                    chart.addAttributes({ [dataAttr]: placeholders.data });
-                                }
-                                if (placeholders.label) {
-                                    chart.addAttributes({ [labelAttr]: placeholders.label });
-                                }
+                                // Принудительно создаем trait и устанавливаем цвет
+                                forceAddColorTrait(chart, brdColorAttr, `Цвет границы ${pos + 1}`, idx, brdColorValue);
 
-                                // Восстанавливаем traits
-                                const dataTrait = updatedTraits?.find(t => t.get('name') === dataAttr);
-                                if (dataTrait && placeholders.data) {
-                                    dataTrait.set('value', placeholders.data);
-                                }
-                                const labelTrait = updatedTraits?.find(t => t.get('name') === labelAttr);
-                                if (labelTrait && placeholders.label) {
-                                    labelTrait.set('value', placeholders.label);
-                                }
-
-                                // Восстанавливаем chartjsOptions
-                                if (updatedChartjsOptions?.data?.datasets && updatedChartjsOptions.data.datasets[idx - 1]) {
-                                    if (placeholders.data) {
-                                        updatedChartjsOptions.data.datasets[idx - 1].data = placeholders.data;
-                                    }
-                                    if (placeholders.label) {
-                                        updatedChartjsOptions.data.datasets[idx - 1].label = placeholders.label;
-                                    }
-                                }
+                                pos++;
                             }
 
-                            if (updatedChartjsOptions) {
-                                chart.set('chartjsOptions', updatedChartjsOptions);
+                            // Толщина границы
+                            const borderWidthAttr = `cjs-dataset-border-width-${idx}`;
+                            const borderWidthValue = updatedAttrs[borderWidthAttr];
+                            if (borderWidthValue && borderWidthValue !== '') {
+                                chart.addAttributes({ [borderWidthAttr]: borderWidthValue });
+                                const borderWidthTrait = updatedTraits?.find(t => t.get('name') === borderWidthAttr);
+                                if (borderWidthTrait) borderWidthTrait.set('value', borderWidthValue);
                             }
 
-                            // chart.trigger('rerender');
-                        }, 100);
-                    });
-                    // editorView.render();
-                }, 300);
+                            // Обновляем chartjsOptions
+                            if (updatedChartjsOptions?.data?.datasets && updatedChartjsOptions.data.datasets[idx - 1]) {
+                                const dataset = updatedChartjsOptions.data.datasets[idx - 1];
+                                if (placeholders.data) dataset.data = placeholders.data;
+                                if (placeholders.label) dataset.label = placeholders.label;
+                                if (bgColors.length > 0) dataset.backgroundColor = bgColors;
+                                if (brdColors.length > 0) dataset.borderColor = brdColors;
+                                if (borderWidthValue && borderWidthValue !== '') dataset.borderWidth = parseInt(borderWidthValue);
+                            }
+                        }
 
-
-
-
-                setReportName(response.data.reportName);
-                setReportCategory(response.data.reportCategory)
-                setSettingDB({
-                    url: decryptData(response.data.dbUrl),
-                    username: decryptData(response.data.dbUsername),
-                    password: decryptData(response.data.dbPassword),
-                    driverClassName: response.data.dbDriver
+                        if (updatedChartjsOptions) chart.set('chartjsOptions', updatedChartjsOptions);
+                        chart.trigger('rerender');
+                    }, 100);
                 });
-                setSql(decryptData(response.data.sql));
-                setParameters(JSON.parse(response.data.parameters));
-                setScript(decryptData(response.data.script));
-                setIsSqlMode(response.data.sqlMode);
-                defineBands(response.data.content);
-                setDataBandsOpt(JSON.parse(response.data.dataBands));
-                setIsBookOrientation(response.data.bookOrientation);
-                setLayoutParam(JSON.parse(response.data.layoutParams));
-                setLayoutParamSettings(JSON.parse(response.data.layoutSettingsParams));
-            } catch (error) {
-                console.error(error)
-                setModalMsg("Ошибка загрузки отчета с сервера! Попробуйте еще раз.")
-                showModalNotif();
-            } finally {
-                showModalDownloadReport();
-            }
+                editorView.render();
+            }, 300);
+
+            // Устанавливаем состояния
+            setReportName(response.data.reportName);
+            setReportCategory(response.data.reportCategory);
+            setSettingDB({
+                url: decryptData(response.data.dbUrl),
+                username: decryptData(response.data.dbUsername),
+                password: decryptData(response.data.dbPassword),
+                driverClassName: response.data.dbDriver
+            });
+            setSql(decryptData(response.data.sql));
+            setParameters(JSON.parse(response.data.parameters));
+            setScript(decryptData(response.data.script));
+            setIsSqlMode(response.data.sqlMode);
+            defineBands(response.data.content);
+            setDataBandsOpt(JSON.parse(response.data.dataBands));
+            setIsBookOrientation(response.data.bookOrientation);
+            setLayoutParam(JSON.parse(response.data.layoutParams));
+            setLayoutParamSettings(JSON.parse(response.data.layoutSettingsParams));
+
+        } catch (error) {
+            console.error(error);
+            setModalMsg("Ошибка загрузки отчета с сервера! Попробуйте еще раз.");
+            showModalNotif();
+        } finally {
+            showModalDownloadReport();
         }
+    }
 
         useEffect(() => { //вызываем блокировку перемещения бэндов и других настроек при добавлении бэндов
             lockAllBandParents()
