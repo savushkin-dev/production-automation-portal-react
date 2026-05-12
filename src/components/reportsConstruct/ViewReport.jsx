@@ -94,7 +94,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                     
                                     const datasetLabel = div.getAttribute(\`cjs-dataset-label-\${datasetIndex}\`);
                                     const borderWidth = div.getAttribute(\`cjs-dataset-border-width-\${datasetIndex}\`);
-                                    
+                                                 
                                     // Собираем цвета в массив
                                     const bgColors = [];
                                     let pos = 0;
@@ -162,7 +162,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                             cleanData = cleanData.slice(1, -1);
                                         }
                                         parsedData = cleanData.split(',').map(Number);
-                                        console.log('Parsed data length:', parsedData.length);
                                     }
                                     
                                     const dataset = {
@@ -170,6 +169,20 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                         data: parsedData,
                                         borderWidth: borderWidth ? parseInt(borderWidth) : 1
                                     };
+                                
+                                    // Чтение fill и tension
+                                    const fill = div.getAttribute(\`cjs-dataset-custom-fill-\${datasetIndex}\`);
+                                    const tension = div.getAttribute(\`cjs-dataset-custom-tension-\${datasetIndex}\`);
+                                    
+                                    // Если атрибут существует, заливка включена (даже если пустая строка)
+                                    if (fill !== null && fill !== undefined) {
+                                        dataset.fill = true;
+                                    }
+                                    
+                                    // Добавляем tension (натяжение кривой)
+                                    if (tension !== null && tension !== undefined && tension !== '') {
+                                        dataset.tension = parseFloat(tension);
+                                    }
                                     
                                     if (backgroundColor) dataset.backgroundColor = backgroundColor;
                                     if (borderColor) dataset.borderColor = borderColor;
@@ -312,6 +325,41 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                     console.log(`Dataset ${dsIndex} replaced from field ${fieldName}:`, dataStr);
                 }
             }
+
+            // Замена для fill (заливка)
+            const fillMatch = result.match(new RegExp(`cjs-dataset-custom-fill-${dsIndex}="([^"]*)"`));
+            if (fillMatch) {
+                const fillPlaceholder = fillMatch[1];
+                const fillFieldMatch = fillPlaceholder.match(/\{\{(\w+)\}\}/);
+                if (fillFieldMatch) {
+                    const fillFieldName = fillFieldMatch[1];
+                    const fillDataValue = rowData[fillFieldName];
+                    if (fillDataValue !== undefined && fillDataValue !== null) {
+                        const fillValue = fillDataValue === true || fillDataValue === 'true' ? 'true' : 'false';
+                        const fillRegex = new RegExp(`cjs-dataset-custom-fill-${dsIndex}="[^"]*"`);
+                        result = result.replace(fillRegex, `cjs-dataset-custom-fill-${dsIndex}="${fillValue}"`);
+                        console.log(`Fill ${dsIndex} replaced from field ${fillFieldName}:`, fillValue);
+                    }
+                }
+            }
+
+            // Замена для tension (натяжение)
+            const tensionMatch = result.match(new RegExp(`cjs-dataset-custom-tension-${dsIndex}="([^"]*)"`));
+            if (tensionMatch) {
+                const tensionPlaceholder = tensionMatch[1];
+                const tensionFieldMatch = tensionPlaceholder.match(/\{\{(\w+)\}\}/);
+                if (tensionFieldMatch) {
+                    const tensionFieldName = tensionFieldMatch[1];
+                    const tensionDataValue = rowData[tensionFieldName];
+                    if (tensionDataValue !== undefined && tensionDataValue !== null) {
+                        const tensionValue = parseFloat(tensionDataValue);
+                        const tensionRegex = new RegExp(`cjs-dataset-custom-tension-${dsIndex}="[^"]*"`);
+                        result = result.replace(tensionRegex, `cjs-dataset-custom-tension-${dsIndex}="${tensionValue}"`);
+                        console.log(`Tension ${dsIndex} replaced from field ${tensionFieldName}:`, tensionValue);
+                    }
+                }
+            }
+
             dsIndex++;
         }
 
