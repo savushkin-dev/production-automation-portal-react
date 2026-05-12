@@ -142,5 +142,19 @@ body.alt-zoom-active {
     width: 100% !important;
 }
 
+/* Стили для графиков */
+
+.cjs-button-disabled {
+    opacity: 1 !important;
+    cursor: auto !important;
+}
+
+.cjs-button {
+    color: #616161 !important;
+    opacity: 1 !important;
+}
+
+
+
 
 
