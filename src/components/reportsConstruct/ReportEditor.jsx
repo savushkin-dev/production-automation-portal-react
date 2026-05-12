@@ -1751,42 +1751,57 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             content = content.replace(/cjs-add-border-color-\d+=""/g, '');
             content = content.replace(/cjs-dataset-border-width-\d+=""/g, '');
 
-            // Сохраняем плейсхолдеры
-            const datasetPlaceholders = new Map();
-            let labelsPlaceholder = null;
+            // Сохраняем плейсхолдеры ДЛЯ КАЖДОГО ГРАФИКА ОТДЕЛЬНО
+            const chartsPlaceholders = new Map(); // key: chartId, value: { placeholders: Map, labelsPlaceholder }
 
-            const dataAttrRegex = /cjs-dataset-data-(\d+)="({{[^}]+}})"/g;
-            let match;
-            while ((match = dataAttrRegex.exec(content)) !== null) {
-                const datasetIndex = parseInt(match[1]);
-                if (!datasetPlaceholders.has(datasetIndex)) {
-                    datasetPlaceholders.set(datasetIndex, {});
-                }
-                datasetPlaceholders.get(datasetIndex).data = match[2];
-            }
+            // Временно парсим HTML чтобы найти все графики и их id
+            const tempParser = new DOMParser();
+            const tempDoc = tempParser.parseFromString(content, 'text/html');
+            const chartElements = tempDoc.querySelectorAll('[data-gjs-type="chartjs"]');
 
-            const labelAttrRegex = /cjs-dataset-label-(\d+)="([^"]*)"/g;
-            while ((match = labelAttrRegex.exec(content)) !== null) {
-                if (match[2] && match[2] !== '') {
+            chartElements.forEach(chartEl => {
+                const chartId = chartEl.getAttribute('id');
+                if (!chartId) return;
+
+                const chartHtml = chartEl.outerHTML;
+                const placeholders = new Map();
+                let labelsPlaceholder = null;
+
+                // Ищем датасеты с плейсхолдерами
+                const dataAttrRegex = /cjs-dataset-data-(\d+)="({{[^}]+}})"/g;
+                let match;
+                while ((match = dataAttrRegex.exec(chartHtml)) !== null) {
                     const datasetIndex = parseInt(match[1]);
-                    if (!datasetPlaceholders.has(datasetIndex)) {
-                        datasetPlaceholders.set(datasetIndex, {});
+                    if (!placeholders.has(datasetIndex)) {
+                        placeholders.set(datasetIndex, {});
                     }
-                    datasetPlaceholders.get(datasetIndex).label = match[2];
+                    placeholders.get(datasetIndex).data = match[2];
                 }
-            }
 
-            const labelsMatch = content.match(/cjs-chart-labels="({{[^}]+}})"/);
-            if (labelsMatch) {
-                labelsPlaceholder = labelsMatch[1];
-            }
+                // Ищем лейблы датасетов
+                const labelAttrRegex = /cjs-dataset-label-(\d+)="([^"]*)"/g;
+                while ((match = labelAttrRegex.exec(chartHtml)) !== null) {
+                    if (match[2] && match[2] !== '') {
+                        const datasetIndex = parseInt(match[1]);
+                        if (!placeholders.has(datasetIndex)) {
+                            placeholders.set(datasetIndex, {});
+                        }
+                        placeholders.get(datasetIndex).label = match[2];
+                    }
+                }
 
-            console.log('Found dataset placeholders:', Array.from(datasetPlaceholders.entries()));
+                // Ищем общие labels
+                const labelsMatch = chartHtml.match(/cjs-chart-labels="({{[^}]+}})"/);
+                if (labelsMatch) {
+                    labelsPlaceholder = labelsMatch[1];
+                }
+
+                chartsPlaceholders.set(chartId, { placeholders, labelsPlaceholder });
+            });
 
             editorView.setComponents(content);
             editorView.setStyle(response.data.styles);
 
-            // Функция для принудительного создания color trait И установки цвета
             function forceAddColorTrait(component, traitName, label, datasetId, colorValue) {
                 let trait = component.getTrait(traitName);
 
@@ -1805,17 +1820,12 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     });
 
                     trait = component.getTrait(traitName);
-                    console.log(`Created color trait: ${traitName}`);
                 }
 
                 if (trait && colorValue) {
                     trait.set('value', colorValue);
                     trait.setValue(colorValue);
-
-                    // Также обновляем атрибут
                     component.addAttributes({ [traitName]: colorValue });
-
-                    console.log(`Set color value for ${traitName}: ${colorValue}`);
                 }
 
                 return trait;
@@ -1825,13 +1835,19 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 const charts = editorView.getWrapper().find('[cjs-chart-type]');
 
                 charts.forEach(chart => {
+                    const chartId = chart.getId();
+                    const chartData = chartsPlaceholders.get(chartId);
+
+                    if (!chartData) return;
+
+                    const { placeholders: datasetPlaceholders, labelsPlaceholder } = chartData;
+
                     const currentDatasets = chart.get('chartjsOptions')?.data?.datasets || [];
                     const currentCount = currentDatasets.length;
                     const maxNeededIndex = Math.max(...Array.from(datasetPlaceholders.keys()), 0);
                     const neededCount = maxNeededIndex;
 
                     for (let i = currentCount; i < neededCount; i++) {
-                        console.log(`Adding dataset ${i + 1}`);
                         chart.addNewDatasetTraitsGroup();
                     }
 
@@ -1869,14 +1885,11 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                 const bgColorValue = updatedAttrs[bgColorAttr];
                                 if (!bgColorValue || bgColorValue === '') break;
                                 bgColors.push(bgColorValue);
-
-                                // Принудительно создаем trait и устанавливаем цвет
                                 forceAddColorTrait(chart, bgColorAttr, `Цвет фона ${pos + 1}`, idx, bgColorValue);
-
                                 pos++;
                             }
 
-// Цвета границ
+                            // Цвета границ
                             const brdColors = [];
                             pos = 0;
                             while (true) {
@@ -1884,10 +1897,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                 const brdColorValue = updatedAttrs[brdColorAttr];
                                 if (!brdColorValue || brdColorValue === '') break;
                                 brdColors.push(brdColorValue);
-
-                                // Принудительно создаем trait и устанавливаем цвет
                                 forceAddColorTrait(chart, brdColorAttr, `Цвет границы ${pos + 1}`, idx, brdColorValue);
-
                                 pos++;
                             }
 
@@ -1915,7 +1925,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         chart.trigger('rerender');
                     }, 50);
                 });
-                // editorView.render();
             }, 100);
 
             // Устанавливаем состояния
