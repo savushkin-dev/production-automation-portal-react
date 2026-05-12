@@ -7,7 +7,7 @@ import plugin from 'grapesjs-blocks-basic';
 import grapesjs from "grapesjs";
 import grapesjspresetwebpage from 'grapesjs-preset-webpage/dist/index.js';
 
-import chartjsPlugin from 'grapesjs-chartjs-plugin'; // 👈 ДОБАВЬТЕ ЭТУ СТРОКУ
+import chartjsPlugin from 'grapesjs-chartjs-plugin';
 import ru from 'grapesjs/locale/ru';
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
@@ -45,7 +45,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [pages, setPages] = useState([
             {id: 1, content: "", styles: ""}
         ]);
-        const [currentPage, setCurrentPage] = useState(1); // Активная страница
+        const [currentPage, setCurrentPage] = useState(1);
 
         const [dataBandsOpt, setDataBandsOpt] = useState(["main", "main-child"])
         const [dataBandsOptDropDown, setDataDropDown] = useState([
@@ -113,7 +113,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 container: editorRef.current,
                 telemetry: false,
                 fromElement: true,
-                height: 1200 + "px",
+                height: 1300 + "px",
                 width: 'auto',
                 default_locale: 'ru',
                 i18n: {
@@ -365,7 +365,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
             });
 
-// Мониторим изменения DOM для новых кнопок
+            // Мониторим изменения DOM для новых кнопок
             const observer = new MutationObserver(() => {
                 fixButtonsAndLabelsInDOM();
                 fixCategoryLabels(editor);
@@ -382,20 +382,29 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }, 1000);
             });
 
-// === КОНЕЦ ===
+            //Синхронизация размера графика при изменении размера
+            editor.on('component:resize:end', (data) => {
+                const component = data.component;
+                if (component && component.get('type') === 'chartjs') {
+                    const el = component.view?.el;
+                    if (el) {
+                        const width = el.offsetWidth;
+                        const height = el.offsetHeight;
 
-            // // Временно добавьте этот код для отладки
-            // editor.on('component:selected', (component) => {
-            //     if (component.get('type') === 'chartjs') {
-            //         console.log('=== ВСЕ TRAITS ===');
-            //         const traits = component.get('traits');
-            //         traits.forEach((trait, index) => {
-            //             console.log(`${index}: name="${trait.get('name')}", label="${trait.get('label')}", value="${trait.get('value')}"`);
-            //         });
-            //         console.log('================');
-            //     }
-            // });
+                        const widthTrait = component.getTrait('cjs-chart-width');
+                        const heightTrait = component.getTrait('cjs-chart-height');
 
+                        if (widthTrait && widthTrait.getValue() !== width) {
+                            widthTrait.setValue(width);
+                            component.addAttributes({ 'cjs-chart-width': width });
+                        }
+                        if (heightTrait && heightTrait.getValue() !== height) {
+                            heightTrait.setValue(height);
+                            component.addAttributes({ 'cjs-chart-height': height });
+                        }
+                    }
+                }
+            });
 
             setTimeout(() => {
                 const { width, height } = getPageDimensions(isBookOrientation);
