@@ -9,6 +9,7 @@ import grapesjspresetwebpage from 'grapesjs-preset-webpage/dist/index.js';
 
 import chartjsPlugin from 'grapesjs-chartjs-plugin';
 import ru from 'grapesjs/locale/ru';
+import ruCharts from "../../locale/ru-charts";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import Dropdown from "../dropdown/Dropdown";
@@ -120,25 +121,26 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     locale: 'ru',
                     detectLocale: true,
                     localeFallback: 'ru',
-                    messages: {ru},
+                    messages: {
+                        ru: {
+                            ...ru, // ru конструктора
+                            ...ruCharts // переводы для графиков
+                        }
+                    },
                 },
                 dragMode: 'absolute',
                 selectorManager: {componentFirst: true},
-                storageManager: false, // Отключаем сохранение
+                storageManager: false,
                 plugins: [grapesjspresetwebpage, plugin, chartjsPlugin],
                 pluginsOpts: {
                     [chartjsPlugin]: {
                         // Выбираем только нужные типы графиков
                         blocks: ['chartjs-bar', 'chartjs-pie', 'chartjs-line', 'chartjs-doughnut', 'chartjs-polarArea',
                             'chartjs-radar', 'chartjs-bubble', 'chartjs-scatter'],
-
-                        // Настройка категории
                         category: {
                             id: 'chartjs',
                             label: 'Графики'
                         },
-
-                        // Chart.js опции
                         chartjsOptions: {
                             maintainAspectRatio: false,
                             responsive: true
@@ -153,233 +155,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 deviceManager: {
                     devices: [], // Очищаем список устройств
                 },
-            });
-
-            // === НАСТРОЙКА ГРАФИКОВ ===
-
-            editor.on('load', () => {
-                const names = {
-                    'chartjs-bar': 'Столбчатая диаграмма',
-                    'chartjs-line': 'Линейный график',
-                    'chartjs-pie': 'Круговая диаграмма',
-                    'chartjs-doughnut': 'Кольцевая диаграмма',
-                    'chartjs-polarArea': 'Полярная диаграмма',
-                    'chartjs-radar': 'Радарная диаграмма',
-                    'chartjs-bubble': 'Пузырьковая диаграмма',
-                    'chartjs-scatter': 'Точечная диаграмма',
-                };
-                editor.BlockManager.getAll().forEach(b => {
-                    if (names[b.get('id')]) {
-                        b.set('label', `${names[b.get('id')]}`);
-                        b.set('category', 'Графики');
-                    }
-                });
-                editor.BlockManager.render();
-            });
-
-            const DI = {
-                'cjs-chart-labels': 'Подписи данных',
-                'cjs-chart-title': 'Заголовок графика',
-                'cjs-chart-subtitle': 'Подзаголовок',
-                'cjs-chart-width': 'Ширина графика',
-                'cjs-chart-height': 'Высота графика',
-                'cjs-add-dataset': 'Добавить набор данных',
-                'dataset-label': 'Название набора',
-                'dataset-data': 'Данные набора',
-                'add-background-color': 'Добавить цвет фона',
-                'add-border-color': 'Добавить цвет границы',
-                'dataset-border-width': 'Толщина границы',
-                'remove-dataset': 'Удалить набор',
-                'dataset-background-color': 'Цвет фона',
-                'dataset-border-color': 'Цвет границы',
-                'dataset-custom-fill': 'Заливка',
-                'dataset-custom-tension': 'Натяжение',
-            };
-
-            function t(key, num) {
-                return num ? `${DI[key]} ${num}` : DI[key];
-            }
-
-            function fixCategoryLabels(editor) {
-                // Исправляем заголовки категорий (они находятся вне компонента)
-                setTimeout(() => {
-                    const traitCategories = document.querySelectorAll('.gjs-trait-category .gjs-title');
-                    traitCategories.forEach(category => {
-                        const titleText = category.innerText || category.textContent;
-                        // Проверяем, содержит ли заголовок "#X undefined"
-                        if (titleText && titleText.includes('undefined')) {
-                            const match = titleText.match(/#(\d+)/);
-                            if (match) {
-                                const num = match[1];
-                                // Заменяем на правильный текст
-                                if (titleText.includes('add-background-color') || titleText.includes('add-border-color')) {
-                                    // Это категория цвета
-                                    const newText = `Цветовые настройки #${num}`;
-                                    if (category.childNodes.length > 1) {
-                                        // Сохраняем иконку, меняем только текст
-                                        const icon = category.querySelector('.gjs-caret-icon');
-                                        if (icon && icon.nextSibling) {
-                                            icon.nextSibling.textContent = ` Цветовые настройки #${num}`;
-                                        } else {
-                                            category.childNodes[category.childNodes.length - 1].textContent = ` Цветовые настройки #${num}`;
-                                        }
-                                    } else {
-                                        category.textContent = newText;
-                                        // Восстанавливаем иконку
-                                        const icon = document.createElement('i');
-                                        icon.className = 'gjs-caret-icon fa fa-caret-down';
-                                        category.prepend(icon);
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }, 100);
-            }
-
-            function fix(c) {
-                if (!c || c.get?.('type') !== 'chartjs') return;
-
-                (c.get('traits') || []).forEach(tr => {
-                    const n = tr.get('name');
-                    if (!n) return;
-                    const num = n.match(/(\d+)$/)?.[1] || '';
-                    let l = '';
-
-                    if (DI[n]) l = t(n);
-                    else if (n.startsWith('cjs-dataset-label-')) l = t('dataset-label', num);
-                    else if (n.startsWith('cjs-dataset-data-')) l = t('dataset-data', num);
-                    else if (n.startsWith('cjs-add-background-color-')) l = t('add-background-color', num);
-                    else if (n.startsWith('cjs-add-border-color-')) l = t('add-border-color', num);
-                    else if (n.startsWith('cjs-dataset-border-width-')) l = t('dataset-border-width', num);
-                    else if (n.startsWith('cjs-remove-dataset-')) l = t('remove-dataset', num);
-                    else if (n.startsWith('cjs-dataset-background-color-')) l = t('dataset-background-color', num);
-                    else if (n.startsWith('cjs-dataset-border-color-')) l = t('dataset-border-color', num);
-                    else if (n.startsWith('cjs-dataset-custom-fill-')) l = t('dataset-custom-fill', num);
-                    else if (n.startsWith('cjs-dataset-custom-tension-')) l = t('dataset-custom-tension', num);
-
-                    if (l) {
-                        tr.set('label', l);
-                        tr.set('text', l);
-                        // Для button типа текст берется из value!
-                        if (n.includes('add-') || n.includes('remove-')) {
-                            tr.set('value', l);
-                        }
-                    }
-                });
-
-                // Дополнительно исправляем кнопки в DOM после обновления traits
-                setTimeout(() => {
-                    fixButtonsAndLabelsInDOM();
-                }, 50);
-            }
-
-            function fixButtonsAndLabelsInDOM() {
-                // Исправляем кнопки "Удалить набор"
-                const removeButtons = document.querySelectorAll('.gjs-trt-trait--button button');
-                removeButtons.forEach(btn => {
-                    if (btn.textContent === 'undefined' || btn.textContent === 'undefined undefined') {
-                        const parentTrait = btn.closest('.gjs-trt-trait__wrp');
-                        if (parentTrait) {
-                            const className = parentTrait.className;
-                            const match = className.match(/cjs-remove-dataset-(\d+)/);
-                            if (match) {
-                                const num = match[1];
-                                btn.textContent = `Удалить набор ${num}`;
-                            } else {
-                                btn.textContent = 'Удалить набор';
-                            }
-                        }
-                    }
-                });
-
-                // Исправляем title у кнопок цветов
-                const colorButtons = document.querySelectorAll('.cjs-button');
-                colorButtons.forEach(btn => {
-                    if (btn.title === 'undefined') {
-                        const wrapper = btn.closest('[data-cjs-wrapper]');
-                        if (wrapper) {
-                            const isRemoveBtn = btn.hasAttribute('data-cjs-remove-color');
-                            const id = wrapper.id;
-                            const match = id ? id.match(/-(\d+)$/) : null;
-                            const num = match ? match[1] : '';
-
-                            if (isRemoveBtn) {
-                                btn.title = num ? `Удалить цвет #${num}` : 'Удалить цвет';
-                            } else {
-                                btn.title = num ? `Добавить цвет #${num}` : 'Добавить цвет';
-                            }
-                        }
-                    }
-                });
-
-                // Исправляем текстовые метки у контейнеров цветов
-                const colorLabels = document.querySelectorAll('[data-cjs-label]');
-                colorLabels.forEach(label => {
-                    const span = label.querySelector('span') || label;
-                    if (span.textContent === '' || span.textContent === 'undefined' || span.textContent.includes('undefined')) {
-                        const wrapper = label.closest('[data-cjs-wrapper]');
-                        if (wrapper) {
-                            const id = wrapper.id;
-                            const match = id ? id.match(/cjs-(add-background-color|add-border-color)-(\d+)/) : null;
-                            if (match) {
-                                const type = match[1] === 'add-background-color' ? 'фона' : 'границы';
-                                const num = match[2];
-                                span.textContent = `Добавить цвет ${type} ${num}`;
-                            }
-                        }
-                    }
-                });
-            }
-
-// Будем вызывать fix КАЖДЫЕ 300мс для выбранного компонента
-            let intervalId = null;
-            editor.on('component:selected', (c) => {
-                if (intervalId) clearInterval(intervalId);
-                if (c?.get?.('type') === 'chartjs') {
-                    fix(c);
-                    fixCategoryLabels(editor);
-                    intervalId = setInterval(() => {
-                        fix(c);
-                        fixCategoryLabels(editor);
-                    }, 300);
-                }
-            });
-
-            editor.on('component:add', (c) => {
-                if (c.get?.('type') === 'chartjs') {
-                    setTimeout(() => {
-                        fix(c);
-                        fixCategoryLabels(editor);
-                    }, 500);
-                }
-            });
-
-// Также запускаем фикс после рендера компонента
-            editor.on('component:update', (c) => {
-                if (c?.get?.('type') === 'chartjs') {
-                    setTimeout(() => {
-                        fix(c);
-                        fixCategoryLabels(editor);
-                    }, 100);
-                }
-            });
-
-            // Мониторим изменения DOM для новых кнопок
-            const observer = new MutationObserver(() => {
-                fixButtonsAndLabelsInDOM();
-                fixCategoryLabels(editor);
-            });
-
-            editor.on('load', () => {
-                setTimeout(() => {
-                    observer.observe(document.body, {
-                        childList: true,
-                        subtree: true,
-                        attributes: true,
-                        attributeFilter: ['title', 'textContent']
-                    });
-                }, 1000);
             });
 
             //Синхронизация размера графика при изменении размера
@@ -445,8 +220,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                       outline-offset: -2px;
                 }
                 
-
-              `);
+            `);
 
             // Добавляем блоки для перетаскивания
             const blocks = [
@@ -457,7 +231,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     category: "Текст",
                     draggable: true,
                     droppable: false,
-                    //Нужно разрешить перемещать только в элементы котиорые являются бэндами!
+                    //Нужно разрешить перемещать только в элементы которые являются бэндами!
                 },
             ];
 
@@ -478,7 +252,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             editor.BlockManager.remove('map')
 
 
-            // Переименовываем категории у базового блока изобюражения
+            // Переименовываем категории у базового блока изображения
             editor.BlockManager.getAll().forEach(block => {
                 if (block.getCategoryLabel() === 'Basic') {
                     block.set('category', 'Графика');
