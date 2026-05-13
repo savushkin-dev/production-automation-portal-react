@@ -184,6 +184,11 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                         dataset.tension = parseFloat(tension);
                                     }
                                     
+                                    // Для радарной диаграммы включаем заливку принудительно
+                                    if (chartType === 'radar') {
+                                        dataset.fill = true;
+                                    }
+                                    
                                     if (backgroundColor) dataset.backgroundColor = backgroundColor;
                                     if (borderColor) dataset.borderColor = borderColor;
                                     

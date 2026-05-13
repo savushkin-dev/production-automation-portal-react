@@ -1390,7 +1390,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 dynamicData1: [row.number_field, row.number_field + 100, row.number_field + 200, row.number_field + 150, row.number_field + 50],
                 dynamicData2: [row.number_field + 50, row.number_field + 15, row.number_field + 25, row.number_field + 20, row.number_field + 10],
                 dynamicData3: [row.number_field + 70, row.number_field + 45, row.number_field + 65, row.number_field + 80, row.number_field + 30],
-                set1: [999, 99, row.number_field + 12, row.number_field + 9, row.number_field + 4]
+                set1: [160, 99, row.number_field + 12, row.number_field + 9, row.number_field + 4]
             }));
         }
 // 👆 ДО СЮДА
