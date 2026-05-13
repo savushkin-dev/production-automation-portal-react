@@ -169,21 +169,21 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                         data: parsedData,
                                         borderWidth: borderWidth ? parseInt(borderWidth) : 1
                                     };
-                                
+
                                     // Чтение fill и tension
                                     const fill = div.getAttribute(\`cjs-dataset-custom-fill-\${datasetIndex}\`);
                                     const tension = div.getAttribute(\`cjs-dataset-custom-tension-\${datasetIndex}\`);
-                                    
+
                                     // Если атрибут существует, заливка включена (даже если пустая строка)
                                     if (fill !== null && fill !== undefined) {
                                         dataset.fill = true;
                                     }
-                                    
+
                                     // Добавляем tension (натяжение кривой)
                                     if (tension !== null && tension !== undefined && tension !== '') {
                                         dataset.tension = parseFloat(tension);
                                     }
-                                    
+
                                     // Для радарной диаграммы включаем заливку принудительно
                                     if (chartType === 'radar') {
                                         dataset.fill = true;
@@ -295,80 +295,100 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
     function replaceChartDataInHtml(html, rowData) {
         let result = html;
 
-        // Заменяем labels
-        const labelsMatch = result.match(/cjs-chart-labels="([^"]*)"/);
-        if (labelsMatch) {
-            const placeholder = labelsMatch[1];
-            const fieldMatch = placeholder.match(/\{\{(\w+)\}\}/);
-            if (fieldMatch) {
-                const fieldName = fieldMatch[1];
-                const dataValue = rowData[fieldName];
-                if (dataValue && Array.isArray(dataValue)) {
-                    const labelsValue = dataValue.join(',');
-                    result = result.replace(/cjs-chart-labels="[^"]*"/, `cjs-chart-labels="${labelsValue}"`);
-                    console.log(`Labels replaced from field ${fieldName}:`, labelsValue);
-                }
-            }
-        }
+        // Находим все div с атрибутом cjs-chart-type
+        const chartDivRegex = /<div([^>]*cjs-chart-type[^>]*)>/g;
+        let match;
+        let lastIndex = 0;
+        let newResult = '';
 
-        // Заменяем датасеты
-        let dsIndex = 1;
-        while (true) {
-            const datasetMatch = result.match(new RegExp(`cjs-dataset-data-${dsIndex}="([^"]*)"`));
-            if (!datasetMatch) break;
+        while ((match = chartDivRegex.exec(result)) !== null) {
+            const fullMatch = match[0];
+            const before = result.substring(lastIndex, match.index);
+            const divContent = fullMatch;
 
-            const placeholder = datasetMatch[1];
-            const fieldMatch = placeholder.match(/\{\{(\w+)\}\}/);
+            // Обрабатываем каждый div отдельно
+            let processedDiv = divContent;
 
-            if (fieldMatch) {
-                const fieldName = fieldMatch[1];
-                const dataValue = rowData[fieldName];
-                if (dataValue && Array.isArray(dataValue)) {
-                    const dataStr = dataValue.join(',');
-                    const regex = new RegExp(`cjs-dataset-data-${dsIndex}="[^"]*"`);
-                    result = result.replace(regex, `cjs-dataset-data-${dsIndex}="${dataStr}"`);
-                    console.log(`Dataset ${dsIndex} replaced from field ${fieldName}:`, dataStr);
-                }
-            }
-
-            // Замена для fill (заливка)
-            const fillMatch = result.match(new RegExp(`cjs-dataset-custom-fill-${dsIndex}="([^"]*)"`));
-            if (fillMatch) {
-                const fillPlaceholder = fillMatch[1];
-                const fillFieldMatch = fillPlaceholder.match(/\{\{(\w+)\}\}/);
-                if (fillFieldMatch) {
-                    const fillFieldName = fillFieldMatch[1];
-                    const fillDataValue = rowData[fillFieldName];
-                    if (fillDataValue !== undefined && fillDataValue !== null) {
-                        const fillValue = fillDataValue === true || fillDataValue === 'true' ? 'true' : 'false';
-                        const fillRegex = new RegExp(`cjs-dataset-custom-fill-${dsIndex}="[^"]*"`);
-                        result = result.replace(fillRegex, `cjs-dataset-custom-fill-${dsIndex}="${fillValue}"`);
-                        console.log(`Fill ${dsIndex} replaced from field ${fillFieldName}:`, fillValue);
+            // Заменяем labels в этом div
+            const labelsMatch = processedDiv.match(/cjs-chart-labels="([^"]*)"/);
+            if (labelsMatch) {
+                const placeholder = labelsMatch[1];
+                const bracketMatch = placeholder.match(/\[\[(\w+)\]\]/);
+                if (bracketMatch) {
+                    const fieldName = bracketMatch[1];
+                    const dataValue = rowData[fieldName];
+                    if (dataValue && Array.isArray(dataValue)) {
+                        const labelsValue = dataValue.join(',');
+                        processedDiv = processedDiv.replace(/cjs-chart-labels="[^"]*"/, `cjs-chart-labels="${labelsValue}"`);
+                        console.log(`Labels replaced in div: ${labelsValue}`);
                     }
                 }
             }
 
-            // Замена для tension (натяжение)
-            const tensionMatch = result.match(new RegExp(`cjs-dataset-custom-tension-${dsIndex}="([^"]*)"`));
-            if (tensionMatch) {
-                const tensionPlaceholder = tensionMatch[1];
-                const tensionFieldMatch = tensionPlaceholder.match(/\{\{(\w+)\}\}/);
-                if (tensionFieldMatch) {
-                    const tensionFieldName = tensionFieldMatch[1];
-                    const tensionDataValue = rowData[tensionFieldName];
-                    if (tensionDataValue !== undefined && tensionDataValue !== null) {
-                        const tensionValue = parseFloat(tensionDataValue);
-                        const tensionRegex = new RegExp(`cjs-dataset-custom-tension-${dsIndex}="[^"]*"`);
-                        result = result.replace(tensionRegex, `cjs-dataset-custom-tension-${dsIndex}="${tensionValue}"`);
-                        console.log(`Tension ${dsIndex} replaced from field ${tensionFieldName}:`, tensionValue);
+            // Заменяем датасеты, fill, tension в этом div
+            let dsIndex = 1;
+            while (true) {
+                const dataRegex = new RegExp(`cjs-dataset-data-${dsIndex}="([^"]*)"`);
+                const dataMatch = processedDiv.match(dataRegex);
+                if (!dataMatch) break;
+
+                const placeholder = dataMatch[1];
+                const bracketMatch = placeholder.match(/\{\{(\w+)\}\}/);
+                if (bracketMatch) {
+                    const fieldName = bracketMatch[1];
+                    const dataValue = rowData[fieldName];
+                    if (dataValue && Array.isArray(dataValue)) {
+                        const dataStr = dataValue.join(',');
+                        processedDiv = processedDiv.replace(dataRegex, `cjs-dataset-data-${dsIndex}="${dataStr}"`);
+                        console.log(`Dataset ${dsIndex} replaced: ${dataStr}`);
                     }
                 }
+
+                // // Замена для fill (заливка)
+                // const fillRegex = new RegExp(`cjs-dataset-custom-fill-${dsIndex}="([^"]*)"`);
+                // const fillMatch = processedDiv.match(fillRegex);
+                // if (fillMatch) {
+                //     const fillPlaceholder = fillMatch[1];
+                //     const fillBracketMatch = fillPlaceholder.match(/\{\{(\w+)\}\}/);
+                //     if (fillBracketMatch) {
+                //         const fillFieldName = fillBracketMatch[1];
+                //         const fillDataValue = rowData[fillFieldName];
+                //         if (fillDataValue !== undefined && fillDataValue !== null) {
+                //             const fillValue = fillDataValue === true || fillDataValue === 'true' ? 'true' : 'false';
+                //             processedDiv = processedDiv.replace(fillRegex, `cjs-dataset-custom-fill-${dsIndex}="${fillValue}"`);
+                //             console.log(`Fill ${dsIndex} replaced: ${fillValue}`);
+                //         }
+                //     }
+                // }
+                //
+                // // Замена для tension (натяжение)
+                // const tensionRegex = new RegExp(`cjs-dataset-custom-tension-${dsIndex}="([^"]*)"`);
+                // const tensionMatch = processedDiv.match(tensionRegex);
+                // if (tensionMatch) {
+                //     const tensionPlaceholder = tensionMatch[1];
+                //     const tensionBracketMatch = tensionPlaceholder.match(/\{\{(\w+)\}\}/);
+                //     if (tensionBracketMatch) {
+                //         const tensionFieldName = tensionBracketMatch[1];
+                //         const tensionDataValue = rowData[tensionFieldName];
+                //         if (tensionDataValue !== undefined && tensionDataValue !== null) {
+                //             const tensionValue = parseFloat(tensionDataValue);
+                //             processedDiv = processedDiv.replace(tensionRegex, `cjs-dataset-custom-tension-${dsIndex}="${tensionValue}"`);
+                //             console.log(`Tension ${dsIndex} replaced: ${tensionValue}`);
+                //         }
+                //     }
+                // }
+
+                dsIndex++;
             }
 
-            dsIndex++;
+            // Добавляем обработанный div
+            newResult += before + processedDiv;
+            lastIndex = match.index + fullMatch.length;
         }
 
-        return result;
+        newResult += result.substring(lastIndex);
+
+        return newResult;
     }
 
     // ==================== ФУНКЦИЯ ЗАМЕНЫ ПОЛЕЙ ====================
