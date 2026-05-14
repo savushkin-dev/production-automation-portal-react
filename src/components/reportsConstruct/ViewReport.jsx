@@ -222,6 +222,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                     options: {
                                         responsive: true,
                                         maintainAspectRatio: false,
+                                        devicePixelRatio: 2,
                                         plugins: {
                                             title: {
                                                 display: !!(chartTitle && chartTitle !== 'undefined' && chartTitle !== ''),
