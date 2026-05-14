@@ -313,7 +313,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
             const labelsMatch = processedDiv.match(/cjs-chart-labels="([^"]*)"/);
             if (labelsMatch) {
                 const placeholder = labelsMatch[1];
-                const bracketMatch = placeholder.match(/\[\[(\w+)\]\]/);
+                const bracketMatch = placeholder.match(/\{\{(\w+)\}\}/);
                 if (bracketMatch) {
                     const fieldName = bracketMatch[1];
                     const dataValue = rowData[fieldName];
@@ -398,7 +398,10 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
         let result = html;
 
-        // Сначала заменяем обычные поля
+        // Обрабатываем плейсхолдеры графиков
+        result = replaceChartDataInHtml(result, rowData);
+
+        // Обрабатываем плейсхолдеры поелй отчета
         Object.keys(rowData).forEach(field => {
             let value = rowData[field];
             if (value === null || value === undefined) return;
@@ -407,9 +410,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
             const regex = new RegExp(`\\{\\{${field}\\}\\}`, 'g');
             result = result.replace(regex, displayValue);
         });
-
-        // Затем обрабатываем атрибуты графиков
-        result = replaceChartDataInHtml(result, rowData);
 
         return result;
     }
