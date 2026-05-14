@@ -503,4 +503,8 @@ export default class ScheduleService {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/initVersion`, {startDate, version})
     }
 
+    static async getDowntimePeriodsByIdBatch(idBatch) {
+        return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/downtimePeriods/` + idBatch)
+    }
+
 }

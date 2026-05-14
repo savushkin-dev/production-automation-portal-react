@@ -976,8 +976,8 @@ function SchedulerPage() {
                     setSelectedItem(null);
                     setIsModalInfoItem(false);
                 }} lines={groups} determineFactPlace={determineFactPlace} determineCameraFact={determineCameraFact}
-                                                                   clickedCameras={clickedCameras}
-                                                                   setClickedCameras={setClickedCameras}/>}
+                                                                   clickedCameras={clickedCameras} setClickedCameras={setClickedCameras}
+                                                                   setModalError={setIsModalNotifyError} setErrorMsg={setMsg}/>}
 
                 {isLoading &&
                     <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>
