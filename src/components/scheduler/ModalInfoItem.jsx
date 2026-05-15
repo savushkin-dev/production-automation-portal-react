@@ -18,6 +18,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
 
     async function clickFindCameraFact(){
         await determineCameraFact(item.info.snpz);
+        // Устанавливаем флаг что кнопка была нажата для этого snpz
         setClickedCameras(prev => ({
             ...prev,
             [item.info.snpz]: true
