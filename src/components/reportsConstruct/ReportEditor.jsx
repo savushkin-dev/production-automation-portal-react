@@ -136,7 +136,9 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     [chartjsPlugin]: {
                         // Выбираем только нужные типы графиков
                         blocks: ['chartjs-bar', 'chartjs-pie', 'chartjs-line', 'chartjs-doughnut', 'chartjs-polarArea',
-                            'chartjs-radar', 'chartjs-bubble', 'chartjs-scatter'],
+                            'chartjs-radar',
+                            // 'chartjs-bubble', 'chartjs-scatter'
+                        ],
                         category: {
                             id: 'chartjs',
                             label: 'Графики'
@@ -261,6 +263,24 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
             });
 
+            setEditorView(editor);
+
+            // Добавьте обработчик монтирования компонентов
+            editor.on('component:mount', (component) => {
+                setTimeout(() => {
+                    const attrs = component.getAttributes();
+                    if (attrs['band-parent'] === 'true') {
+                        component.addAttributes({
+                            'data-locked-band': 'true',
+                            'data-gjs-type': 'locked-band',
+                            'data-position-locked': 'true'
+                        });
+                        component.set('draggable', false);
+                        component.set('resizable', false);
+                    }
+                }, 10);
+            });
+
 
             editor.on('component:add', component => {
                 const parent = component.parent();
@@ -359,7 +379,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
             });
 
-
             //для того чтобы сдвигать описание футера страницы при изменении высоты
             editor.on('component:styleUpdate:height', (component) => {
                 if (component.getId() === 'pageFooter') {
@@ -409,6 +428,30 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         checkElementAndMove();
                     }, 500);
                 }
+            });
+
+            editor.on('component:mount', function onMount(component) {
+                setTimeout(() => {
+                    const attrs = component.getAttributes();
+                    if (attrs['band'] === 'true' || attrs['band-parent'] === 'true' || attrs['data-band'] === 'true' || attrs['data-band-child'] === 'true') {
+                        component.set('draggable', false);
+                        component.set('resizable', false);
+
+                        // Получаем текущий toolbar и фильтруем
+                        let toolbar = component.get('toolbar');
+                        if (toolbar && toolbar.length > 0) {
+                            toolbar = toolbar.filter(btn => {
+                                const command = btn.command;
+                                // Убираем иконки изменение размера и дублирование
+                                return command !== 'move' &&
+                                    command !== 'tlb-move' &&
+                                    command !== 'duplicate' &&
+                                    command !== 'tlb-clone';
+                            });
+                            component.set('toolbar', toolbar);
+                        }
+                    }
+                }, 50);
             });
 
             function moveComponentToTarget(param, isTarget) {
@@ -1101,6 +1144,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: true,
@@ -1120,14 +1164,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                  <p data-field="true"  style="position: absolute; top: 60px; left: 20px; margin: 0px">Укажите поле из запроса в двойных скобках: {{field_1}}</p>
                               </div>
                           `,
-                        // script: function () {
-                        //     this.querySelector('.data-band-field').addEventListener('click', function () {
-                        //         alert('Будущее окно выбора поля из БД');
-                        //     });
-                        //     this.querySelector('.data-band-table').addEventListener('click', function () {
-                        //         alert('Будущее окно выбора таблицы из БД');
-                        //     });
-                        // },
                     },
                 },
             });
@@ -1140,6 +1176,9 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             } else {
                 components.add('<div data-gjs-type="data-band-block"></div>');
             }
+
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addChildDataBand(childName) {
@@ -1150,6 +1189,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: true,
@@ -1181,6 +1221,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             } else {
                 components.add('<div data-gjs-type="data-child-band-block"></div>');
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addPageHeaderBand() {
@@ -1190,6 +1232,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: false,
@@ -1223,6 +1266,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
                 setUsedBands(prevState => ({...prevState, headerPage: true}))
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addReportTitleBand() {
@@ -1232,6 +1277,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: false,
@@ -1260,6 +1306,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 components.add('<div data-gjs-type="reportTitle-band-block"></div>', {at: 0}); // Добавляем первым элементом
                 setUsedBands(prevState => ({...prevState, reportTitle: true}))
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addPageFooterBand() {
@@ -1269,6 +1317,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: false,
@@ -1301,6 +1350,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 components.add('<div data-gjs-type="pageFooter-band-block"></div>', {at: components.length});
                 setUsedBands(prevState => ({...prevState, footerPage: true}))
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addReportSummaryBand() {
@@ -1310,6 +1361,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: false,
@@ -1337,6 +1389,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 components.add('<div data-gjs-type="reportSummary-band-block"></div>', {at: components.length});
                 setUsedBands(prevState => ({...prevState, reportSummary: true}))
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
 
@@ -1364,50 +1418,50 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             setIsModalParameter(true);
         }
 
-    async function enterPreviewMode(params) {
-        params = ReportService.addDefaultParameters(params, parameters);
-        setIsModalParameter(false);
+        async function enterPreviewMode(params) {
+            params = ReportService.addDefaultParameters(params, parameters);
+            setIsModalParameter(false);
 
-        const data = await fetchReportData("", "", settingDB.url, settingDB.username,
-            settingDB.password, settingDB.driverClassName, sql, "", "", params, script, isSqlMode)
+            const data = await fetchReportData("", "", settingDB.url, settingDB.username,
+                settingDB.password, settingDB.driverClassName, sql, "", "", params, script, isSqlMode)
 
-        if (!data) {
-            return
+            if (!data) {
+                return
+            }
+
+            // // ТЕСТОВЫЕ ДАННЫЕ С ТРЕМЯ ДАТАСЕТАМИ
+            // data.globalVar = {
+            //     dynamicLabels: ['Янв', 'Фев', 'Март', 'Апр', 'Май'],
+            //     dynamicData1: [100, 200, 150, 180, 220],
+            //     set0: [50, 80, 120, 90, 60],
+            //     dynamicData3: [30, 40, 60, 50, 45]
+            // };
+            //
+            // // Также добавляем данные в каждую строку таблицы
+            // if (data.tableData && data.tableData.length > 0) {
+            //     data.tableData = data.tableData.map(row => ({
+            //         ...row,
+            //         set0: ['Янв222', 'Фев', 'Март', 'Апр', 'Май'],
+            //         dynamicData1: [row.number_field, row.number_field + 100, row.number_field + 200, row.number_field + 150, row.number_field + 50],
+            //         dynamicData2: [row.number_field + 50, row.number_field + 15, row.number_field + 25, row.number_field + 20, row.number_field + 10],
+            //         dynamicData3: [row.number_field + 70, row.number_field + 45, row.number_field + 65, row.number_field + 80, row.number_field + 30],
+            //         set1: [160, 99, row.number_field + 12, row.number_field + 9, row.number_field + 4]
+            //     }));
+            // }
+            // // ДО СЮДА
+
+            setDataParam(params)
+            setData(data)
+            setHtml(editorView.getHtml())
+            setCss(editorView.getCss())
+
+            setIsJavaEditor(false)
+            setIsViewMode(true)
+
+            setTimeout(() => {
+                setIsLoading(false)
+            }, 1300)
         }
-
-        // // ТЕСТОВЫЕ ДАННЫЕ С ТРЕМЯ ДАТАСЕТАМИ
-        // data.globalVar = {
-        //     dynamicLabels: ['Янв', 'Фев', 'Март', 'Апр', 'Май'],
-        //     dynamicData1: [100, 200, 150, 180, 220],
-        //     set0: [50, 80, 120, 90, 60],
-        //     dynamicData3: [30, 40, 60, 50, 45]
-        // };
-        //
-        // // Также добавляем данные в каждую строку таблицы
-        // if (data.tableData && data.tableData.length > 0) {
-        //     data.tableData = data.tableData.map(row => ({
-        //         ...row,
-        //         set0: ['Янв222', 'Фев', 'Март', 'Апр', 'Май'],
-        //         dynamicData1: [row.number_field, row.number_field + 100, row.number_field + 200, row.number_field + 150, row.number_field + 50],
-        //         dynamicData2: [row.number_field + 50, row.number_field + 15, row.number_field + 25, row.number_field + 20, row.number_field + 10],
-        //         dynamicData3: [row.number_field + 70, row.number_field + 45, row.number_field + 65, row.number_field + 80, row.number_field + 30],
-        //         set1: [160, 99, row.number_field + 12, row.number_field + 9, row.number_field + 4]
-        //     }));
-        // }
-        // // ДО СЮДА
-
-        setDataParam(params)
-        setData(data)
-        setHtml(editorView.getHtml())
-        setCss(editorView.getCss())
-
-        setIsJavaEditor(false)
-        setIsViewMode(true)
-
-        setTimeout(() => {
-            setIsLoading(false)
-        }, 1300)
-    }
 
 
         function defineBands(html) {
@@ -1522,227 +1576,276 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             })
         }
 
-    async function downloadReport(reportName) {
-        try {
-            const response = await ReportService.getReportTemplateByReportName(reportName);
-            let content = response.data.content;
+        async function downloadReport(reportName) {
+            try {
+                const response = await ReportService.getReportTemplateByReportName(reportName);
+                let content = response.data.content;
 
-            // Удаляем пустые атрибуты датасетов
-            content = content.replace(/cjs-dataset-data-\d+=""/g, '');
-            content = content.replace(/cjs-dataset-label-\d+=""/g, '');
-            content = content.replace(/cjs-remove-dataset-\d+=""/g, '');
-            content = content.replace(/cjs-add-background-color-\d+=""/g, '');
-            content = content.replace(/cjs-add-border-color-\d+=""/g, '');
-            content = content.replace(/cjs-dataset-border-width-\d+=""/g, '');
+                // Удаляем пустые атрибуты датасетов
+                content = content.replace(/cjs-dataset-data-\d+=""/g, '');
+                content = content.replace(/cjs-dataset-label-\d+=""/g, '');
+                content = content.replace(/cjs-remove-dataset-\d+=""/g, '');
+                content = content.replace(/cjs-add-background-color-\d+=""/g, '');
+                content = content.replace(/cjs-add-border-color-\d+=""/g, '');
+                content = content.replace(/cjs-dataset-border-width-\d+=""/g, '');
 
-            // Сохраняем плейсхолдеры ДЛЯ КАЖДОГО ГРАФИКА ОТДЕЛЬНО
-            const chartsPlaceholders = new Map(); // key: chartId, value: { placeholders: Map, labelsPlaceholder }
+                // Сохраняем плейсхолдеры ДЛЯ КАЖДОГО ГРАФИКА ОТДЕЛЬНО
+                const chartsPlaceholders = new Map(); // key: chartId, value: { placeholders: Map, labelsPlaceholder }
 
-            // Временно парсим HTML чтобы найти все графики и их id
-            const tempParser = new DOMParser();
-            const tempDoc = tempParser.parseFromString(content, 'text/html');
-            const chartElements = tempDoc.querySelectorAll('[data-gjs-type="chartjs"]');
+                // Временно парсим HTML чтобы найти все графики и их id
+                const tempParser = new DOMParser();
+                const tempDoc = tempParser.parseFromString(content, 'text/html');
+                const chartElements = tempDoc.querySelectorAll('[data-gjs-type="chartjs"]');
 
-            chartElements.forEach(chartEl => {
-                const chartId = chartEl.getAttribute('id');
-                if (!chartId) return;
+                chartElements.forEach(chartEl => {
+                    const chartId = chartEl.getAttribute('id');
+                    if (!chartId) return;
 
-                const chartHtml = chartEl.outerHTML;
-                const placeholders = new Map();
-                let labelsPlaceholder = null;
+                    const chartHtml = chartEl.outerHTML;
+                    const placeholders = new Map();
+                    let labelsPlaceholder = null;
 
-                // Ищем датасеты с плейсхолдерами
-                const dataAttrRegex = /cjs-dataset-data-(\d+)="({{[^}]+}})"/g;
-                let match;
-                while ((match = dataAttrRegex.exec(chartHtml)) !== null) {
-                    const datasetIndex = parseInt(match[1]);
-                    if (!placeholders.has(datasetIndex)) {
-                        placeholders.set(datasetIndex, {});
-                    }
-                    placeholders.get(datasetIndex).data = match[2];
-                }
-
-                // Ищем лейблы датасетов
-                const labelAttrRegex = /cjs-dataset-label-(\d+)="([^"]*)"/g;
-                while ((match = labelAttrRegex.exec(chartHtml)) !== null) {
-                    if (match[2] && match[2] !== '') {
+                    // Ищем датасеты с плейсхолдерами
+                    const dataAttrRegex = /cjs-dataset-data-(\d+)="({{[^}]+}})"/g;
+                    let match;
+                    while ((match = dataAttrRegex.exec(chartHtml)) !== null) {
                         const datasetIndex = parseInt(match[1]);
                         if (!placeholders.has(datasetIndex)) {
                             placeholders.set(datasetIndex, {});
                         }
-                        placeholders.get(datasetIndex).label = match[2];
-                    }
-                }
-
-                // Ищем общие labels
-                const labelsMatch = chartHtml.match(/cjs-chart-labels="({{[^}]+}})"/);
-                if (labelsMatch) {
-                    labelsPlaceholder = labelsMatch[1];
-                }
-
-                chartsPlaceholders.set(chartId, { placeholders, labelsPlaceholder });
-            });
-
-            editorView.setComponents(content);
-            editorView.setStyle(response.data.styles);
-
-            function forceAddColorTrait(component, traitName, label, datasetId, colorValue) {
-                let trait = component.getTrait(traitName);
-
-                if (!trait) {
-                    const category = {
-                        id: `cjs-dataset-options-${datasetId}`,
-                        label: `#${datasetId} Набор данных`
-                    };
-
-                    component.addTrait({
-                        type: 'color',
-                        name: traitName,
-                        label: label,
-                        category: category,
-                        changeProp: true
-                    });
-
-                    trait = component.getTrait(traitName);
-                }
-
-                if (trait && colorValue) {
-                    trait.set('value', colorValue);
-                    trait.setValue(colorValue);
-                    component.addAttributes({ [traitName]: colorValue });
-                }
-
-                return trait;
-            }
-
-            setTimeout(() => {
-                const charts = editorView.getWrapper().find('[cjs-chart-type]');
-
-                charts.forEach(chart => {
-                    const chartId = chart.getId();
-                    const chartData = chartsPlaceholders.get(chartId);
-
-                    if (!chartData) return;
-
-                    const { placeholders: datasetPlaceholders, labelsPlaceholder } = chartData;
-
-                    const currentDatasets = chart.get('chartjsOptions')?.data?.datasets || [];
-                    const currentCount = currentDatasets.length;
-                    const maxNeededIndex = Math.max(...Array.from(datasetPlaceholders.keys()), 0);
-                    const neededCount = maxNeededIndex;
-
-                    for (let i = currentCount; i < neededCount; i++) {
-                        chart.addNewDatasetTraitsGroup();
+                        placeholders.get(datasetIndex).data = match[2];
                     }
 
-                    setTimeout(() => {
-                        const updatedAttrs = chart.getAttributes();
-                        const updatedChartjsOptions = chart.get('chartjsOptions');
-                        const updatedTraits = chart.get('traits');
-
-                        // Восстанавливаем labels
-                        if (labelsPlaceholder && updatedAttrs['cjs-chart-labels'] !== labelsPlaceholder) {
-                            chart.addAttributes({ 'cjs-chart-labels': labelsPlaceholder });
-                            const labelsTrait = updatedTraits?.find(t => t.get('name') === 'cjs-chart-labels');
-                            if (labelsTrait) labelsTrait.set('value', labelsPlaceholder);
-                            if (updatedChartjsOptions?.data) updatedChartjsOptions.data.labels = labelsPlaceholder;
+                    // Ищем лейблы датасетов
+                    const labelAttrRegex = /cjs-dataset-label-(\d+)="([^"]*)"/g;
+                    while ((match = labelAttrRegex.exec(chartHtml)) !== null) {
+                        if (match[2] && match[2] !== '') {
+                            const datasetIndex = parseInt(match[1]);
+                            if (!placeholders.has(datasetIndex)) {
+                                placeholders.set(datasetIndex, {});
+                            }
+                            placeholders.get(datasetIndex).label = match[2];
                         }
+                    }
 
-                        // Восстанавливаем датасеты
-                        for (const [idx, placeholders] of datasetPlaceholders.entries()) {
-                            const dataAttr = `cjs-dataset-data-${idx}`;
-                            const labelAttr = `cjs-dataset-label-${idx}`;
+                    // Ищем общие labels
+                    const labelsMatch = chartHtml.match(/cjs-chart-labels="({{[^}]+}})"/);
+                    if (labelsMatch) {
+                        labelsPlaceholder = labelsMatch[1];
+                    }
 
-                            if (placeholders.data) chart.addAttributes({ [dataAttr]: placeholders.data });
-                            if (placeholders.label) chart.addAttributes({ [labelAttr]: placeholders.label });
-
-                            const dataTrait = updatedTraits?.find(t => t.get('name') === dataAttr);
-                            if (dataTrait && placeholders.data) dataTrait.set('value', placeholders.data);
-                            const labelTrait = updatedTraits?.find(t => t.get('name') === labelAttr);
-                            if (labelTrait && placeholders.label) labelTrait.set('value', placeholders.label);
-
-                            // Цвета фона
-                            const bgColors = [];
-                            let pos = 0;
-                            while (true) {
-                                const bgColorAttr = `cjs-dataset-background-color-${pos}-${idx}`;
-                                const bgColorValue = updatedAttrs[bgColorAttr];
-                                if (!bgColorValue || bgColorValue === '') break;
-                                bgColors.push(bgColorValue);
-                                forceAddColorTrait(chart, bgColorAttr, `Цвет фона ${pos + 1}`, idx, bgColorValue);
-                                pos++;
-                            }
-
-                            // Цвета границ
-                            const brdColors = [];
-                            pos = 0;
-                            while (true) {
-                                const brdColorAttr = `cjs-dataset-border-color-${pos}-${idx}`;
-                                const brdColorValue = updatedAttrs[brdColorAttr];
-                                if (!brdColorValue || brdColorValue === '') break;
-                                brdColors.push(brdColorValue);
-                                forceAddColorTrait(chart, brdColorAttr, `Цвет границы ${pos + 1}`, idx, brdColorValue);
-                                pos++;
-                            }
-
-                            // Толщина границы
-                            const borderWidthAttr = `cjs-dataset-border-width-${idx}`;
-                            const borderWidthValue = updatedAttrs[borderWidthAttr];
-                            if (borderWidthValue && borderWidthValue !== '') {
-                                chart.addAttributes({ [borderWidthAttr]: borderWidthValue });
-                                const borderWidthTrait = updatedTraits?.find(t => t.get('name') === borderWidthAttr);
-                                if (borderWidthTrait) borderWidthTrait.set('value', borderWidthValue);
-                            }
-
-                            // Обновляем chartjsOptions
-                            if (updatedChartjsOptions?.data?.datasets && updatedChartjsOptions.data.datasets[idx - 1]) {
-                                const dataset = updatedChartjsOptions.data.datasets[idx - 1];
-                                if (placeholders.data) dataset.data = placeholders.data;
-                                if (placeholders.label) dataset.label = placeholders.label;
-                                if (bgColors.length > 0) dataset.backgroundColor = bgColors;
-                                if (brdColors.length > 0) dataset.borderColor = brdColors;
-                                if (borderWidthValue && borderWidthValue !== '') dataset.borderWidth = parseInt(borderWidthValue);
-                            }
-                        }
-
-                        if (updatedChartjsOptions) chart.set('chartjsOptions', updatedChartjsOptions);
-                        chart.trigger('rerender');
-                    }, 50);
+                    chartsPlaceholders.set(chartId, { placeholders, labelsPlaceholder });
                 });
-            }, 100);
 
-            // Устанавливаем состояния
-            setReportName(response.data.reportName);
-            setReportCategory(response.data.reportCategory);
-            setSettingDB({
-                url: decryptData(response.data.dbUrl),
-                username: decryptData(response.data.dbUsername),
-                password: decryptData(response.data.dbPassword),
-                driverClassName: response.data.dbDriver
-            });
-            setSql(decryptData(response.data.sql));
-            setParameters(JSON.parse(response.data.parameters));
-            setScript(decryptData(response.data.script));
-            setIsSqlMode(response.data.sqlMode);
-            defineBands(response.data.content);
-            setDataBandsOpt(JSON.parse(response.data.dataBands));
-            setIsBookOrientation(response.data.bookOrientation);
-            setLayoutParam(JSON.parse(response.data.layoutParams));
-            setLayoutParamSettings(JSON.parse(response.data.layoutSettingsParams));
+                editorView.setComponents(content);
+                editorView.setStyle(response.data.styles);
 
-        } catch (error) {
-            console.error(error);
-            setModalMsg("Ошибка загрузки отчета с сервера! Попробуйте еще раз.");
-            showModalNotif();
-        } finally {
-            showModalDownloadReport();
+                function forceAddColorTrait(component, traitName, label, datasetId, colorValue) {
+                    let trait = component.getTrait(traitName);
+
+                    if (!trait) {
+                        const category = {
+                            id: `cjs-dataset-options-${datasetId}`,
+                            label: `#${datasetId} Набор данных`
+                        };
+
+                        component.addTrait({
+                            type: 'color',
+                            name: traitName,
+                            label: label,
+                            category: category,
+                            changeProp: true
+                        });
+
+                        trait = component.getTrait(traitName);
+                    }
+
+                    if (trait && colorValue) {
+                        trait.set('value', colorValue);
+                        trait.setValue(colorValue);
+                        component.addAttributes({ [traitName]: colorValue });
+                    }
+
+                    return trait;
+                }
+
+                setTimeout(() => {
+                    const charts = editorView.getWrapper().find('[cjs-chart-type]');
+
+                    charts.forEach(chart => {
+                        const chartId = chart.getId();
+                        const chartData = chartsPlaceholders.get(chartId);
+
+                        if (!chartData) return;
+
+                        const { placeholders: datasetPlaceholders, labelsPlaceholder } = chartData;
+
+                        const currentDatasets = chart.get('chartjsOptions')?.data?.datasets || [];
+                        const currentCount = currentDatasets.length;
+                        const maxNeededIndex = Math.max(...Array.from(datasetPlaceholders.keys()), 0);
+                        const neededCount = maxNeededIndex;
+
+                        for (let i = currentCount; i < neededCount; i++) {
+                            chart.addNewDatasetTraitsGroup();
+                        }
+
+                        setTimeout(() => {
+                            const updatedAttrs = chart.getAttributes();
+                            const updatedChartjsOptions = chart.get('chartjsOptions');
+                            const updatedTraits = chart.get('traits');
+
+                            // Восстанавливаем labels
+                            if (labelsPlaceholder && updatedAttrs['cjs-chart-labels'] !== labelsPlaceholder) {
+                                chart.addAttributes({ 'cjs-chart-labels': labelsPlaceholder });
+                                const labelsTrait = updatedTraits?.find(t => t.get('name') === 'cjs-chart-labels');
+                                if (labelsTrait) labelsTrait.set('value', labelsPlaceholder);
+                                if (updatedChartjsOptions?.data) updatedChartjsOptions.data.labels = labelsPlaceholder;
+                            }
+
+                            // Восстанавливаем датасеты
+                            for (const [idx, placeholders] of datasetPlaceholders.entries()) {
+                                const dataAttr = `cjs-dataset-data-${idx}`;
+                                const labelAttr = `cjs-dataset-label-${idx}`;
+
+                                if (placeholders.data) chart.addAttributes({ [dataAttr]: placeholders.data });
+                                if (placeholders.label) chart.addAttributes({ [labelAttr]: placeholders.label });
+
+                                const dataTrait = updatedTraits?.find(t => t.get('name') === dataAttr);
+                                if (dataTrait && placeholders.data) dataTrait.set('value', placeholders.data);
+                                const labelTrait = updatedTraits?.find(t => t.get('name') === labelAttr);
+                                if (labelTrait && placeholders.label) labelTrait.set('value', placeholders.label);
+
+                                // Цвета фона
+                                const bgColors = [];
+                                let pos = 0;
+                                while (true) {
+                                    const bgColorAttr = `cjs-dataset-background-color-${pos}-${idx}`;
+                                    const bgColorValue = updatedAttrs[bgColorAttr];
+                                    if (!bgColorValue || bgColorValue === '') break;
+                                    bgColors.push(bgColorValue);
+                                    forceAddColorTrait(chart, bgColorAttr, `Цвет фона ${pos + 1}`, idx, bgColorValue);
+                                    pos++;
+                                }
+
+                                // Цвета границ
+                                const brdColors = [];
+                                pos = 0;
+                                while (true) {
+                                    const brdColorAttr = `cjs-dataset-border-color-${pos}-${idx}`;
+                                    const brdColorValue = updatedAttrs[brdColorAttr];
+                                    if (!brdColorValue || brdColorValue === '') break;
+                                    brdColors.push(brdColorValue);
+                                    forceAddColorTrait(chart, brdColorAttr, `Цвет границы ${pos + 1}`, idx, brdColorValue);
+                                    pos++;
+                                }
+
+                                // Толщина границы
+                                const borderWidthAttr = `cjs-dataset-border-width-${idx}`;
+                                const borderWidthValue = updatedAttrs[borderWidthAttr];
+                                if (borderWidthValue && borderWidthValue !== '') {
+                                    chart.addAttributes({ [borderWidthAttr]: borderWidthValue });
+                                    const borderWidthTrait = updatedTraits?.find(t => t.get('name') === borderWidthAttr);
+                                    if (borderWidthTrait) borderWidthTrait.set('value', borderWidthValue);
+                                }
+
+                                // Обновляем chartjsOptions
+                                if (updatedChartjsOptions?.data?.datasets && updatedChartjsOptions.data.datasets[idx - 1]) {
+                                    const dataset = updatedChartjsOptions.data.datasets[idx - 1];
+                                    if (placeholders.data) dataset.data = placeholders.data;
+                                    if (placeholders.label) dataset.label = placeholders.label;
+                                    if (bgColors.length > 0) dataset.backgroundColor = bgColors;
+                                    if (brdColors.length > 0) dataset.borderColor = brdColors;
+                                    if (borderWidthValue && borderWidthValue !== '') dataset.borderWidth = parseInt(borderWidthValue);
+                                }
+                            }
+
+                            if (updatedChartjsOptions) chart.set('chartjsOptions', updatedChartjsOptions);
+                            chart.trigger('rerender');
+                        }, 50);
+                    });
+                }, 100);
+
+                // Устанавливаем состояния
+                setReportName(response.data.reportName);
+                setReportCategory(response.data.reportCategory);
+                setSettingDB({
+                    url: decryptData(response.data.dbUrl),
+                    username: decryptData(response.data.dbUsername),
+                    password: decryptData(response.data.dbPassword),
+                    driverClassName: response.data.dbDriver
+                });
+                setSql(decryptData(response.data.sql));
+                setParameters(JSON.parse(response.data.parameters));
+                setScript(decryptData(response.data.script));
+                setIsSqlMode(response.data.sqlMode);
+                defineBands(response.data.content);
+                setDataBandsOpt(JSON.parse(response.data.dataBands));
+                setIsBookOrientation(response.data.bookOrientation);
+                setLayoutParam(JSON.parse(response.data.layoutParams));
+                setLayoutParamSettings(JSON.parse(response.data.layoutSettingsParams));
+
+                // //Это для миграции старых отчетов чтобы бэнды нельзя было перемещать и изменять размер мышью
+                // setTimeout(() => {
+                //     // Находим все бэнды в загруженном отчете
+                //     const wrapper = editorView.DomComponents.getWrapper();
+                //     if (!wrapper) return;
+                //
+                //     // Находим все родительские div у бэндов (те, у которых есть description-band внутри)
+                //     const allDivs = wrapper.find('div');
+                //     allDivs.forEach(div => {
+                //         // Проверяем есть ли внутри description-band
+                //         const hasDescription = div.components().some(child =>
+                //             child.getAttributes()?.['description-band'] === 'true'
+                //         );
+                //
+                //         // Проверяем есть ли внутри band="true"
+                //         const hasBand = div.components().some(child =>
+                //             child.getAttributes()?.['band'] === 'true' ||
+                //             child.getAttributes()?.['data-band'] === 'true'
+                //         );
+                //
+                //         // Если это контейнер бэнда - добавляем атрибут band-parent
+                //         if ((hasDescription || hasBand) && !div.getAttributes()?.['band-parent']) {
+                //             div.addAttributes({ 'band-parent': 'true' });
+                //             div.set('draggable', false);
+                //             div.set('resizable', false);
+                //         }
+                //     });
+                //
+                //     // Применяем CSS блокировку
+                //     const canvasDoc = editorView.Canvas.getDocument();
+                //     if (canvasDoc) {
+                //         const style = canvasDoc.createElement('style');
+                //         style.textContent = `
+                //             [band-parent="true"] {
+                //                 pointer-events: none !important;
+                //                 user-select: none !important;
+                //             }
+                //             [band-parent="true"] [band="true"],
+                //             [band-parent="true"] [data-band="true"],
+                //              [band-parent="true"] [data-band-child="true"]{
+                //                 pointer-events: auto !important;
+                //             }
+                //         `;
+                //         canvasDoc.head.appendChild(style);
+                //     }
+                // }, 200);
+
+                lockAllBand()
+                lockAllBandParents()
+            } catch (error) {
+                console.error(error);
+                setModalMsg("Ошибка загрузки отчета с сервера! Попробуйте еще раз.");
+                showModalNotif();
+            } finally {
+                showModalDownloadReport();
+            }
         }
-    }
 
         useEffect(() => { //вызываем блокировку перемещения бэндов и других настроек при добавлении бэндов
             lockAllBandParents()
             lockAllBand()
-        }, [usedBands])
+        }, [usedBands, editorView])
 
         function lockAllBandParents() {
             const bandParents = editorView?.DomComponents?.getWrapper()?.find('[band-parent="true"]');
