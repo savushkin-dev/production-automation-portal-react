@@ -31,6 +31,7 @@ import yaml from "js-yaml";
 import {GlobalVars} from "./GlobalVars";
 import {ModalErrorScriptCompile} from "./ModalErrorScriptCompile";
 import {defaultScript} from "../../data/report";
+import {processChartsOnLoad} from "./utils/chartUtils";
 
 
 const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
@@ -859,148 +860,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             setupCanvas(editorView, width, height);
         }, [isBookOrientation]);
 
-        const exportYAML = async () => {
-
-            // Добавляем data-gjs-type всем графикам перед сохранением
-            const charts = editorView.getWrapper().find('[cjs-chart-type]');
-            charts.forEach(chart => {
-                chart.addAttributes({ 'data-gjs-type': 'chartjs' });
-            });
-
-            saveCurrentPage(editorView).then((updatedPages) => {
-                let css = cleanCSS(updatedPages[0].styles).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-
-                const toOneLine = (value) => {
-                    if (typeof value === 'string') {
-                        return value.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-                    }
-                    if (value === null || value === undefined) return '';
-                    if (typeof value === 'object') return JSON.stringify(value);
-                    return String(value);
-                };
-
-                let resultWithoutScript = {
-                    dbUrl: settingDB.url,
-                    dbUsername: settingDB.username,
-                    dbPassword: settingDB.password,
-                    dbDriver: settingDB.driverClassName,
-                    sql,
-                    reportName: reportName,
-                    reportCategory: reportCategory,
-                    content: updatedPages[0].content,
-                    styles: css,
-                    sqlMode: isSqlMode,
-                    dataBands: JSON.stringify(dataBandsOpt),
-                    bookOrientation: isBookOrientation,
-                    layoutParamSettings: toOneLine(layoutParamSettings),
-                    layoutParam: toOneLine(layoutParam),
-                    parameters: parameters,
-                }
-
-                try {
-                    let yamlString = yaml.dump(resultWithoutScript, {indent: 2, lineWidth: -1, noRefs: true});
-
-                    const cleanScript = script.replace(/\\r\\n/g, '\n').replace(/\\r/g, '\n');
-                    const scriptLines = cleanScript.split('\n');
-                    const scriptBlock = 'script: |-\n' + scriptLines.map(line => '  ' + line).join('\n');
-                    const finalYaml = yamlString + scriptBlock + '\n';
-
-                    const blob = new Blob([finalYaml], {type: "application/yaml"});
-                    const link = document.createElement("a");
-                    link.href = URL.createObjectURL(blob);
-                    link.download = reportName + ".yaml";
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                } catch (error) {
-                    console.error("Ошибка при экспорте отчета:", error);
-                    setModalMsg("Ошибка при экспорте отчета.");
-                    showModalNotif();
-                }
-            });
-        };
-
-
-        const importYAML = () => {
-            const fileInput = document.createElement("input");
-            fileInput.type = "file";
-            fileInput.accept = ".yaml,.yml";
-            fileInput.style.display = "none";
-
-            // Обратная функция для toOneLine
-            const fromOneLine = (value) => {
-                if (typeof value === 'string') {
-                    if (value.trim().startsWith('{') || value.trim().startsWith('[')) {
-                        try {
-                            return JSON.parse(value);
-                        } catch {
-                            return value;
-                        }
-                    }
-                    return value;
-                }
-                return value;
-            };
-
-            fileInput.addEventListener("change", (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-
-                reader.onload = (e) => {
-                    try {
-                        const yamlContent = e.target.result;
-                        const importedData = yaml.load(yamlContent);
-
-                        setPages([{id: 1, content: "", styles: ""}]);
-                        setCurrentPage(1);
-
-                        setSettingDB({
-                            url: importedData.dbUrl,
-                            username: importedData.dbUsername,
-                            password: importedData.dbPassword,
-                            driverClassName: importedData.dbDriver
-                        });
-
-                        setSql(importedData.sql);
-                        setReportName(importedData.reportName);
-                        setReportCategory(importedData.reportCategory);
-
-                        editorView.setComponents(importedData.content);
-                        editorView.setStyle(importedData.styles);
-
-                        setParameters(importedData.parameters || []);
-                        setIsSqlMode(importedData.sqlMode);
-                        setScript(importedData.script || '');
-
-                        setDataBandsOpt(JSON.parse(importedData.dataBands));
-                        setIsBookOrientation(importedData.bookOrientation ?? true);
-
-                        // Применяем fromOneLine к полям, которые были через toOneLine
-                        setLayoutParamSettings(fromOneLine(importedData.layoutParamSettings));
-                        setLayoutParam(fromOneLine(importedData.layoutParam));
-
-                        setTimeout(() => defineBands(importedData.content), 200);
-
-                        setModalMsg("Отчет успешно импортирован!");
-                        showModalNotif();
-
-                    } catch (error) {
-                        console.error("Ошибка при импорте отчета:", error);
-                        setModalMsg("Ошибка импорта отчета! Проверьте данные на корректность.");
-                        showModalNotif();
-                    }
-                };
-                reader.readAsText(file);
-            });
-
-            document.body.appendChild(fileInput);
-            fileInput.click();
-            document.body.removeChild(fileInput);
-        };
-
-
         const updateCanvasZoom = (newZoom) => {
             if (!editorView) return;
             const frame = editorView.Canvas.getElement();
@@ -1549,6 +1408,152 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             return [...uniqueGlobalRules, ...otherRules].join('\n');
         }
 
+        const exportYAML = async () => {
+
+            // Добавляем data-gjs-type всем графикам перед сохранением
+            const charts = editorView.getWrapper().find('[cjs-chart-type]');
+            charts.forEach(chart => {
+                chart.addAttributes({ 'data-gjs-type': 'chartjs' });
+            });
+
+            saveCurrentPage(editorView).then((updatedPages) => {
+                let css = cleanCSS(updatedPages[0].styles).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+
+                const toOneLine = (value) => {
+                    if (typeof value === 'string') {
+                        return value.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                    }
+                    if (value === null || value === undefined) return '';
+                    if (typeof value === 'object') return JSON.stringify(value);
+                    return String(value);
+                };
+
+                let resultWithoutScript = {
+                    dbUrl: settingDB.url,
+                    dbUsername: settingDB.username,
+                    dbPassword: settingDB.password,
+                    dbDriver: settingDB.driverClassName,
+                    sql,
+                    reportName: reportName,
+                    reportCategory: reportCategory,
+                    content: updatedPages[0].content,
+                    styles: css,
+                    sqlMode: isSqlMode,
+                    dataBands: JSON.stringify(dataBandsOpt),
+                    bookOrientation: isBookOrientation,
+                    layoutParamSettings: toOneLine(layoutParamSettings),
+                    layoutParam: toOneLine(layoutParam),
+                    parameters: parameters,
+                }
+
+                try {
+                    let yamlString = yaml.dump(resultWithoutScript, {indent: 2, lineWidth: -1, noRefs: true});
+
+                    const cleanScript = script.replace(/\\r\\n/g, '\n').replace(/\\r/g, '\n');
+                    const scriptLines = cleanScript.split('\n');
+                    const scriptBlock = 'script: |-\n' + scriptLines.map(line => '  ' + line).join('\n');
+                    const finalYaml = yamlString + scriptBlock + '\n';
+
+                    const blob = new Blob([finalYaml], {type: "application/yaml"});
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = reportName + ".yaml";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (error) {
+                    console.error("Ошибка при экспорте отчета:", error);
+                    setModalMsg("Ошибка при экспорте отчета.");
+                    showModalNotif();
+                }
+            });
+        };
+
+
+        const importYAML = () => {
+            const fileInput = document.createElement("input");
+            fileInput.type = "file";
+            fileInput.accept = ".yaml,.yml";
+            fileInput.style.display = "none";
+
+            // Обратная функция для toOneLine
+            const fromOneLine = (value) => {
+                if (typeof value === 'string') {
+                    if (value.trim().startsWith('{') || value.trim().startsWith('[')) {
+                        try {
+                            return JSON.parse(value);
+                        } catch {
+                            return value;
+                        }
+                    }
+                    return value;
+                }
+                return value;
+            };
+
+            fileInput.addEventListener("change", (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+
+                reader.onload = (e) => {
+                    try {
+                        const yamlContent = e.target.result;
+                        const importedData = yaml.load(yamlContent);
+
+                        processChartsOnLoad(editorView, importedData.content);
+
+                        editorView.setComponents(importedData.content);
+                        editorView.setStyle(importedData.styles);
+
+                        setPages([{id: 1, content: "", styles: ""}]);
+                        setCurrentPage(1);
+
+                        setSettingDB({
+                            url: importedData.dbUrl,
+                            username: importedData.dbUsername,
+                            password: importedData.dbPassword,
+                            driverClassName: importedData.dbDriver
+                        });
+
+                        setSql(importedData.sql);
+                        setReportName(importedData.reportName);
+                        setReportCategory(importedData.reportCategory);
+
+                        setParameters(importedData.parameters || []);
+                        setIsSqlMode(importedData.sqlMode);
+                        setScript(importedData.script || '');
+
+                        setDataBandsOpt(JSON.parse(importedData.dataBands));
+                        setIsBookOrientation(importedData.bookOrientation ?? true);
+
+                        // Применяем fromOneLine к полям, которые были через toOneLine
+                        setLayoutParamSettings(fromOneLine(importedData.layoutParamSettings));
+                        setLayoutParam(fromOneLine(importedData.layoutParam));
+
+                        setTimeout(() => defineBands(importedData.content), 200);
+
+                        setModalMsg("Отчет успешно импортирован!");
+                        showModalNotif();
+
+                    } catch (error) {
+                        console.error("Ошибка при импорте отчета:", error);
+                        setModalMsg("Ошибка импорта отчета! Проверьте данные на корректность.");
+                        showModalNotif();
+                    }
+                };
+                reader.readAsText(file);
+            });
+
+            document.body.appendChild(fileInput);
+            fileInput.click();
+            document.body.removeChild(fileInput);
+
+            lockAllBand();
+            lockAllBandParents();
+        };
+
         async function saveReport(reportName) {
             showModalSaveReport();
 
@@ -1581,189 +1586,11 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 const response = await ReportService.getReportTemplateByReportName(reportName);
                 let content = response.data.content;
 
-                // Удаляем пустые атрибуты датасетов
-                content = content.replace(/cjs-dataset-data-\d+=""/g, '');
-                content = content.replace(/cjs-dataset-label-\d+=""/g, '');
-                content = content.replace(/cjs-remove-dataset-\d+=""/g, '');
-                content = content.replace(/cjs-add-background-color-\d+=""/g, '');
-                content = content.replace(/cjs-add-border-color-\d+=""/g, '');
-                content = content.replace(/cjs-dataset-border-width-\d+=""/g, '');
-
-                // Сохраняем плейсхолдеры ДЛЯ КАЖДОГО ГРАФИКА ОТДЕЛЬНО
-                const chartsPlaceholders = new Map(); // key: chartId, value: { placeholders: Map, labelsPlaceholder }
-
-                // Временно парсим HTML чтобы найти все графики и их id
-                const tempParser = new DOMParser();
-                const tempDoc = tempParser.parseFromString(content, 'text/html');
-                const chartElements = tempDoc.querySelectorAll('[data-gjs-type="chartjs"]');
-
-                chartElements.forEach(chartEl => {
-                    const chartId = chartEl.getAttribute('id');
-                    if (!chartId) return;
-
-                    const chartHtml = chartEl.outerHTML;
-                    const placeholders = new Map();
-                    let labelsPlaceholder = null;
-
-                    // Ищем датасеты с плейсхолдерами
-                    const dataAttrRegex = /cjs-dataset-data-(\d+)="({{[^}]+}})"/g;
-                    let match;
-                    while ((match = dataAttrRegex.exec(chartHtml)) !== null) {
-                        const datasetIndex = parseInt(match[1]);
-                        if (!placeholders.has(datasetIndex)) {
-                            placeholders.set(datasetIndex, {});
-                        }
-                        placeholders.get(datasetIndex).data = match[2];
-                    }
-
-                    // Ищем лейблы датасетов
-                    const labelAttrRegex = /cjs-dataset-label-(\d+)="([^"]*)"/g;
-                    while ((match = labelAttrRegex.exec(chartHtml)) !== null) {
-                        if (match[2] && match[2] !== '') {
-                            const datasetIndex = parseInt(match[1]);
-                            if (!placeholders.has(datasetIndex)) {
-                                placeholders.set(datasetIndex, {});
-                            }
-                            placeholders.get(datasetIndex).label = match[2];
-                        }
-                    }
-
-                    // Ищем общие labels
-                    const labelsMatch = chartHtml.match(/cjs-chart-labels="({{[^}]+}})"/);
-                    if (labelsMatch) {
-                        labelsPlaceholder = labelsMatch[1];
-                    }
-
-                    chartsPlaceholders.set(chartId, { placeholders, labelsPlaceholder });
-                });
+                // Обработка графиков - одной строкой!
+                processChartsOnLoad(editorView, content);
 
                 editorView.setComponents(content);
                 editorView.setStyle(response.data.styles);
-
-                function forceAddColorTrait(component, traitName, label, datasetId, colorValue) {
-                    let trait = component.getTrait(traitName);
-
-                    if (!trait) {
-                        const category = {
-                            id: `cjs-dataset-options-${datasetId}`,
-                            label: `#${datasetId} Набор данных`
-                        };
-
-                        component.addTrait({
-                            type: 'color',
-                            name: traitName,
-                            label: label,
-                            category: category,
-                            changeProp: true
-                        });
-
-                        trait = component.getTrait(traitName);
-                    }
-
-                    if (trait && colorValue) {
-                        trait.set('value', colorValue);
-                        trait.setValue(colorValue);
-                        component.addAttributes({ [traitName]: colorValue });
-                    }
-
-                    return trait;
-                }
-
-                setTimeout(() => {
-                    const charts = editorView.getWrapper().find('[cjs-chart-type]');
-
-                    charts.forEach(chart => {
-                        const chartId = chart.getId();
-                        const chartData = chartsPlaceholders.get(chartId);
-
-                        if (!chartData) return;
-
-                        const { placeholders: datasetPlaceholders, labelsPlaceholder } = chartData;
-
-                        const currentDatasets = chart.get('chartjsOptions')?.data?.datasets || [];
-                        const currentCount = currentDatasets.length;
-                        const maxNeededIndex = Math.max(...Array.from(datasetPlaceholders.keys()), 0);
-                        const neededCount = maxNeededIndex;
-
-                        for (let i = currentCount; i < neededCount; i++) {
-                            chart.addNewDatasetTraitsGroup();
-                        }
-
-                        setTimeout(() => {
-                            const updatedAttrs = chart.getAttributes();
-                            const updatedChartjsOptions = chart.get('chartjsOptions');
-                            const updatedTraits = chart.get('traits');
-
-                            // Восстанавливаем labels
-                            if (labelsPlaceholder && updatedAttrs['cjs-chart-labels'] !== labelsPlaceholder) {
-                                chart.addAttributes({ 'cjs-chart-labels': labelsPlaceholder });
-                                const labelsTrait = updatedTraits?.find(t => t.get('name') === 'cjs-chart-labels');
-                                if (labelsTrait) labelsTrait.set('value', labelsPlaceholder);
-                                if (updatedChartjsOptions?.data) updatedChartjsOptions.data.labels = labelsPlaceholder;
-                            }
-
-                            // Восстанавливаем датасеты
-                            for (const [idx, placeholders] of datasetPlaceholders.entries()) {
-                                const dataAttr = `cjs-dataset-data-${idx}`;
-                                const labelAttr = `cjs-dataset-label-${idx}`;
-
-                                if (placeholders.data) chart.addAttributes({ [dataAttr]: placeholders.data });
-                                if (placeholders.label) chart.addAttributes({ [labelAttr]: placeholders.label });
-
-                                const dataTrait = updatedTraits?.find(t => t.get('name') === dataAttr);
-                                if (dataTrait && placeholders.data) dataTrait.set('value', placeholders.data);
-                                const labelTrait = updatedTraits?.find(t => t.get('name') === labelAttr);
-                                if (labelTrait && placeholders.label) labelTrait.set('value', placeholders.label);
-
-                                // Цвета фона
-                                const bgColors = [];
-                                let pos = 0;
-                                while (true) {
-                                    const bgColorAttr = `cjs-dataset-background-color-${pos}-${idx}`;
-                                    const bgColorValue = updatedAttrs[bgColorAttr];
-                                    if (!bgColorValue || bgColorValue === '') break;
-                                    bgColors.push(bgColorValue);
-                                    forceAddColorTrait(chart, bgColorAttr, `Цвет фона ${pos + 1}`, idx, bgColorValue);
-                                    pos++;
-                                }
-
-                                // Цвета границ
-                                const brdColors = [];
-                                pos = 0;
-                                while (true) {
-                                    const brdColorAttr = `cjs-dataset-border-color-${pos}-${idx}`;
-                                    const brdColorValue = updatedAttrs[brdColorAttr];
-                                    if (!brdColorValue || brdColorValue === '') break;
-                                    brdColors.push(brdColorValue);
-                                    forceAddColorTrait(chart, brdColorAttr, `Цвет границы ${pos + 1}`, idx, brdColorValue);
-                                    pos++;
-                                }
-
-                                // Толщина границы
-                                const borderWidthAttr = `cjs-dataset-border-width-${idx}`;
-                                const borderWidthValue = updatedAttrs[borderWidthAttr];
-                                if (borderWidthValue && borderWidthValue !== '') {
-                                    chart.addAttributes({ [borderWidthAttr]: borderWidthValue });
-                                    const borderWidthTrait = updatedTraits?.find(t => t.get('name') === borderWidthAttr);
-                                    if (borderWidthTrait) borderWidthTrait.set('value', borderWidthValue);
-                                }
-
-                                // Обновляем chartjsOptions
-                                if (updatedChartjsOptions?.data?.datasets && updatedChartjsOptions.data.datasets[idx - 1]) {
-                                    const dataset = updatedChartjsOptions.data.datasets[idx - 1];
-                                    if (placeholders.data) dataset.data = placeholders.data;
-                                    if (placeholders.label) dataset.label = placeholders.label;
-                                    if (bgColors.length > 0) dataset.backgroundColor = bgColors;
-                                    if (brdColors.length > 0) dataset.borderColor = brdColors;
-                                    if (borderWidthValue && borderWidthValue !== '') dataset.borderWidth = parseInt(borderWidthValue);
-                                }
-                            }
-
-                            if (updatedChartjsOptions) chart.set('chartjsOptions', updatedChartjsOptions);
-                            chart.trigger('rerender');
-                        }, 50);
-                    });
-                }, 100);
 
                 // Устанавливаем состояния
                 setReportName(response.data.reportName);
