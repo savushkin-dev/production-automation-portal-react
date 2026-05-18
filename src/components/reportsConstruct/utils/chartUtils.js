@@ -1,3 +1,4 @@
+// chartUtils.js - ИСПРАВЛЕННАЯ ВЕРСИЯ
 
 // Очистка пустых атрибутов графиков
 export const cleanEmptyChartAttributes = (content) => {
@@ -22,74 +23,164 @@ export const extractChartsPlaceholders = (content) => {
         const chartId = chartEl.getAttribute('id');
         if (!chartId) return;
 
+        const chartType = chartEl.getAttribute('cjs-chart-type');
         const chartHtml = chartEl.outerHTML;
         const placeholders = new Map();
         let labelsPlaceholder = null;
 
-        const dataAttrRegex = /cjs-dataset-data-(\d+)="({{[^}]+}})"/g;
+        const colorAttrs = {};
+        const bgColorRegex = /cjs-dataset-background-color-(\d+)-(\d+)="([^"]*)"/g;
         let match;
-        while ((match = dataAttrRegex.exec(chartHtml)) !== null) {
-            const datasetIndex = parseInt(match[1]);
-            if (!placeholders.has(datasetIndex)) {
-                placeholders.set(datasetIndex, {});
-            }
-            placeholders.get(datasetIndex).data = match[2];
+        while ((match = bgColorRegex.exec(chartHtml)) !== null) {
+            colorAttrs[`cjs-dataset-background-color-${match[1]}-${match[2]}`] = match[3];
+        }
+        const borderColorRegex = /cjs-dataset-border-color-(\d+)-(\d+)="([^"]*)"/g;
+        while ((match = borderColorRegex.exec(chartHtml)) !== null) {
+            colorAttrs[`cjs-dataset-border-color-${match[1]}-${match[2]}`] = match[3];
+        }
+        const borderWidthRegex = /cjs-dataset-border-width-(\d+)="([^"]*)"/g;
+        while ((match = borderWidthRegex.exec(chartHtml)) !== null) {
+            colorAttrs[`cjs-dataset-border-width-${match[1]}`] = match[2];
         }
 
-        const labelAttrRegex = /cjs-dataset-label-(\d+)="([^"]*)"/g;
-        while ((match = labelAttrRegex.exec(chartHtml)) !== null) {
-            if (match[2] && match[2] !== '') {
+        if (chartType === 'doughnut' || chartType === 'pie') {
+            const dataMatch = chartHtml.match(/cjs-dataset-data-1="({{[^}]+}})"/);
+            if (dataMatch) {
+                placeholders.set(1, { data: dataMatch[1] });
+            }
+            const labelsMatch = chartHtml.match(/cjs-chart-labels="({{[^}]+}})"/);
+            if (labelsMatch) {
+                labelsPlaceholder = labelsMatch[1];
+            }
+        } else {
+            const dataAttrRegex = /cjs-dataset-data-(\d+)="({{[^}]+}})"/g;
+            while ((match = dataAttrRegex.exec(chartHtml)) !== null) {
                 const datasetIndex = parseInt(match[1]);
                 if (!placeholders.has(datasetIndex)) {
                     placeholders.set(datasetIndex, {});
                 }
-                placeholders.get(datasetIndex).label = match[2];
+                placeholders.get(datasetIndex).data = match[2];
+            }
+
+            const labelAttrRegex = /cjs-dataset-label-(\d+)="([^"]*)"/g;
+            while ((match = labelAttrRegex.exec(chartHtml)) !== null) {
+                if (match[2] && match[2] !== '') {
+                    const datasetIndex = parseInt(match[1]);
+                    if (!placeholders.has(datasetIndex)) {
+                        placeholders.set(datasetIndex, {});
+                    }
+                    placeholders.get(datasetIndex).label = match[2];
+                }
+            }
+
+            const labelsMatch = chartHtml.match(/cjs-chart-labels="({{[^}]+}})"/);
+            if (labelsMatch) {
+                labelsPlaceholder = labelsMatch[1];
             }
         }
 
-        const labelsMatch = chartHtml.match(/cjs-chart-labels="({{[^}]+}})"/);
-        if (labelsMatch) {
-            labelsPlaceholder = labelsMatch[1];
-        }
-
-        chartsPlaceholders.set(chartId, { placeholders, labelsPlaceholder });
+        chartsPlaceholders.set(chartId, { placeholders, labelsPlaceholder, chartType, colorAttrs });
     });
 
     return chartsPlaceholders;
 };
 
+// Функция для принудительного обновления графика при изменении Trait
+const setupTraitChangeHandler = (component) => {
+    const traits = component.get('traits');
+    if (!traits || traits.length === 0) return;
+
+    traits.forEach(trait => {
+        // Удаляем старый обработчик если есть
+        if (trait.__handlerAttached) return;
+
+        // Добавляем обработчик изменения
+        trait.on('change:value', () => {
+            const traitName = trait.get('name');
+            const value = trait.get('value');
+
+            // Обновляем атрибут
+            component.addAttributes({ [traitName]: value });
+
+            // Обновляем chartjsOptions
+            const options = component.get('chartjsOptions');
+            if (options && options.data && options.data.datasets) {
+                // Парсим имя трейта
+                const bgMatch = traitName.match(/cjs-dataset-background-color-(\d+)-(\d+)/);
+                const borderMatch = traitName.match(/cjs-dataset-border-color-(\d+)-(\d+)/);
+                const widthMatch = traitName.match(/cjs-dataset-border-width-(\d+)/);
+
+                if (bgMatch) {
+                    const pos = parseInt(bgMatch[1]);
+                    const datasetId = parseInt(bgMatch[2]) - 1;
+                    if (options.data.datasets[datasetId]) {
+                        if (!options.data.datasets[datasetId].backgroundColor) {
+                            options.data.datasets[datasetId].backgroundColor = [];
+                        }
+                        options.data.datasets[datasetId].backgroundColor[pos] = value;
+                    }
+                } else if (borderMatch) {
+                    const pos = parseInt(borderMatch[1]);
+                    const datasetId = parseInt(borderMatch[2]) - 1;
+                    if (options.data.datasets[datasetId]) {
+                        if (!options.data.datasets[datasetId].borderColor) {
+                            options.data.datasets[datasetId].borderColor = [];
+                        }
+                        options.data.datasets[datasetId].borderColor[pos] = value;
+                    }
+                } else if (widthMatch) {
+                    const datasetId = parseInt(widthMatch[1]) - 1;
+                    if (options.data.datasets[datasetId]) {
+                        options.data.datasets[datasetId].borderWidth = parseInt(value);
+                    }
+                }
+            }
+
+            // Перерисовываем график
+            setTimeout(() => {
+                component.trigger('rerender');
+            }, 50);
+        });
+
+        trait.__handlerAttached = true;
+    });
+};
+
+const forceAddColorTrait = (component, traitName, label, datasetId, colorValue) => {
+    let trait = component.getTrait(traitName);
+
+    if (!trait) {
+        const category = {
+            id: `cjs-dataset-options-${datasetId}`,
+            label: `#${datasetId} Набор данных`
+        };
+
+        component.addTrait({
+            type: 'color',
+            name: traitName,
+            label: false,
+            category: category,
+            changeProp: true
+        });
+
+        trait = component.getTrait(traitName);
+    }
+
+    if (trait && colorValue) {
+        trait.set('value', colorValue);
+        trait.setValue(colorValue);
+        component.addAttributes({ [traitName]: colorValue });
+    }
+
+    // Настраиваем обработчик изменения
+    setupTraitChangeHandler(component);
+
+    return trait;
+};
+
 // Восстановление плейсхолдеров графиков
 export const restoreChartsPlaceholders = (editorView, chartsPlaceholders) => {
     if (!editorView || !chartsPlaceholders || chartsPlaceholders.size === 0) return;
-
-    const forceAddColorTrait = (component, traitName, label, datasetId, colorValue) => {
-        let trait = component.getTrait(traitName);
-
-        if (!trait) {
-            const category = {
-                id: `cjs-dataset-options-${datasetId}`,
-                label: `#${datasetId} Набор данных`
-            };
-
-            component.addTrait({
-                type: 'color',
-                name: traitName,
-                label: label,
-                category: category,
-                changeProp: true
-            });
-
-            trait = component.getTrait(traitName);
-        }
-
-        if (trait && colorValue) {
-            trait.set('value', colorValue);
-            trait.setValue(colorValue);
-            component.addAttributes({ [traitName]: colorValue });
-        }
-
-        return trait;
-    };
 
     const charts = editorView.getWrapper().find('[cjs-chart-type]');
 
@@ -98,8 +189,45 @@ export const restoreChartsPlaceholders = (editorView, chartsPlaceholders) => {
         const chartData = chartsPlaceholders.get(chartId);
         if (!chartData) return;
 
-        const { placeholders: datasetPlaceholders, labelsPlaceholder } = chartData;
+        const { placeholders: datasetPlaceholders, labelsPlaceholder, chartType, colorAttrs } = chartData;
 
+        // ДЛЯ DOUGHNUT И PIE
+        if (chartType === 'doughnut' || chartType === 'pie') {
+            setTimeout(() => {
+                if (labelsPlaceholder) {
+                    chart.addAttributes({ 'cjs-chart-labels': labelsPlaceholder });
+                }
+
+                const dataset = datasetPlaceholders.get(1);
+                if (dataset && dataset.data) {
+                    chart.addAttributes({ 'cjs-dataset-data-1': dataset.data });
+                }
+
+                // Восстанавливаем цвета и создаем Trait'ы
+                Object.entries(colorAttrs).forEach(([attr, value]) => {
+                    chart.addAttributes({ [attr]: value });
+
+                    const match = attr.match(/cjs-dataset-(background|border)-color-(\d+)-(\d+)/);
+                    if (match) {
+                        const type = match[1] === 'background' ? 'фона' : 'границы';
+                        const pos = parseInt(match[2]) + 1;
+                        const datasetId = parseInt(match[3]);
+                        const label = `Цвет ${type} ${pos}`;
+                        forceAddColorTrait(chart, attr, label, datasetId, value);
+                    }
+                });
+
+                const borderWidth = colorAttrs['cjs-dataset-border-width-1'];
+                if (borderWidth) {
+                    chart.addAttributes({ 'cjs-dataset-border-width-1': borderWidth });
+                }
+
+                chart.trigger('rerender');
+            }, 100);
+            return;
+        }
+
+        // ДЛЯ ОСТАЛЬНЫХ ГРАФИКОВ
         const currentDatasets = chart.get('chartjsOptions')?.data?.datasets || [];
         const currentCount = currentDatasets.length;
         const maxNeededIndex = Math.max(...Array.from(datasetPlaceholders.keys()), 0);
@@ -133,7 +261,6 @@ export const restoreChartsPlaceholders = (editorView, chartsPlaceholders) => {
                 const labelTrait = updatedTraits?.find(t => t.get('name') === labelAttr);
                 if (labelTrait && placeholders.label) labelTrait.set('value', placeholders.label);
 
-                // Цвета фона
                 const bgColors = [];
                 let pos = 0;
                 while (true) {
@@ -145,7 +272,6 @@ export const restoreChartsPlaceholders = (editorView, chartsPlaceholders) => {
                     pos++;
                 }
 
-                // Цвета границ
                 const brdColors = [];
                 pos = 0;
                 while (true) {
@@ -161,8 +287,7 @@ export const restoreChartsPlaceholders = (editorView, chartsPlaceholders) => {
                 const borderWidthValue = updatedAttrs[borderWidthAttr];
                 if (borderWidthValue && borderWidthValue !== '') {
                     chart.addAttributes({ [borderWidthAttr]: borderWidthValue });
-                    const borderWidthTrait = updatedTraits?.find(t => t.get('name') === borderWidthAttr);
-                    if (borderWidthTrait) borderWidthTrait.set('value', borderWidthValue);
+                    forceAddColorTrait(chart, borderWidthAttr, `Толщина границы`, idx, borderWidthValue);
                 }
 
                 if (updatedChartjsOptions?.data?.datasets && updatedChartjsOptions.data.datasets[idx - 1]) {
@@ -185,15 +310,20 @@ export const restoreChartsPlaceholders = (editorView, chartsPlaceholders) => {
 export const processChartsOnLoad = (editorView, content) => {
     if (!editorView) return;
 
-    const processedContent = cleanEmptyChartAttributes(content);
-    const chartsPlaceholders = extractChartsPlaceholders(processedContent);
+    const chartsPlaceholders = extractChartsPlaceholders(content);
+
+    let safeContent = content;
+    safeContent = safeContent.replace(/cjs-chart-labels="\{\{[^}]+\}\}"/g, 'cjs-chart-labels="[]"');
+    safeContent = safeContent.replace(/cjs-dataset-data-\d+="\{\{[^}]+\}\}"/g, 'cjs-dataset-data-1="[]"');
+
+    const processedContent = cleanEmptyChartAttributes(safeContent);
 
     editorView.setComponents(processedContent);
 
     if (chartsPlaceholders.size > 0) {
         setTimeout(() => {
             restoreChartsPlaceholders(editorView, chartsPlaceholders);
-        }, 100);
+        }, 150);
     }
 
     return processedContent;
