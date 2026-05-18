@@ -1409,15 +1409,11 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         }
 
         const exportYAML = async () => {
-
-            // Добавляем data-gjs-type всем графикам перед сохранением
-            const charts = editorView.getWrapper().find('[cjs-chart-type]');
-            charts.forEach(chart => {
-                chart.addAttributes({ 'data-gjs-type': 'chartjs' });
-            });
-
             saveCurrentPage(editorView).then((updatedPages) => {
                 let css = cleanCSS(updatedPages[0].styles).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                let content = updatedPages[0].content;
+                // Добавляем data-gjs-type="chartjs" ко всем графикам в HTML строке
+                content = content.replace(/(<div[^>]*cjs-chart-type[^>]*)/g, '$1 data-gjs-type="chartjs"');
 
                 const toOneLine = (value) => {
                     if (typeof value === 'string') {
@@ -1436,7 +1432,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     sql,
                     reportName: reportName,
                     reportCategory: reportCategory,
-                    content: updatedPages[0].content,
+                    content: content,
                     styles: css,
                     sqlMode: isSqlMode,
                     dataBands: JSON.stringify(dataBandsOpt),
@@ -1557,19 +1553,16 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         async function saveReport(reportName) {
             showModalSaveReport();
 
-            // Добавляем data-gjs-type всем графикам перед сохранением
-            const charts = editorView.getWrapper().find('[cjs-chart-type]');
-            charts.forEach(chart => {
-                chart.addAttributes({ 'data-gjs-type': 'chartjs' });
-            });
-
             saveCurrentPage(editorView).then(async (updatedPages) => {
                 let css = cleanCSS(updatedPages[0].styles)
+                let content = updatedPages[0].content;
+                // Добавляем data-gjs-type="chartjs" ко всем графикам в HTML строке
+                content = content.replace(/(<div[^>]*cjs-chart-type[^>]*)/g, '$1 data-gjs-type="chartjs"');
                 try {
                     await ReportService.createReportTemplate(reportName, reportCategory,
                         encryptData(settingDB.url), encryptData(settingDB.username), encryptData(settingDB.password), settingDB.driverClassName, encryptData(sql),
                         parameters,
-                        updatedPages[0].content, css,
+                        content, css,
                         encryptData(script), isSqlMode, dataBandsOpt, isBookOrientation, layoutParamSettings, layoutParam);
                     setModalMsg("Документ успешно отправлен!");
 
