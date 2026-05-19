@@ -1,6 +1,6 @@
 import $apiSchedule, {API_URL_SCHEDULER} from "../http/scheduler";
 import moment from "moment/moment";
-import {isFactItem} from "../utils/scheduler/items";
+import {isCleaningItem, isDelayItem, isFactItem} from "../utils/scheduler/items";
 
 export let hardware = []
 export let planByHardware = []
@@ -89,6 +89,7 @@ export default class ScheduleService {
                 pinned: false,
                 lineInfo: json.jobs[i].line,
                 delayNote: filteredData[i].cleaningDelayNote,
+                parentJobId: filteredData[i].id
             }
         }
         return cleaningDelayList;
@@ -366,7 +367,7 @@ export default class ScheduleService {
     static defineAssignedJobs(result, json){
         for (let i = 0; i < result.length; i++) {
             // Пропускаем cleaning элементы
-            if(result[i].id.includes('cleaning')) {
+            if(isCleaningItem(result[i])) {
                 continue;
             }
 
@@ -387,7 +388,7 @@ export default class ScheduleService {
 
     static defineGroupPositionDelayItems(result, json){
         for (let i = 0; i < result.length; i++) {
-            if(result[i].id.includes('delay')) {
+            if(isDelayItem(result[i])) {
                 if(result[i].group === ""){
                     return result
                 }
@@ -405,7 +406,7 @@ export default class ScheduleService {
 
         // Исключаем cleaning и фактические элементы из группы
         const groupItems = allItems.filter(i =>
-            i.group === item.group && !i.id.includes('cleaning') && !i.id.includes('delay') && !isFactItem(i)
+            i.group === item.group && !isCleaningItem(i) && !isDelayItem(i) && !isFactItem(i)
         )
 
         const sorted = groupItems.sort((a, b) =>
@@ -558,6 +559,10 @@ export default class ScheduleService {
 
     static async updateDelayJob(lineId, index, delayNote) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/delayNote`, {lineId, index, delayNote})
+    }
+
+    static async updateDelayCleaning(lineId, index, delayNote) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/cleaningDelay`, {lineId, index, delayNote})
     }
 
     static async getVersionList(startDate) {

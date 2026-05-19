@@ -2,6 +2,7 @@
 import React, {useEffect} from "react";
 import moment from "moment/moment";
 import {
+    isCleaningDelayItem,
     isCleaningItem,
     isDelayItem,
     isFactItem,
@@ -88,7 +89,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                 {!isFactEl ? (
                     <>
                         <div className="flex px-1 justify-between font-medium text-sm text-gray-800">
-                            {item.info?.pinned && !isFactEl ? (
+                            {item.info?.pinned && !isFactEl && !isCleaningDelayItem(item) ? (
                                 <>
                                     {isSelected && selectedItems.filter(item => !isFactItem(item)).length > 1 && (
                                         <div
@@ -112,8 +113,12 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                     {!isLeveling &&
                                         <span className="">{item.title}</span>
                                     }
-                                    {isLeveling &&
+                                    {isDelayItem(item) && !isCleaningItem(item) &&
                                         <span className="">{item.info.delayNote !== null && item.info.delayNote !== "" ? item.info.delayNote : item.title}</span>
+                                    }
+
+                                    {isCleaningItem(item) &&
+                                        <span className="">{item.info.cleaningDelayNote !== null && item.info.cleaningDelayNote !== "" ? item.info.cleaningDelayNote : item.title}</span>
                                     }
                                 </>
                             )}

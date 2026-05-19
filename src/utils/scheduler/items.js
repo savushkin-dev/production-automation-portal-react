@@ -50,6 +50,12 @@ export function isCleaningItem(item) {
     return item.id.includes('cleaning') && !isDelayItem(item);
 }
 
+//Определяет является ли задержкой мойки
+export function isCleaningDelayItem(item) {
+    return item.id.includes('cleaning-delay');
+}
+
+
 //Определяет сколько времени до 8 утра
 export const calculateTimeToNext8AM = (inputTime) => {
     const startDate = new Date(inputTime);

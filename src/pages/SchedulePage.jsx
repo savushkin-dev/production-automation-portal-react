@@ -90,7 +90,7 @@ function SchedulerPage() {
     const [isModalUpdateServiceWork, setIsModalUpdateServiceWork] = useState(false);
     const [isModalSendToWork, setIsModalSendToWork] = useState(false);
     const [isModalSavePlan, setIsModalSavePlan] = useState(false);
-    const [isModalUpdateDelayJob, setIsModalUpdateDelayJob] = useState(false);
+    const [isModalUpdateDelay, setIsModalUpdateDelay] = useState(false);
 
 
     const [isSolve, setIsSolve] = useState(false);
@@ -460,7 +460,7 @@ function SchedulerPage() {
     const handleItemRightClick = (itemId, e) => {
         e.preventDefault();
 
-        if (itemId.includes('cleaning')) {
+        if (itemId.includes('cleaning') && !itemId.includes('delay')) {
             return;
         }
 
@@ -873,6 +873,17 @@ function SchedulerPage() {
         }
     }
 
+    async function updateDelayCleaning(lineId, index, delayNote) {
+        try {
+            await SchedulerService.updateDelayCleaning(lineId, index, delayNote);
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка обновления отклонения мойки от плана: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
     const timelineRenderers = useMemo(
         () => {
             return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay)
@@ -1278,7 +1289,7 @@ function SchedulerPage() {
                                                              updateServiceWork={() => setIsModalUpdateServiceWork(true)}
                                                              removeServiceWork={removeServiceWork}
                                                              sortRange={sortRange}
-                                                             updateDelayJob={() => setIsModalUpdateDelayJob(true)}
+                                                             updateDelay={() => setIsModalUpdateDelay(true)}
                 />}
 
                 {isModalMoveJobs &&
@@ -1306,9 +1317,9 @@ function SchedulerPage() {
                     />
                 }
 
-                {isModalUpdateDelayJob &&
-                    <ModalUpdateJobDelay onClose={() => setIsModalUpdateDelayJob(false)}
-                                         updateDelayJob={updateDelayJob} selectedItems={selectedItems}/>
+                {isModalUpdateDelay &&
+                    <ModalUpdateJobDelay onClose={() => setIsModalUpdateDelay(false)}
+                                         updateDelayJob={updateDelayJob} updateDelayCleaning={updateDelayCleaning} selectedItems={selectedItems}/>
                 }
 
                 {isModalVersionSettings &&
