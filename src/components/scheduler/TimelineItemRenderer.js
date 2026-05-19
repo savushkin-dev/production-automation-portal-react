@@ -123,7 +123,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
                                     {isCleaningItem(item) &&
                                         <div className="flex justify-start">
-                                            {item.info.cleaningDurationWithDelay < 0 &&
+                                            {item.info.cleaningDelay < 0 &&
                                                 <span className="text-red-600 pr-2 h-[20px] w-[20px]">
                                                     <i className="fa-solid fa-triangle-exclamation"></i>
                                                 </span>
@@ -131,6 +131,9 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                             <span className="">{item.title}</span>
                                         </div>
                                     }
+
+
+
 
                                 </>
                             )}
