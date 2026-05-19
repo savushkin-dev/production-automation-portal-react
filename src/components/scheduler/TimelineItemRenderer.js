@@ -110,16 +110,28 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                             {selectedItems.findIndex(el => el.id === item.id) + 1}
                                         </div>
                                     )}
-                                    {!isLeveling &&
+                                    {!isLeveling && !isCleaningItem(item) &&
                                         <span className="">{item.title}</span>
                                     }
-                                    {isDelayItem(item) && !isCleaningItem(item) &&
+                                    {isDelayItem(item) && !isCleaningDelayItem(item) &&
                                         <span className="">{item.info.delayNote !== null && item.info.delayNote !== "" ? item.info.delayNote : item.title}</span>
                                     }
 
-                                    {isCleaningItem(item) &&
-                                        <span className="">{item.info.cleaningDelayNote !== null && item.info.cleaningDelayNote !== "" ? item.info.cleaningDelayNote : item.title}</span>
+                                    {isCleaningDelayItem(item) &&
+                                        <span className="">{item.info.delayNote && item.info.delayNote !== "" ? item.info.delayNote : item.title}</span>
                                     }
+
+                                    {isCleaningItem(item) &&
+                                        <div className="flex justify-start">
+                                            {item.info.cleaningDurationWithDelay < 0 &&
+                                                <span className="text-red-600 pr-2 h-[20px] w-[20px]">
+                                                    <i className="fa-solid fa-triangle-exclamation"></i>
+                                                </span>
+                                            }
+                                            <span className="">{item.title}</span>
+                                        </div>
+                                    }
+
                                 </>
                             )}
                         </div>

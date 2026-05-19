@@ -15,8 +15,6 @@ export function ModalUpdateJobDelay({onClose, selectedItems, updateDelayJob, upd
         const parentIndex = firstItem.info.groupIndex-1;
         const line = firstItem.group;
 
-        console.log(firstItem.info)
-
         if(isCleaningDelay){
             updateDelayCleaning(line, parentIndex, descriptionOperation)
         } else {

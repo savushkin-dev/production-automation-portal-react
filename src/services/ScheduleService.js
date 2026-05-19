@@ -89,7 +89,8 @@ export default class ScheduleService {
                 pinned: false,
                 lineInfo: json.jobs[i].line,
                 delayNote: filteredData[i].cleaningDelayNote,
-                parentJobId: filteredData[i].id
+                parentJobId: filteredData[i].id,
+                cleaningDurationWithDelay: filteredData[i].cleaningDurationWithDelay
             }
         }
         return cleaningDelayList;
@@ -140,6 +141,7 @@ export default class ScheduleService {
                 duration: dur,
                 pinned: false,
                 lineInfo: json.jobs[i].line,
+                cleaningDurationWithDelay: filteredData[i].cleaningDurationWithDelay
             }
         }
         return cleaning;
