@@ -62,7 +62,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                 // borderWidth: '1px',
                 borderStyle: 'solid',
                 borderColor: '#aeaeae',
-                borderLeftColor: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '#0077ff' : '#aeaeae',
+                borderLeftColor: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '#436fff' : '#aeaeae',
                 // borderLeftColor: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '#ff0059' : '#aeaeae',
                 borderLeftWidth: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '3px' : '1px',
                 textAlign: 'start',
