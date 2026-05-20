@@ -460,10 +460,6 @@ function SchedulerPage() {
     const handleItemRightClick = (itemId, e) => {
         e.preventDefault();
 
-        if (itemId.includes('cleaning') && !itemId.includes('delay')) {
-            return;
-        }
-
         const clickedItem = planByHardware.find(item => item.id === itemId);
 
         if (isFactItem(clickedItem)) {
@@ -611,9 +607,7 @@ function SchedulerPage() {
     }
 
     function onItemSelect(itemId, e, time) {
-        if (itemId.includes('cleaning') && !itemId.includes('cleaning-delay')) {
-            return;
-        }
+
         const itemsArray = planByHardware;
         const clickedItem = itemsArray.find(item => item.id === itemId);
 

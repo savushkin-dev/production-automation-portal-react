@@ -141,6 +141,8 @@ export default class ScheduleService {
                 duration: dur,
                 pinned: false,
                 lineInfo: json.jobs[i].line,
+                delayNote: filteredData[i].cleaningDelayNote,
+                parentJobId: filteredData[i].id,
                 cleaningDelay: filteredData[i].cleaningDelay || 0
             }
         }
@@ -390,7 +392,7 @@ export default class ScheduleService {
 
     static defineGroupPositionDelayItems(result, json){
         for (let i = 0; i < result.length; i++) {
-            if(isDelayItem(result[i])) {
+            if(isDelayItem(result[i]) || isCleaningItem(result[i])) {
                 if(result[i].group === ""){
                     return result
                 }

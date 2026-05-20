@@ -170,7 +170,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                 </span>
                             )}
 
-                            {item.info?.groupIndex && !isFact && !isLeveling && (
+                            {item.info?.groupIndex && !isFact && !isLeveling && !isCleaningItem(item) && (
                                 <span className="px-1 rounded">
                                       <span className="text-violet-600">{item.info.groupIndex}</span>
                                       <span className="pl-1">Позиция на линии</span>

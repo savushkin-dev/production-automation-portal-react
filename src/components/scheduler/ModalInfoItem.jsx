@@ -134,7 +134,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                         </div>
                     }
 
-                    {isDelayItem(item) &&
+                    {(isDelayItem(item) || isCleaningItem(item)) &&
                         <div className="flex flex-row px-4">
                             <span className={styleLable}>Описание:</span>
                             <span className={styleInfo}>{item.info.delayNote || "-"}</span>
