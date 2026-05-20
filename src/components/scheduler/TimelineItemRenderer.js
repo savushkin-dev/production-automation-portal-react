@@ -59,9 +59,12 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                 background: isSelected
                     ? (isSingleSelected ? selectBg : selectBg)
                     : (isFactEl ? factElBg : (isFact ? factBg : item.itemProps?.style?.background || '#fff')),
-                borderWidth: '1px',
+                // borderWidth: '1px',
                 borderStyle: 'solid',
                 borderColor: '#aeaeae',
+                borderLeftColor: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '#0077ff' : '#aeaeae',
+                // borderLeftColor: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '#ff0059' : '#aeaeae',
+                borderLeftWidth: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '3px' : '1px',
                 textAlign: 'start',
                 color: item.itemProps?.style?.color || 'black',
                 margin: 0,
@@ -123,11 +126,11 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
                                     {isCleaningItem(item) &&
                                         <div className="flex justify-start">
-                                            {item.info.cleaningDelay < 0 &&
-                                                <span className="text-red-600 pr-2 h-[20px] w-[20px]">
-                                                    <i className="fa-solid fa-triangle-exclamation"></i>
-                                                </span>
-                                            }
+                                            {/*{item.info.cleaningDelay < 0 &&*/}
+                                            {/*    <span className="text-blue-600 pr-2 h-[20px] w-[20px]">*/}
+                                            {/*        <i className="fa-solid fa-triangle-exclamation"></i>*/}
+                                            {/*    </span>*/}
+                                            {/*}*/}
                                             <span className="">{item.title}</span>
                                         </div>
                                     }
