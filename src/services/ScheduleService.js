@@ -143,7 +143,9 @@ export default class ScheduleService {
                 lineInfo: json.jobs[i].line,
                 delayNote: filteredData[i].cleaningDelayNote,
                 parentJobId: filteredData[i].id,
-                cleaningDelay: filteredData[i].cleaningDelay || 0
+                cleaningDelay: filteredData[i].cleaningDelay || 0,
+                cleaningDurationPlan: filteredData[i].cleaningDurationPlan || 0,
+                cleaningDurationWithDelay: filteredData[i].cleaningDurationWithDelay || 0,
             }
         }
         return cleaning;

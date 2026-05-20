@@ -82,11 +82,32 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
         const {key, ...safeItemProps} = itemProps;
 
+        //Определяем подсказку при наведении
+        function defineHint(){
+            let result = `${item.title}`;
+
+            //Для моек
+            if(isCleaningItem(item)){
+                result = `${item.title}\nПлан: ${defineHoursAndMinToString(item.info.cleaningDurationPlan)}\nФакт: ${defineHoursAndMinToString(item.info.cleaningDurationWithDelay)}`
+            }
+
+            return result;
+        }
+
+        function defineHoursAndMinToString(duration){
+            if(duration >= 60){
+                return `${Math.floor(duration / 60)} ч. ${duration % 60} мин.`;
+            } else {
+                return `${duration} мин.`
+            }
+        }
+
         return (
             <div
                 key={item.id}
                 {...safeItemProps}
                 className={isFactEl ? "rct-item-fact" : (isLeveling? "rct-item-alignment" : "rct-item")}
+                title={defineHint()}
             >
 
                 {!isFactEl ? (
