@@ -186,7 +186,7 @@ export default class ScheduleService {
             let colorGr = "#fff2db";
             delayList[i].itemProps = {
                 style: {
-                    background: "linear-gradient(to right, #f4e9ff, " + colorGr +")",
+                    background: "linear-gradient(to right, #f9efff, " + colorGr +")",
                     border: '1px solid #dcdcdc',
                     color: "#0369a1",
                 },

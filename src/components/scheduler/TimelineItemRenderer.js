@@ -46,7 +46,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
         const isLinesMatch = item.info?.lineIdFact === item.info?.lineInfo?.id;
 
         const factElBg = "#fafafa";
-        const factBg = "#f4e9ff";
+        const factBg = "#f9efff";
         const selectBg = "#cbff93";
 
         const isFactEl = isFactItem(item);
