@@ -157,6 +157,7 @@ export default class ScheduleService {
                 cleaningDelay: filteredData[i].cleaningDelay || 0,
                 cleaningDurationPlan: filteredData[i].cleaningDurationPlan || 0,
                 cleaningDurationWithDelay: filteredData[i].cleaningDurationWithDelay || 0,
+                cleaningDelayEndDateTime: filteredData[i].startProductionDateTime || 0,
             }
         }
         return cleaning;

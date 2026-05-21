@@ -1,6 +1,7 @@
 import React, {useEffect} from 'react'
 import {isCleaningItem, isDelayItem, isFactItem, isPackagedItem} from "../../utils/scheduler/items";
 import {formatIsoToDateOnly, formatIsoToDatetimeRegex} from "../../utils/date/date";
+import moment from "moment";
 
 
 
@@ -107,15 +108,43 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                         </div>
                     }
 
-                    <div className="flex flex-row px-4">
-                        <span className={styleLable}>{!isDelayItem(item) ? "Начало по плану:" : "Начало:"}</span>
-                        <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.start) || "-"}</span>
-                    </div>
+                    {!isCleaningItem(item) &&
+                        <>
+                            <div className="flex flex-row px-4">
+                                <span
+                                    className={styleLable}>{!isDelayItem(item) ? "Начало по плану:" : "Начало:"}</span>
+                                <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.start) || "-"}</span>
+                            </div>
 
-                    <div className="flex flex-row px-4">
-                        <span className={styleLable}>{!isDelayItem(item) ? "Конец по плану:" : "Конец:"}</span>
-                        <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.end) || ""}</span>
-                    </div>
+                            <div className="flex flex-row px-4">
+                                <span className={styleLable}>{!isDelayItem(item) ? "Конец по плану:" : "Конец:"}</span>
+                                <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.end) || ""}</span>
+                            </div>
+                        </>
+                    }
+
+                    {isCleaningItem(item) &&
+                        <>
+                            <div className="flex flex-row px-4">
+                                <span
+                                    className={styleLable}>{"Начало по плану:"}</span>
+                                <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.start) || "-"}</span>
+                            </div>
+
+                            <div className="flex flex-row px-4">
+                                <span className={styleLable}>{"Конец по плану:"}</span>
+                                <span className={styleInfo}>{formatIsoToDatetimeRegex(
+                                    moment(item.info.start).add(item.info.cleaningDurationPlan, 'minutes').format('YYYY-MM-DDTHH:mm:ss')) || ""}</span>
+                            </div>
+
+                            <div className="flex flex-row px-4">
+                                <span className={styleLable}>{"Конец по факту:"}</span>
+                                <span
+                                    className={styleInfo}>{formatIsoToDatetimeRegex(item.info.cleaningDelayEndDateTime) || ""}</span>
+                            </div>
+                        </>
+                    }
+
 
                     {!isCleaningItem(item) && !isDelayItem(item) && !item.info.maintenance && isFact &&
                         <div>
