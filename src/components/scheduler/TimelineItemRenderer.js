@@ -7,13 +7,13 @@ import {
     isDelayItem,
     isFactItem,
     isMaintenanceItem,
-    isMaintenancePackingOrLeveling
+    isMaintenancePackingOrLeveling, isSimpleItem
 } from "../../utils/scheduler/items";
 
 /**
  * Фабрика для создания рендерера элементов таймлайна планировщика
  */
-export const createItemRendererScheduler = (selectedItems, selectedItem, activeDisplay) => {
+export const createItemRendererScheduler = (selectedItems, selectedItem, activeDisplay, selectDate) => {
 
     function defineStyle(activeDisplay, isFactEl, isLeveling, isSelected) {
         const { plan, fact, planFact } = activeDisplay || {};
@@ -59,12 +59,16 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                 background: isSelected
                     ? (isSingleSelected ? selectBg : selectBg)
                     : (isFactEl ? factElBg : (isFact ? factBg : item.itemProps?.style?.background || '#fff')),
-                // borderWidth: '1px',
+
                 borderStyle: 'solid',
                 borderColor: '#aeaeae',
                 borderLeftColor: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '#436fff' : '#aeaeae',
-                // borderLeftColor: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '#ff0059' : '#aeaeae',
                 borderLeftWidth: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '3px' : '1px',
+
+                //Подсвечиваем задания на выбранную дату
+                borderBottomColor: isSimpleItem(item) && moment(item.info.dti).format('YYYY-MM-DD') === selectDate ? 'rgb(193,0,207)' : '#aeaeae',
+                borderBottomWidth: isSimpleItem(item) && moment(item.info.dti).format('YYYY-MM-DD') === selectDate ? '2px' : '1px',
+
                 textAlign: 'start',
                 color: item.itemProps?.style?.color || 'black',
                 margin: 0,
@@ -405,9 +409,9 @@ export const createGroupRenderer = () => {
 /**
  * Функция для создания всех рендереров планировщика
  */
-export const createTimelineRenderersSheduler = (selectedItems, selectedItem, activeDisplay) => {
+export const createTimelineRenderersSheduler = (selectedItems, selectedItem, activeDisplay, selectDate) => {
     return {
-        itemRenderer: createItemRendererScheduler(selectedItems, selectedItem, activeDisplay),
+        itemRenderer: createItemRendererScheduler(selectedItems, selectedItem, activeDisplay, selectDate),
         groupRenderer: createGroupRenderer(),
     };
 };

@@ -21,6 +21,15 @@ const exampleTask = {
 
 }
 
+export const ItemType = {
+    SIMPLE: 'simple',
+    CLEANING: 'cleaning',
+    DELAY: 'delay',
+    FACT: 'fact',
+    MAINTENANCE: 'maintenance',
+    CLEANING_DELAY: 'cleaning_delay',
+};
+
 export default class ScheduleService {
 
     static async parseDateTimeSettings(json) {
@@ -81,6 +90,7 @@ export default class ScheduleService {
             };
 
             cleaningDelayList[i].info = { //Доп информация
+                itemType: ItemType.CLEANING_DELAY, //Для идентификации элемента на плане
                 name: "Отклонение мойки от плана",
                 start: cleaningDelayStartDateTime,
                 end: cleaningDelayEndDateTime,
@@ -134,6 +144,7 @@ export default class ScheduleService {
                 },
             };
             cleaning[i].info = { //Доп информация
+                itemType: ItemType.CLEANING, //Для идентификации элемента на плане
                 name: "Мойка",
                 start: cleaningStartDateTime,
                 end: cleaningEndDateTime,
@@ -180,6 +191,7 @@ export default class ScheduleService {
                 },
             };
             delayList[i].info = { //Доп информация
+                itemType: ItemType.DELAY, //Для идентификации элемента на плане
                 name: "Отклонение от плана",
                 start: planEndDateTime,
                 end: endDateTime,
@@ -221,6 +233,7 @@ export default class ScheduleService {
                 }
             };
             factList[i].info = { //Доп информация
+                itemType: ItemType.FACT, //Для идентификации элемента на плане
                 name: filteredData[i].name,
                 start: filteredData[i].startProductionDateTime,
                 end: filteredData[i].endDateTime,
@@ -315,6 +328,7 @@ export default class ScheduleService {
                 }
             };
             planByHardware[i].info = { //Доп информация
+                itemType: ItemType.SIMPLE, //Для идентификации элемента на плане
                 name: json.jobs[i].name,
                 start: json.jobs[i].startProductionDateTime,
                 end: planEndDateTime,

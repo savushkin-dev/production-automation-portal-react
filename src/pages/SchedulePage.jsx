@@ -880,7 +880,7 @@ function SchedulerPage() {
 
     const timelineRenderers = useMemo(
         () => {
-            return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay)
+            return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay, selectDate)
         },
         [selectedItems, selectedItem, activeDisplay]
     );
@@ -1313,7 +1313,8 @@ function SchedulerPage() {
 
                 {isModalUpdateDelay &&
                     <ModalUpdateJobDelay onClose={() => setIsModalUpdateDelay(false)}
-                                         updateDelayJob={updateDelayJob} updateDelayCleaning={updateDelayCleaning} selectedItems={selectedItems}/>
+                                         updateDelayJob={updateDelayJob} updateDelayCleaning={updateDelayCleaning}
+                                         selectedItems={selectedItems}/>
                 }
 
                 {isModalVersionSettings &&
@@ -1322,6 +1323,26 @@ function SchedulerPage() {
                                           setModalError={setIsModalNotifyError} setErrorMsg={setMsg}
                                           setPlanVersion={setPlanVersion}/>
                 }
+
+
+                <div className="flex items-center gap-4 mx-3 px-3 rounded-md  flex-wrap">
+                    <div className="flex items-center gap-2">
+                        <div
+                            className="w-12 h-5 border border-gray-400 relative bg-white text-[9px] flex items-center justify-center font-bold">
+                            <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#436fff]"></div>
+                            <span className="z-10">Мойка</span>
+                        </div>
+                        <span className="text-xs text-gray-600">Мойка быстрее плана</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div
+                            className="w-12 h-5 border border-gray-400 relative bg-white text-[9px] flex items-center justify-center font-bold">
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[rgb(193,0,207)]"></div>
+                            <span className="z-10">Задание</span>
+                        </div>
+                        <span className="text-xs text-gray-600">Задание на выбранную дату</span>
+                    </div>
+                </div>
 
                 <SchedulerDataTables
                     pdayData={pdayData}

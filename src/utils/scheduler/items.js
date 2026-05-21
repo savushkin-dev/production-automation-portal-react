@@ -1,7 +1,12 @@
 //Проверяет или это отдельный фактический элемент
+import {ItemType} from "../../services/ScheduleService";
+
 export function isFactItem(item) {
     return item.id.endsWith("fact_camera")
 }
+
+//Определяет что это обычная задача, а не задержка, мойка и тд
+export const isSimpleItem = (item) => item?.info.itemType === ItemType.SIMPLE;
 
 //Определяет если ли уже факт
 export function isPackagedItem(item) {
