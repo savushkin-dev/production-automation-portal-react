@@ -92,7 +92,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
             //Для моек
             if(isCleaningItem(item)){
-                result = `${item.title}\nПлан: ${defineHoursAndMinToString(item.info.cleaningDurationPlan)}\nФакт: ${defineHoursAndMinToString(item.info.cleaningDurationWithDelay)}`
+                result = `${item.title}\nПлан: ${defineHoursAndMinToString(item.info.cleaningDurationPlan)}\nФакт: ${defineHoursAndMinToString(item.info.cleaningDurationFact)}`
             }
 
             return result;
