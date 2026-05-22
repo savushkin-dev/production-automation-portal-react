@@ -1,3 +1,4 @@
+
 // Очистка пустых атрибутов графиков
 export const cleanEmptyChartAttributes = (content) => {
     let cleaned = content;
@@ -101,22 +102,28 @@ const setupColorTraitHandler = (component, traitName, datasetId) => {
 };
 
 // Добавление трейта цвета
-const forceAddColorTrait = (component, traitName, label, datasetId, colorValue) => {
+const addColorTrait = (component, traitName, datasetId, colorValue, position = null) => {
     let trait = component.getTrait(traitName);
 
     if (!trait) {
         const category = {
             id: `cjs-dataset-options-${datasetId}`,
-            label: `#${datasetId} Набор данных`
+            label: `Набор ${datasetId}`
         };
 
-        component.addTrait({
+        const traitConfig = {
             type: 'color',
             name: traitName,
             label: false,
             category: category,
             changeProp: true
-        });
+        };
+
+        if (position !== null && position >= 0) {
+            component.addTrait(traitConfig, { at: position });
+        } else {
+            component.addTrait(traitConfig);
+        }
 
         trait = component.getTrait(traitName);
     }
@@ -127,10 +134,25 @@ const forceAddColorTrait = (component, traitName, label, datasetId, colorValue) 
         component.addAttributes({ [traitName]: colorValue });
     }
 
-    // Добавляем обработчик изменения цвета
     setupColorTraitHandler(component, traitName, datasetId);
 
     return trait;
+};
+
+// Поиск позиции кнопки по точному имени
+const findButtonPosition = (chart, buttonName) => {
+    const traits = chart.get('traits');
+    if (!traits || traits.length === 0) return -1;
+
+    for (let i = 0; i < traits.models.length; i++) {
+        const trait = traits.models[i];
+        const name = trait.attributes?.name || '';
+
+        if (name === buttonName) {
+            return i + 1; // Вставляем ПОСЛЕ этой кнопки
+        }
+    }
+    return -1;
 };
 
 // Восстановление плейсхолдеров графиков
@@ -179,28 +201,71 @@ export const restoreChartsPlaceholders = (editorView, chartsPlaceholders) => {
                 const labelTrait = updatedTraits?.find(t => t.get('name') === labelAttr);
                 if (labelTrait && placeholders.label) labelTrait.set('value', placeholders.label);
 
-                // Цвета фона
-                const bgColors = [];
+                // Собираем цвета фона
+                const bgColorsList = [];
                 let pos = 0;
                 while (true) {
                     const bgColorAttr = `cjs-dataset-background-color-${pos}-${idx}`;
                     const bgColorValue = updatedAttrs[bgColorAttr];
                     if (!bgColorValue || bgColorValue === '') break;
-                    bgColors.push(bgColorValue);
-                    forceAddColorTrait(chart, bgColorAttr, `Цвет фона ${pos + 1}`, idx, bgColorValue);
+                    bgColorsList.push({ pos, value: bgColorValue, attr: bgColorAttr });
                     pos++;
                 }
 
-                // Цвета границ
-                const brdColors = [];
+                // Собираем цвета границ
+                const brdColorsList = [];
                 pos = 0;
                 while (true) {
                     const brdColorAttr = `cjs-dataset-border-color-${pos}-${idx}`;
                     const brdColorValue = updatedAttrs[brdColorAttr];
                     if (!brdColorValue || brdColorValue === '') break;
-                    brdColors.push(brdColorValue);
-                    forceAddColorTrait(chart, brdColorAttr, `Цвет границы ${pos + 1}`, idx, brdColorValue);
+                    brdColorsList.push({ pos, value: brdColorValue, attr: brdColorAttr });
                     pos++;
+                }
+
+                // Обновляем chartjsOptions
+                if (bgColorsList.length > 0 && updatedChartjsOptions?.data?.datasets[idx - 1]) {
+                    updatedChartjsOptions.data.datasets[idx - 1].backgroundColor = bgColorsList.sort((a, b) => a.pos - b.pos).map(item => item.value);
+                }
+                if (brdColorsList.length > 0 && updatedChartjsOptions?.data?.datasets[idx - 1]) {
+                    updatedChartjsOptions.data.datasets[idx - 1].borderColor = brdColorsList.sort((a, b) => a.pos - b.pos).map(item => item.value);
+                }
+
+                // Вставляем цвета фона ПОСЛЕ кнопки cjs-add-background-color-{idx}
+                const bgButtonName = `cjs-add-background-color-${idx}`;
+                let bgInsertPosition = findButtonPosition(chart, bgButtonName);
+
+                if (bgInsertPosition !== -1 && bgColorsList.length > 0) {
+                    let currentPosition = bgInsertPosition;
+                    bgColorsList.sort((a, b) => a.pos - b.pos);
+                    bgColorsList.forEach((item) => {
+                        addColorTrait(chart, item.attr, idx, item.value, currentPosition);
+                        currentPosition++;
+                    });
+                } else if (bgColorsList.length > 0) {
+                    // Если кнопка не найдена - вставляем в конец датасета
+                    bgColorsList.sort((a, b) => a.pos - b.pos);
+                    bgColorsList.forEach((item) => {
+                        addColorTrait(chart, item.attr, idx, item.value);
+                    });
+                }
+
+                // Вставляем цвета границ ПОСЛЕ кнопки cjs-add-border-color-{idx}
+                const brdButtonName = `cjs-add-border-color-${idx}`;
+                let brdInsertPosition = findButtonPosition(chart, brdButtonName);
+
+                if (brdInsertPosition !== -1 && brdColorsList.length > 0) {
+                    let currentPosition = brdInsertPosition;
+                    brdColorsList.sort((a, b) => a.pos - b.pos);
+                    brdColorsList.forEach((item) => {
+                        addColorTrait(chart, item.attr, idx, item.value, currentPosition);
+                        currentPosition++;
+                    });
+                } else if (brdColorsList.length > 0) {
+                    brdColorsList.sort((a, b) => a.pos - b.pos);
+                    brdColorsList.forEach((item) => {
+                        addColorTrait(chart, item.attr, idx, item.value);
+                    });
                 }
 
                 const borderWidthAttr = `cjs-dataset-border-width-${idx}`;
@@ -209,15 +274,6 @@ export const restoreChartsPlaceholders = (editorView, chartsPlaceholders) => {
                     chart.addAttributes({ [borderWidthAttr]: borderWidthValue });
                     const borderWidthTrait = updatedTraits?.find(t => t.get('name') === borderWidthAttr);
                     if (borderWidthTrait) borderWidthTrait.set('value', borderWidthValue);
-                }
-
-                if (updatedChartjsOptions?.data?.datasets && updatedChartjsOptions.data.datasets[idx - 1]) {
-                    const dataset = updatedChartjsOptions.data.datasets[idx - 1];
-                    if (placeholders.data) dataset.data = placeholders.data;
-                    if (placeholders.label) dataset.label = placeholders.label;
-                    if (bgColors.length > 0) dataset.backgroundColor = bgColors;
-                    if (brdColors.length > 0) dataset.borderColor = brdColors;
-                    if (borderWidthValue && borderWidthValue !== '') dataset.borderWidth = parseInt(borderWidthValue);
                 }
             }
 
