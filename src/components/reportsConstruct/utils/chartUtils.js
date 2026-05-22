@@ -11,7 +11,7 @@ export const cleanEmptyChartAttributes = (content) => {
     return cleaned;
 };
 
-// Сохранение плейсхолдеров графиков
+// Сохранение плейсхолдеров и реальных значений графиков
 export const extractChartsPlaceholders = (content) => {
     const chartsPlaceholders = new Map();
     const tempParser = new DOMParser();
@@ -25,17 +25,26 @@ export const extractChartsPlaceholders = (content) => {
         const chartHtml = chartEl.outerHTML;
         const placeholders = new Map();
         let labelsPlaceholder = null;
+        let labelsValue = null;
 
-        const dataAttrRegex = /cjs-dataset-data-(\d+)="({{[^}]+}})"/g;
+        // Ищем датасеты (и плейсхолдеры, и реальные значения)
+        const dataAttrRegex = /cjs-dataset-data-(\d+)="([^"]*)"/g;
         let match;
         while ((match = dataAttrRegex.exec(chartHtml)) !== null) {
             const datasetIndex = parseInt(match[1]);
+            const value = match[2];
             if (!placeholders.has(datasetIndex)) {
                 placeholders.set(datasetIndex, {});
             }
-            placeholders.get(datasetIndex).data = match[2];
+            // Сохраняем и плейсхолдеры, и реальные значения
+            if (value.match(/{{[^}]+}}/)) {
+                placeholders.get(datasetIndex).data = value; // плейсхолдер
+            } else {
+                placeholders.get(datasetIndex).dataValue = value; // реальные числа
+            }
         }
 
+        // Ищем лейблы датасетов
         const labelAttrRegex = /cjs-dataset-label-(\d+)="([^"]*)"/g;
         while ((match = labelAttrRegex.exec(chartHtml)) !== null) {
             if (match[2] && match[2] !== '') {
@@ -43,16 +52,27 @@ export const extractChartsPlaceholders = (content) => {
                 if (!placeholders.has(datasetIndex)) {
                     placeholders.set(datasetIndex, {});
                 }
-                placeholders.get(datasetIndex).label = match[2];
+                const value = match[2];
+                if (value.match(/{{[^}]+}}/)) {
+                    placeholders.get(datasetIndex).label = value;
+                } else {
+                    placeholders.get(datasetIndex).labelValue = value;
+                }
             }
         }
 
-        const labelsMatch = chartHtml.match(/cjs-chart-labels="({{[^}]+}})"/);
+        // Ищем общие labels
+        const labelsMatch = chartHtml.match(/cjs-chart-labels="([^"]*)"/);
         if (labelsMatch) {
-            labelsPlaceholder = labelsMatch[1];
+            const value = labelsMatch[1];
+            if (value.match(/{{[^}]+}}/)) {
+                labelsPlaceholder = value;
+            } else {
+                labelsValue = value;
+            }
         }
 
-        chartsPlaceholders.set(chartId, { placeholders, labelsPlaceholder });
+        chartsPlaceholders.set(chartId, { placeholders, labelsPlaceholder, labelsValue });
     });
 
     return chartsPlaceholders;
@@ -193,8 +213,19 @@ export const restoreChartsPlaceholders = (editorView, chartsPlaceholders) => {
                 const dataAttr = `cjs-dataset-data-${idx}`;
                 const labelAttr = `cjs-dataset-label-${idx}`;
 
-                if (placeholders.data) chart.addAttributes({ [dataAttr]: placeholders.data });
-                if (placeholders.label) chart.addAttributes({ [labelAttr]: placeholders.label });
+                // Восстанавливаем данные (приоритет у плейсхолдера, потом реальные значения)
+                if (placeholders.data) {
+                    chart.addAttributes({ [dataAttr]: placeholders.data });
+                } else if (placeholders.dataValue) {
+                    chart.addAttributes({ [dataAttr]: placeholders.dataValue });
+                }
+
+                // Восстанавливаем лейблы датасета
+                if (placeholders.label) {
+                    chart.addAttributes({ [labelAttr]: placeholders.label });
+                } else if (placeholders.labelValue) {
+                    chart.addAttributes({ [labelAttr]: placeholders.labelValue });
+                }
 
                 const dataTrait = updatedTraits?.find(t => t.get('name') === dataAttr);
                 if (dataTrait && placeholders.data) dataTrait.set('value', placeholders.data);
