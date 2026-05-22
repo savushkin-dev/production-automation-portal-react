@@ -16,7 +16,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
     let size = isBookOrientation ? "A4" : "A4 landscape"
 
     useEffect(() => {
-        console.log(data)
         render(data, dataParam, html, css)
     }, [])
 
@@ -291,8 +290,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         renderDataBand(data, dataParam, html, css);
     }
 
-    // ==================== ЗАМЕНА ДАННЫХ В ГРАФИКАХ ====================
-
+    // замена данных в графике
     function replaceChartDataInHtml(html, rowData) {
         let result = html;
 
@@ -321,12 +319,10 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                     if (dataValue && Array.isArray(dataValue)) {
                         const labelsValue = dataValue.join(',');
                         processedDiv = processedDiv.replace(/cjs-chart-labels="[^"]*"/, `cjs-chart-labels="${labelsValue}"`);
-                        console.log(`Labels replaced in div: ${labelsValue}`);
                     }
                 }
             }
-
-            // Заменяем датасеты, fill, tension в этом div
+            
             let dsIndex = 1;
             while (true) {
                 const dataRegex = new RegExp(`cjs-dataset-data-${dsIndex}="([^"]*)"`);
@@ -341,43 +337,8 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                     if (dataValue && Array.isArray(dataValue)) {
                         const dataStr = dataValue.join(',');
                         processedDiv = processedDiv.replace(dataRegex, `cjs-dataset-data-${dsIndex}="${dataStr}"`);
-                        console.log(`Dataset ${dsIndex} replaced: ${dataStr}`);
                     }
                 }
-
-                // // Замена для fill (заливка)
-                // const fillRegex = new RegExp(`cjs-dataset-custom-fill-${dsIndex}="([^"]*)"`);
-                // const fillMatch = processedDiv.match(fillRegex);
-                // if (fillMatch) {
-                //     const fillPlaceholder = fillMatch[1];
-                //     const fillBracketMatch = fillPlaceholder.match(/\{\{(\w+)\}\}/);
-                //     if (fillBracketMatch) {
-                //         const fillFieldName = fillBracketMatch[1];
-                //         const fillDataValue = rowData[fillFieldName];
-                //         if (fillDataValue !== undefined && fillDataValue !== null) {
-                //             const fillValue = fillDataValue === true || fillDataValue === 'true' ? 'true' : 'false';
-                //             processedDiv = processedDiv.replace(fillRegex, `cjs-dataset-custom-fill-${dsIndex}="${fillValue}"`);
-                //             console.log(`Fill ${dsIndex} replaced: ${fillValue}`);
-                //         }
-                //     }
-                // }
-                //
-                // // Замена для tension (натяжение)
-                // const tensionRegex = new RegExp(`cjs-dataset-custom-tension-${dsIndex}="([^"]*)"`);
-                // const tensionMatch = processedDiv.match(tensionRegex);
-                // if (tensionMatch) {
-                //     const tensionPlaceholder = tensionMatch[1];
-                //     const tensionBracketMatch = tensionPlaceholder.match(/\{\{(\w+)\}\}/);
-                //     if (tensionBracketMatch) {
-                //         const tensionFieldName = tensionBracketMatch[1];
-                //         const tensionDataValue = rowData[tensionFieldName];
-                //         if (tensionDataValue !== undefined && tensionDataValue !== null) {
-                //             const tensionValue = parseFloat(tensionDataValue);
-                //             processedDiv = processedDiv.replace(tensionRegex, `cjs-dataset-custom-tension-${dsIndex}="${tensionValue}"`);
-                //             console.log(`Tension ${dsIndex} replaced: ${tensionValue}`);
-                //         }
-                //     }
-                // }
 
                 dsIndex++;
             }
@@ -392,8 +353,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         return newResult;
     }
 
-    // ==================== ФУНКЦИЯ ЗАМЕНЫ ПОЛЕЙ ====================
-
+    // замена полей в графике
     function replaceFieldsInHtml(html, rowData) {
         if (!rowData) return html;
 
@@ -419,19 +379,17 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         return html.replaceAll(`{{${field}}}`, String(value));
     }
 
-    // ==================== ОСНОВНАЯ ФУНКЦИЯ РЕНДЕРИНГА ====================
-
     function renderDataBand(data, dataParam, htmlTemplate, css) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlTemplate, 'text/html');
         const dataArray = data.tableData;
 
-        // if (!data.tableData || data.tableData.length === 0) {
-        //     setPages([{content: doc.body.innerHTML, css: ""}]);
-        //     setModalMsg("Скрипт вернул пустые данные. Подстановка значений в отчет невозможна.");
-        //     setIsModalNotif(true);
-        //     return;
-        // }
+        if (!data.tableData || data.tableData.length === 0) {
+            setPages([{content: doc.body.innerHTML, css: ""}]);
+            setModalMsg("Скрипт вернул пустые данные. Подстановка значений в отчет невозможна.");
+            setIsModalNotif(true);
+            return;
+        }
 
         // Удаляем описательные бэнды
         const descriptionBands = doc.querySelectorAll('[description-band="true"]');
