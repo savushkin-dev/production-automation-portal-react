@@ -772,8 +772,10 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                         <span className="gjs-pn-btn hover:bg-gray-200" onClick={exportHtml} title="Экспорт HTML">
                             <i className="fa fa-code"></i>
                         </span>
-                        <span className="gjs-pn-btn hover:bg-gray-200" onClick={printReport} title="Печать">
+                        <span className="gjs-pn-btn hover:bg-gray-200" onClick={printReport} title="Печать или экспорт PDF">
                             <i className="fa fa-print"></i>
+                            <span className="px-2"/>
+                            <i className="fa-solid fa-file-pdf"></i>
                         </span>
                         <span className="gjs-pn-btn hover:bg-gray-200" onClick={zoomOut} title="Уменьшить масштаб">
                             <i className="fa fa-magnifying-glass-minus"></i>
