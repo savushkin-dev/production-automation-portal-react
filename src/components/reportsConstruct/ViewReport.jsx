@@ -1,84 +1,272 @@
 import React, {useEffect, useRef, useState} from "react";
 import {ModalNotify} from "../modal/ModalNotify";
 
-
 export function ViewReport({data, dataParam, html, css, onClose, isBookOrientation}) {
 
     const [printContent, setPrintContent] = useState("");
     const [uniqueStyles, setUniqueStyles] = useState("");
     const [fullHtml, setFullHtml] = useState("");
     const iframeRef = useRef(null);
-    const [iframeScale, setIframeScale] = useState(1); // Начальный масштаб 1 (100%)
-
+    const [iframeScale, setIframeScale] = useState(1);
     const [isModalNotify, setIsModalNotif] = useState(false);
     const [modalMsg, setModalMsg] = useState('');
-
-    const [pages, setPages] = useState([
-        {id: 1, content: "", styles: ""}
-    ]);
+    const [pages, setPages] = useState([{id: 1, content: "", styles: ""}]);
 
     let heightPage = isBookOrientation ? "297mm" : "210mm";
     let size = isBookOrientation ? "A4" : "A4 landscape"
-
 
     useEffect(() => {
         render(data, dataParam, html, css)
     }, [])
 
-
-    // Обновление содержимого iframe при изменении данных
     useEffect(() => {
         if (iframeRef.current && printContent) {
-            const fullHtml = `
-                <!DOCTYPE html>
-                <html lang="ru">
-                <head>
-                    <meta charset="UTF-8" />
-                    <style>
-                        <style>
-                            @page { 
-                                size: ${size};
-                                margin: 0;
+            const finalHtml = `
+            <!DOCTYPE html>
+            <html lang="ru">
+            <head>
+                <meta charset="UTF-8" />
+                <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+                <style>
+                    @page { 
+                        size: ${size};
+                        margin: 0;
+                    }
+                    body, html {
+                        margin: 0;
+                        padding: 0 !important;
+                        left: 0;
+                        right: 0;
+                        display: flex;
+                        align-items: center;
+                        flex-direction: column;
+                    }
+                    .page-container {
+                        position: relative;
+                        page-break-after: always;
+                        height: ${heightPage};
+                        overflow: hidden;
+                        margin: 0;
+                        padding-left: 20px;
+                        padding-right: 20px;
+                        padding-top: 10px; 
+                        padding-bottom: 10px;
+                        left: 0;
+                        right: 0;
+                        box-sizing: border-box;
+                    }
+                    hr {
+                        margin-top: 20px;
+                        margin-bottom: 20px;
+                    }
+                    ${uniqueStyles}
+                </style>
+            </head>
+            <body>
+                ${printContent}
+                <script>
+                (function() {
+                    function initCharts() {
+                        if (typeof Chart === 'undefined') {
+                            setTimeout(initCharts, 100);
+                            return;
+                        }
+                        
+                        const chartDivs = document.querySelectorAll('[cjs-chart-type]');
+                        
+                        chartDivs.forEach(function(div) {
+                            try {
+                                const chartType = div.getAttribute('cjs-chart-type');
+                                const chartLabels = div.getAttribute('cjs-chart-labels');
+                                const chartTitle = div.getAttribute('cjs-chart-title');
+                                const chartSubtitle = div.getAttribute('cjs-chart-subtitle');
+                                
+                                if (!chartType) return;
+                                
+                                const isBubbleOrScatter = chartType === 'bubble' || chartType === 'scatter';
+                                const datasets = [];
+                                let datasetIndex = 1;
+                                
+                                while (true) {
+                                    const datasetData = div.getAttribute(\`cjs-dataset-data-\${datasetIndex}\`);
+                                    if (!datasetData) break;
+                                    
+                                    const datasetLabel = div.getAttribute(\`cjs-dataset-label-\${datasetIndex}\`);
+                                    const borderWidth = div.getAttribute(\`cjs-dataset-border-width-\${datasetIndex}\`);
+                                                 
+                                    // Собираем цвета в массив
+                                    const bgColors = [];
+                                    let pos = 0;
+                                    while (true) {
+                                        const color = div.getAttribute(\`cjs-dataset-background-color-\${pos}-\${datasetIndex}\`);
+                                        if (!color) break;
+                                        bgColors.push(color);
+                                        pos++;
+                                    }
+                                    
+                                    let backgroundColor = null;
+                                    if (bgColors.length > 0) {
+                                        backgroundColor = bgColors;
+                                    } else {
+                                        backgroundColor = div.getAttribute(\`cjs-dataset-background-color-\${datasetIndex}\`);
+                                        if (!backgroundColor) {
+                                            backgroundColor = div.getAttribute(\`cjs-dataset-background-color-0-\${datasetIndex}\`);
+                                        }
+                                    }
+                                    
+                                    // Собираем цвета границ
+                                    const brdColors = [];
+                                    pos = 0;
+                                    while (true) {
+                                        const color = div.getAttribute(\`cjs-dataset-border-color-\${pos}-\${datasetIndex}\`);
+                                        if (!color) break;
+                                        brdColors.push(color);
+                                        pos++;
+                                    }
+                                    
+                                    let borderColor = null;
+                                    if (brdColors.length > 0) {
+                                        borderColor = brdColors;
+                                    } else {
+                                        borderColor = div.getAttribute(\`cjs-dataset-border-color-\${datasetIndex}\`);
+                                        if (!borderColor) {
+                                            borderColor = div.getAttribute(\`cjs-dataset-border-color-0-\${datasetIndex}\`);
+                                        }
+                                    }
+                                    
+                                    let parsedData;
+                                    let parsedLabels = null;
+                                    
+                                    if (isBubbleOrScatter) {
+                                        // Для bubble/scatter - преобразуем числа в объекты
+                                        const numbers = datasetData.split(',').map(Number);
+                                        
+                                        if (chartType === 'scatter') {
+                                            parsedData = numbers.map((y, index) => ({ x: index, y: y }));
+                                        } else {
+                                            parsedData = numbers.map((value, index) => ({ x: index, y: value, r: Math.abs(value / 2) }));
+                                        }
+                                        
+                                        // Лейблы для осей
+                                        let labelsAttr = div.getAttribute(\`cjs-chart-labels-\${datasetIndex}\`);
+                                        if (!labelsAttr) labelsAttr = chartLabels;
+                                        if (labelsAttr) {
+                                            parsedLabels = labelsAttr.split(',').map(Number);
+                                        }
+                                    } else {
+                                        // Для обычных графиков
+                                        // Очищаем данные от квадратных скобок и пробелов
+                                        let cleanData = datasetData;
+                                        if (cleanData.startsWith('[') && cleanData.endsWith(']')) {
+                                            cleanData = cleanData.slice(1, -1);
+                                        }
+                                        parsedData = cleanData.split(',').map(Number);
+                                    }
+                                    
+                                    const dataset = {
+                                        label: datasetLabel || \`Набор \${datasetIndex}\`,
+                                        data: parsedData,
+                                        borderWidth: borderWidth ? parseInt(borderWidth) : 1
+                                    };
+
+                                    // Чтение fill и tension
+                                    const fill = div.getAttribute(\`cjs-dataset-custom-fill-\${datasetIndex}\`);
+                                    const tension = div.getAttribute(\`cjs-dataset-custom-tension-\${datasetIndex}\`);
+
+                                    // Если атрибут существует, заливка включена (даже если пустая строка)
+                                    if (fill !== null && fill !== undefined) {
+                                        dataset.fill = true;
+                                    }
+
+                                    // Добавляем tension (натяжение кривой)
+                                    if (tension !== null && tension !== undefined && tension !== '') {
+                                        dataset.tension = parseFloat(tension);
+                                    }
+
+                                    // Для радарной диаграммы включаем заливку принудительно
+                                    if (chartType === 'radar') {
+                                        dataset.fill = true;
+                                    }
+                                    
+                                    if (backgroundColor) dataset.backgroundColor = backgroundColor;
+                                    if (borderColor) dataset.borderColor = borderColor;
+                                    
+                                    datasets.push(dataset);
+                                    datasetIndex++;
+                                }
+                                
+                                if (datasets.length === 0) return;
+                                
+                                // Сохраняем размеры
+                                const originalWidth = div.style.width;
+                                const originalHeight = div.style.height;
+                                
+                                // Создаем canvas
+                                const canvas = document.createElement('canvas');
+                                div.innerHTML = '';
+                                div.appendChild(canvas);
+                                
+                                if (originalWidth) div.style.width = originalWidth;
+                                if (originalHeight) div.style.height = originalHeight;
+                                
+                                canvas.style.width = '100%';
+                                canvas.style.height = '100%';
+                                
+                                // Конфиг графика
+                                const chartConfig = {
+                                    type: chartType,
+                                    data: {
+                                        datasets: datasets
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        devicePixelRatio: 2,
+                                        plugins: {
+                                            title: {
+                                                display: !!(chartTitle && chartTitle !== 'undefined' && chartTitle !== ''),
+                                                text: (chartTitle && chartTitle !== 'undefined') ? chartTitle : ''
+                                            },
+                                            subtitle: {
+                                                display: !!(chartSubtitle && chartSubtitle !== 'undefined' && chartSubtitle !== ''),
+                                                text: (chartSubtitle && chartSubtitle !== 'undefined') ? chartSubtitle : ''
+                                            }
+                                        }
+                                    }
+                                };
+                                
+                                // Добавляем лейблы для обычных графиков
+                                if (!isBubbleOrScatter && chartLabels) {
+                                    chartConfig.data.labels = chartLabels.split(',');
+                                }
+                                
+                                // Для bubble/scatter добавляем оси
+                                if (isBubbleOrScatter) {
+                                    chartConfig.options.scales = {
+                                        x: { type: 'linear', position: 'bottom', title: { display: true, text: 'X' } },
+                                        y: { type: 'linear', title: { display: true, text: 'Y' } }
+                                    };
+                                }
+                                
+                                new Chart(canvas, chartConfig);
+                            } catch(e) {
+                                console.error('Chart init error:', e);
                             }
-                            body, html {
-                                /*font-family: Arial, 'Times New Roman', sans-serif;*/
-                                margin: 0;
-                                padding: 0 !important;
-                                left: 0;
-                                right: 0;
-                                display: flex;
-                                align-items: center;
-                                flex-direction: column;
-                            }
-                            .page-container {
-                                position: relative;
-                                page-break-after: always;
-                                height: ${heightPage};
-                                overflow: hidden;
-                                margin: 0;
-                                padding-left: 20px;
-                                padding-right: 20px;
-                                padding-top: 10px; 
-                                padding-bottom: 10px;
-                                left: 0;
-                                right: 0;
-                                box-sizing: border-box;
-                            }
-                            hr {
-                                margin-top: 20px;
-                                margin-bottom: 20px;
-                            }
-                            ${uniqueStyles}
-                        </style>
-                    </style>
-                </head>
-                <body>
-                    ${printContent}
-                </body>
-                </html>
-            `;
-            iframeRef.current.srcdoc = fullHtml;
-            setFullHtml(fullHtml);
+                        });
+                    }
+                    
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', initCharts);
+                    } else {
+                        initCharts();
+                    }
+                })();
+            </script>
+            </body>
+            </html>
+        `;
+            iframeRef.current.srcdoc = finalHtml;
+            setFullHtml(finalHtml);
         }
     }, [printContent]);
 
@@ -89,7 +277,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
             pagesHtml += pages[i].content;
             pagesHtml += "</div> ";
         }
-
         setPrintContent(pagesHtml)
     }
 
@@ -97,11 +284,99 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         prepareHtmlAndCss()
     }, [pages])
 
-
     function render(data, dataParam, html, css) {
         css = transformIDs(css);
         setUniqueStyles(css);
         renderDataBand(data, dataParam, html, css);
+    }
+
+    // замена данных в графике
+    function replaceChartDataInHtml(html, rowData) {
+        let result = html;
+
+        // Находим все div с атрибутом cjs-chart-type
+        const chartDivRegex = /<div([^>]*cjs-chart-type[^>]*)>/g;
+        let match;
+        let lastIndex = 0;
+        let newResult = '';
+
+        while ((match = chartDivRegex.exec(result)) !== null) {
+            const fullMatch = match[0];
+            const before = result.substring(lastIndex, match.index);
+            const divContent = fullMatch;
+
+            // Обрабатываем каждый div отдельно
+            let processedDiv = divContent;
+
+            // Заменяем labels в этом div
+            const labelsMatch = processedDiv.match(/cjs-chart-labels="([^"]*)"/);
+            if (labelsMatch) {
+                const placeholder = labelsMatch[1];
+                const bracketMatch = placeholder.match(/\{\{(\w+)\}\}/);
+                if (bracketMatch) {
+                    const fieldName = bracketMatch[1];
+                    const dataValue = rowData[fieldName];
+                    if (dataValue && Array.isArray(dataValue)) {
+                        const labelsValue = dataValue.join(',');
+                        processedDiv = processedDiv.replace(/cjs-chart-labels="[^"]*"/, `cjs-chart-labels="${labelsValue}"`);
+                    }
+                }
+            }
+            
+            let dsIndex = 1;
+            while (true) {
+                const dataRegex = new RegExp(`cjs-dataset-data-${dsIndex}="([^"]*)"`);
+                const dataMatch = processedDiv.match(dataRegex);
+                if (!dataMatch) break;
+
+                const placeholder = dataMatch[1];
+                const bracketMatch = placeholder.match(/\{\{(\w+)\}\}/);
+                if (bracketMatch) {
+                    const fieldName = bracketMatch[1];
+                    const dataValue = rowData[fieldName];
+                    if (dataValue && Array.isArray(dataValue)) {
+                        const dataStr = dataValue.join(',');
+                        processedDiv = processedDiv.replace(dataRegex, `cjs-dataset-data-${dsIndex}="${dataStr}"`);
+                    }
+                }
+
+                dsIndex++;
+            }
+
+            // Добавляем обработанный div
+            newResult += before + processedDiv;
+            lastIndex = match.index + fullMatch.length;
+        }
+
+        newResult += result.substring(lastIndex);
+
+        return newResult;
+    }
+
+    // замена полей в графике
+    function replaceFieldsInHtml(html, rowData) {
+        if (!rowData) return html;
+
+        let result = html;
+
+        // Обрабатываем плейсхолдеры графиков
+        result = replaceChartDataInHtml(result, rowData);
+
+        // Обрабатываем плейсхолдеры поелй отчета
+        Object.keys(rowData).forEach(field => {
+            let value = rowData[field];
+            if (value === null || value === undefined) return;
+
+            const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+            const regex = new RegExp(`\\{\\{${field}\\}\\}`, 'g');
+            result = result.replace(regex, displayValue);
+        });
+
+        return result;
+    }
+
+    function replaceFieldInHtml(html, value, field) {
+        return html.replaceAll(`{{${field}}}`, String(value));
     }
 
     function renderDataBand(data, dataParam, htmlTemplate, css) {
@@ -109,7 +384,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         const doc = parser.parseFromString(htmlTemplate, 'text/html');
         const dataArray = data.tableData;
 
-        if(!data.tableData){
+        if (!data.tableData || data.tableData.length === 0) {
             setPages([{content: doc.body.innerHTML, css: ""}]);
             setModalMsg("Скрипт вернул пустые данные. Подстановка значений в отчет невозможна.");
             setIsModalNotif(true);
@@ -126,22 +401,20 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
         dataBands.forEach(band => {
             let bandHtml = band.innerHTML;
-
-            // Находим все дочерние бэнды
             const childBands = Array.from(doc.querySelectorAll(`[data-band-child="true"]`));
 
             dataArray.forEach((tableData, index) => {
                 // Рендерим главный бэнд
                 let instanceHtml = replaceFieldsInHtml(bandHtml, tableData);
-                let bandCopy = band.cloneNode(true); // Глубокое клонирование
+                let bandCopy = band.cloneNode(true);
 
                 // Применяем чередование фона
                 if (index > 0 && index % 2 !== 0) {
-                    bandCopy.style.backgroundColor = '#f6f6f6';
+                    bandCopy.style.backgroundColor = '#efefef';
                 }
 
                 counterBand++;
-                instanceHtml = replaceFieldInHtml(instanceHtml, counterBand, "№")
+                instanceHtml = replaceFieldInHtml(instanceHtml, counterBand, "№");
 
                 bandCopy.innerHTML = instanceHtml;
                 doc.body.appendChild(bandCopy);
@@ -149,16 +422,13 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                 // Рендерим дочерние бэнды
                 childBands.forEach(originalChildBand => {
                     const childId = originalChildBand.getAttribute('id');
-                    //Если есть логический параметр с таким же id как и у дочернего бэнда или когда параметр вообще отсутствует тогда рендерим дочерний элемент
                     if (dataParam[childId] || dataParam[childId] === undefined) {
                         const childHtml = originalChildBand.innerHTML;
                         const childInstanceHtml = replaceFieldsInHtml(childHtml, tableData);
-                        // Клонируем ОРИГИНАЛЬНЫЙ дочерний бэнд (со всеми атрибутами и классами)
                         const childBandCopy = originalChildBand.cloneNode(true);
                         childBandCopy.innerHTML = childInstanceHtml;
                         doc.body.appendChild(childBandCopy);
                     }
-
                 });
             });
 
@@ -175,55 +445,32 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         const bands = doc.querySelectorAll('[band="true"]');
         bands.forEach(band => doc.body.removeChild(band.parentNode));
 
-        //Вставляем глобальные данные в бэнды
+        // Вставляем глобальные данные в бэнды
         bands.forEach(band => {
-            band.innerHTML = replaceFieldsInHtml(band.innerHTML, data.globalVar)
-        })
+            band.innerHTML = replaceFieldsInHtml(band.innerHTML, data.globalVar);
+        });
+
+        let finalHtml = doc.body.innerHTML;
+
+        // Удаляем старый скрипт инициализации от плагина
+        finalHtml = finalHtml.replace(/<script>var props = \{.*?<\/script>/gs, '');
 
         // Разбиваем на страницы
-        splitIntoA4Pages(doc.body.innerHTML, css, bands);
+        splitIntoA4Pages(finalHtml, css, bands);
 
-        return doc.body.innerHTML;
-    }
-
-    function replaceFieldsInHtml(html, data) {
-        Object.keys(data).forEach(field => {
-            let value = data[field];
-
-            if (value === null) {
-                value = "-";
-            }
-
-            const style = data.style?.[field] || ''; // Получаем стиль для текущего поля
-            // Если есть стиль для поля - оборачиваем в span
-            if (style) {
-                html = html.replaceAll(`{{${field}}}`, `<span style="${style}">${value}</span>`);
-            }
-            // Без стиля - просто подставляем значение
-            else {
-                html = html.replaceAll(`{{${field}}}`, value);
-            }
-        });
-        return html;
-    }
-
-    function replaceFieldInHtml(html, value, field) {
-        html = html.replaceAll(`{{${field}}}`, value);
-        return html;
+        return finalHtml;
     }
 
     function splitIntoA4Pages(htmlString, css, bands) {
-
         return new Promise((resolve) => {
-
             let currentBands = bands;
             const tempContainer = createTempContainer();
             tempContainer.style.cssText = `
-                        position: absolute;
-                        left: -9999px;
-                        width: 794px;
-                        visibility: hidden;
-                `;
+                position: absolute;
+                left: -9999px;
+                width: 794px;
+                visibility: hidden;
+            `;
 
             const bodyContainer = tempContainer.querySelector('#body-container');
             bodyContainer.innerHTML = `<style>${css}</style>${htmlString}`;
@@ -238,18 +485,18 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
             const measureDiv = createTempContainer();
             measureDiv.style.cssText = `
-                        position: absolute;
-                        visibility: hidden;
-                        width: 794px;
-                `;
+                position: absolute;
+                visibility: hidden;
+                width: 794px;
+            `;
             document.body.appendChild(measureDiv);
 
             try {
                 let maxHeight;
                 if (isBookOrientation) {
-                    maxHeight = 1103; // Высота с padding top bottom, обычная - 1123
+                    maxHeight = 1103;
                 } else {
-                    maxHeight = 774; // Высота с padding top bottom, обычная - 794
+                    maxHeight = 774;
                 }
 
                 const currentBandsHeight = calculateCurrentBandsHeight(true, true, bandHeights);
@@ -265,7 +512,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                     return;
                 }
 
-                //  Разбиение на страницы
                 const pages = [];
                 let currentPage = createPageTemplate(1, css);
                 let currentPageHeight = 0;
@@ -274,12 +520,10 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                 for (let i = 0; i < childNodes.length; i++) {
                     const node = childNodes[i];
 
-                    // Пропускаем style элементы
                     if (node.nodeName === "STYLE") {
                         continue;
                     }
 
-                    // Пропускаем дочерние элементы (они будут обработаны вместе с родительскими)
                     if (node.getAttribute("id")?.includes('-child')) {
                         continue;
                     }
@@ -287,62 +531,47 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                     measureDiv.innerHTML = '';
                     measureDiv.appendChild(node.cloneNode(true));
 
-                    // Собираем все дочерние элементы для текущего родителя
                     const childElements = [];
                     let j = i + 1;
 
-                    // Собираем все последующие дочерние элементы
                     while (j < childNodes.length && childNodes[j].getAttribute("id")?.includes('-child')) {
                         childElements.push(childNodes[j]);
                         j++;
                     }
 
-                    // Добавляем все дочерние элементы в measureDiv для расчета общей высоты
                     childElements.forEach(child => {
                         measureDiv.appendChild(child.cloneNode(true));
                     });
 
                     const totalNodeHeight = measureDiv.offsetHeight;
-
-                    // Рассчитываем высоту с учетом бэндов
-                    const isFirstPage = currentPage.id === 1;
-
-                    // Пропускаем индексы дочерних элементов, которые уже обработаны
                     i += childElements.length;
 
                     const isLastNode = i === childNodes.length - 1;
-                    let currentBandsHeight = calculateCurrentBandsHeight(isFirstPage, isLastNode, bandHeights);
-
+                    let currentBandsHeight = calculateCurrentBandsHeight(currentPage.id === 1, isLastNode, bandHeights);
                     const totalHeight = currentPageHeight + totalNodeHeight + currentBandsHeight;
 
-                    // Если не помещается - сохраняем текущую страницу
                     if (totalHeight > maxHeight) {
-                        bandsWithPage = insertNumbPage(pages.length + 1 , currentBands);
+                        bandsWithPage = insertNumbPage(pages.length + 1, currentBands);
                         finalizePage(currentPage, pages, bandsWithPage, false, false);
                         currentPage = createPageTemplate(pages.length + 1, css);
                         currentPageHeight = 0;
 
-                        currentBands = bands; // Возвращаемся к исходным бэндам для следующей страницы
-                        const bandsForNewPage = insertNumbPage(pages.length + 1 , currentBands);
+                        currentBands = bands;
+                        const bandsForNewPage = insertNumbPage(pages.length + 1, currentBands);
                         insertBand(currentPage.container, bandsForNewPage, false, false);
                     }
 
-                    // Добавляем родительский элемент
                     currentPage.container.querySelector('#body-container').appendChild(node.cloneNode(true));
-
-                    // Добавляем все дочерние элементы
                     childElements.forEach(child => {
                         currentPage.container.querySelector('#body-container').appendChild(child.cloneNode(true));
                     });
 
                     currentPageHeight += totalNodeHeight;
 
-                    // Если это последний узел - добавляем report footer
-                    if (i >= childNodes.length - 1) {  //Проверить или починилось
+                    if (i >= childNodes.length - 1) {
                         insertBand(currentPage.container, bands, false, true, false);
                         currentPageHeight += bandHeights.reportFooter;
                     }
-
                 }
 
                 bandsWithPage = insertNumbPage(pages.length + 1, currentBands);
@@ -366,8 +595,8 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         const bandsArray = Array.from(bands || []);
         const footerIndex = bandsArray.findIndex(el => el.id === "pageFooter");
         if (footerIndex === -1) return bandsArray;
-        const newBands = [...bandsArray]; // поверхностная копия массива
-        const footerClone = newBands[footerIndex].cloneNode(true); // клонируем только footer
+        const newBands = [...bandsArray];
+        const footerClone = newBands[footerIndex].cloneNode(true);
         footerClone.innerHTML = footerClone.innerHTML.replace(/{{page}}/g, numbPage);
         newBands[footerIndex] = footerClone;
         return newBands;
@@ -389,7 +618,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         } else {
             insertBand(page.container, bands, showReportHeader, showReportFooter);
         }
-
         page.content = page.container.innerHTML;
         pages.push(page);
         safeRemove(page.container);
@@ -397,18 +625,14 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
     function calculateCurrentBandsHeight(isFirstPage, isLastNode, bandHeights) {
         let height = 0;
-
         if (isFirstPage) {
             height += bandHeights.reportHeader;
         }
-
         height += bandHeights.header;
         height += bandHeights.footer;
-
         if (isLastNode) {
             height += bandHeights.reportFooter;
         }
-
         return height;
     }
 
@@ -428,9 +652,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
     }
 
     function insertBand(tempContainer, bands, addReportTitle, addReportSummary, addPageFooter = true) {
-
         for (let i = 0; i < bands.length; i++) {
-
             switch (bands[i].id) {
                 case 'reportTitle': {
                     if (addReportTitle) tempContainer.querySelector('#header-container').prepend(bands[i])
@@ -453,14 +675,12 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
     }
 
     function getBandHeight(bands, type) {
-
         let band;
         bands.forEach(node => {
             if (node.id === type) {
                 band = node;
             }
         });
-
         if (!band) return 0;
         const temp = document.createElement('div');
         temp.style.position = 'absolute';
@@ -473,7 +693,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         } else {
             height = temp.offsetHeight;
         }
-
         document.body.removeChild(temp);
         return height;
     }
@@ -495,7 +714,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         } else {
             tempDiv.style.height = "210mm"
         }
-
         const headerContainer = document.createElement('div');
         headerContainer.id = 'header-container';
         tempDiv.appendChild(headerContainer);
@@ -503,18 +721,14 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         bodyContainer.id = 'body-container';
         tempDiv.appendChild(bodyContainer);
         const footerContainer = document.createElement('div');
-        // footerContainer.style.position = 'absolute';
-        // footerContainer.style.bottom = '0';
-        // footerContainer.style.left = '0';
         footerContainer.id = 'footer-container';
         tempDiv.appendChild(footerContainer);
-
         return tempDiv;
     }
 
-    function transformIDs(css) { //т.к. нужно применять ко всем дубликатам бэнда
+    function transformIDs(css) {
         return css.replace(/(?<!:)\#([a-zA-Z_][\w-]+)/g, (match, id) => {
-            return `[id^='${id}']`; // заменяем #id на [id^='id']
+            return `[id^='${id}']`;
         });
     }
 
@@ -549,319 +763,48 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
     return (
         <>
             <div>
-                <div className=" gjs-two-color gjs-one-bg flex flex-row justify-between py-1 gjs-pn-commands">
+                <div className="gjs-two-color gjs-one-bg flex flex-row justify-between py-1 gjs-pn-commands">
                     <div className="flex justify-start text-center ml-3 w-1/3">
                         <span className="gjs-pn-btn font-medium">Просмотр отчета</span>
                     </div>
 
-
                     <div className="flex justify-center text-center mr-2 w-1/3 ">
-                        {/*<span className="gjs-pn-btn hover:bg-gray-200" onClick={() => {*/}
-                        {/*    printReport()*/}
-                        {/*}}*/}
-                        {/*      title="Экспорт PDF">*/}
-                        {/*    <i className="fa fa-file-pdf"></i>*/}
-                        {/*</span>*/}
-                        <span className="gjs-pn-btn hover:bg-gray-200" onClick={() => {
-                            exportHtml()
-                        }}
-                              title="Экспорт HTML">
+                        <span className="gjs-pn-btn hover:bg-gray-200" onClick={exportHtml} title="Экспорт HTML">
                             <i className="fa fa-code"></i>
-                            </span>
-                        <span className="gjs-pn-btn hover:bg-gray-200" onClick={() => {
-                            printReport()
-                        }} title="Печать">
+                        </span>
+                        <span className="gjs-pn-btn hover:bg-gray-200" onClick={printReport} title="Печать или экспорт PDF">
                             <i className="fa fa-print"></i>
-                            </span>
-                        <span className="gjs-pn-btn hover:bg-gray-200" onClick={zoomOut}
-                              title="Уменьшить масштаб">
-                                <i className="fa fa-magnifying-glass-minus"></i>
-                            </span>
-                        <span className="gjs-pn-btn hover:bg-gray-200" onClick={zoomIn}
-                              title="Увеличить масштаб">
+                            <span className="px-2"/>
+                            <i className="fa-solid fa-file-pdf"></i>
+                        </span>
+                        <span className="gjs-pn-btn hover:bg-gray-200" onClick={zoomOut} title="Уменьшить масштаб">
+                            <i className="fa fa-magnifying-glass-minus"></i>
+                        </span>
+                        <span className="gjs-pn-btn hover:bg-gray-200" onClick={zoomIn} title="Увеличить масштаб">
                             <i className="fa fa-magnifying-glass-plus"></i>
                         </span>
-
                     </div>
+
                     <div className="flex justify-end items-center w-1/3 mr-3 ">
                         <button
                             className="h-[28px] px-3 rounded text-xs text-white font-medium shadow-inner bg-blue-800 hover:bg-blue-700"
                             onClick={onClose}>Закрыть
                         </button>
                     </div>
-
                 </div>
-
 
                 <div className="flex justify-center p-4 rounded-lg">
                     <iframe
                         ref={iframeRef}
                         title="report-preview"
                         style={{transform: `scale(${iframeScale})`}}
-                        className={iframeSize + " origin-top border shadow-lg bg-white"}
-                        // sandbox="allow-same-origin allow-scripts"
+                        className={`${iframeSize} origin-top border shadow-lg bg-white`}
                     />
-
                 </div>
             </div>
 
             {isModalNotify &&
-                <ModalNotify title={"Результат операции"} message={modalMsg} onClose={()=>setIsModalNotif(false)}/>}
+                <ModalNotify title={"Результат операции"} message={modalMsg} onClose={() => setIsModalNotif(false)}/>}
         </>
-    )
-
-//     // Функция экспорта PDF
-//     const exportPDF = async (editor) => {
-//
-//         saveCurrentPage(editorView).then((updatedPages) => {
-//
-//             let combinedHTML = "";
-//             let combinedCSS = "";
-//
-//             for (let i = 0; i < updatedPages.length; i++) {
-//                 combinedHTML += `
-//
-//          <div class="print-page">
-//             ${updatedPages[i].content}
-//          </div>
-//          `;
-//                 combinedCSS += " " + updatedPages[i].styles;
-//             }
-//
-//             // Создаем скрытый iframe для окна печати
-//             const printFrame = document.createElement("iframe");
-//             printFrame.style.position = "absolute";
-//             printFrame.style.width = "0px";
-//             printFrame.style.height = "0px";
-//             printFrame.style.border = "none";
-//
-//             document.body.appendChild(printFrame);
-//
-//             const printDocument = printFrame.contentDocument || printFrame.contentWindow.document;
-//             printDocument.open("", "_blank");
-//             printDocument.write(`
-//
-//                  <html>
-//                     <head>
-//                       <title>Печать</title>
-//                       <style>
-//                         ${combinedCSS}
-//
-//                         @media print {
-//                         body {
-//                           margin: 0;
-//                           padding: 0;
-//                           display: flex;
-//                           flex-direction: column;
-//                           align-items: center;
-//                           -webkit-print-color-adjust: exact; /* Для Chrome и Safari */
-//                           print-color-adjust: exact; /* Для Firefox */
-//                           box-sizing: border-box;
-//                         }
-//                         .print-page {
-//                           width: 100%;
-//                           max-width: 100%;
-//                           height: 100vh;
-//                           min-height: 100vh;
-//                           box-sizing: border-box;
-//                           display: flex;
-//                           flex-direction: column;
-//                           justify-content: flex-start;
-//                           align-items: flex-start;
-//                           padding: 0;
-//                           margin: 0 auto;
-//                           position: relative;
-//                           overflow: hidden;
-//                           page-break-after: always; /* Стабильное разбиение страниц */
-//                           break-after: page;
-//                         }
-//                         .print-page:last-child {
-//                           page-break-after: auto; /* Убираем лишний пустой лист в конце */
-//                         }
-//                       }
-//                         @page { size: A4; margin: 0; }
-//                         body { width: 210mm; height: 297mm; margin: 0 auto; overflow: hidden; }
-//
-//
-//                       </style>
-//                     </head>
-//                     <body>${combinedHTML}
-//                   </html>
-//
-//
-//
-//               `);
-//
-//             printDocument.close();
-//
-//             setTimeout(() => {
-//                 printFrame.contentWindow.focus();
-//                 document.title = "Report"
-//                 printFrame.contentWindow.print();
-//                 document.title = "React App"
-//                 document.body.removeChild(printFrame);
-//             }, 1000);
-//
-//         });
-//     };
-//
-//     const printAllPages = async () => {
-//         // 1. Создаем отдельное окно вместо iframe (лучше для больших документов)
-//         const printWindow = window.open('', '_blank', 'width=800,height=600');
-//         if (!printWindow) {
-//             alert('Пожалуйста, разрешите всплывающие окна для печати');
-//             return;
-//         }
-//
-//         try {
-//             // 2. Получаем данные страниц
-//             const updatedPages = await saveCurrentPage(editorView);
-//             if (!updatedPages.length) {
-//                 printWindow.close();
-//                 return;
-//             }
-//
-//             // 3. Создаем базовую структуру документа
-//             printWindow.document.open();
-//             printWindow.document.write(`
-//                   <!DOCTYPE html>
-//                   <html>
-//                   <head>
-//                     <meta charset="UTF-8">
-//                     <title>Печать</title>
-//                     <style>
-//                       @page {
-//                         size: A4;
-//                         margin: 0;
-//                       }
-//                       body {
-//                         margin: 0;
-//                         padding: 0;
-//                         width: 210mm;
-//                         overflow-x: hidden;
-//                       }
-//                       .print-page {
-//                         width: 210mm;
-//                         height: 297mm;
-//                         page-break-after: always;
-//                         position: relative;
-//                         overflow: hidden;
-//                       }
-//                       .print-page:last-child {
-//                         page-break-after: auto;
-//                       }
-//                     </style>
-//                   </head>
-//                   <body>
-//                 `);
-//
-//             // 4. Используем DocumentFragment для пакетной вставки
-//             const fragment = printWindow.document.createDocumentFragment();
-//             const container = printWindow.document.createElement('div');
-//             fragment.appendChild(container);
-//
-//             console.log(updatedPages)
-//
-//             // 5. Создаем страницы с использованием createElement (быстрее чем innerHTML)
-//             for (let i = 0; i < updatedPages.length; i++) {
-//                 const page = updatedPages[i];
-//                 const pageDiv = printWindow.document.createElement('div');
-//                 pageDiv.className = 'print-page';
-//
-//                 if (page.styles) {
-//                     pageDiv.setAttribute('style', page.styles);
-//                 }
-//
-//                 // Используем innerHTML только для контента страницы
-//                 pageDiv.innerHTML = page.content;
-//                 container.appendChild(pageDiv);
-//
-//                 // Даем браузеру "передохнуть" каждые 10 страниц
-//                 if (i % 10 === 0) {
-//                     await new Promise(resolve => setTimeout(resolve, 0));
-//                 }
-//             }
-//
-//             // 6. Вставляем все страницы одним действием
-//             printWindow.document.body.appendChild(fragment);
-//             printWindow.document.write('</body></html>');
-//             printWindow.document.close();
-//
-//             // 7. Оптимизированная печать с задержкой для рендеринга
-//             setTimeout(() => {
-//                 const originalTitle = document.title;
-//                 document.title = "Report";
-//
-//                 printWindow.focus();
-//                 printWindow.print();
-//
-//                 // Восстановление состояния после печати
-//                 setTimeout(() => {
-//                     document.title = originalTitle;
-//                     printWindow.close();
-//                 }, 1000);
-//             }, 500);
-//
-//         } catch (error) {
-//             console.error('Print error:', error);
-//             if (printWindow) printWindow.close();
-//         }
-//     };
-//
-//     const printReport2 = async () => {
-//         const updatedPages = await saveCurrentPage(editorView);
-//         try {
-//             const response = await fetch(`${API_URL}/api/pdf/generate`, {
-//                 method: 'POST',
-//                 headers: {'Content-Type': 'application/json'},
-//                 body: JSON.stringify(updatedPages),
-//             });
-//
-//             const pdfBlob = await response.blob();
-//             const pdfUrl = URL.createObjectURL(pdfBlob);
-//
-//             const iframe = document.createElement('iframe');
-//             iframe.style.display = 'none';
-//             iframe.src = pdfUrl;
-//             document.body.appendChild(iframe);
-//
-//             iframe.onload = () => {
-//                 try {
-//                     setTimeout(() => {
-//                         iframe.contentWindow?.print();
-//                     }, 500);
-//                 } catch (e) {
-//                     console.error('Print error:', e);
-//                     document.body.removeChild(iframe);
-//                     URL.revokeObjectURL(pdfUrl);
-//                     alert('Ошибка при печати. Попробуйте снова или проверьте настройки печати.');
-//                 }
-//             };
-//
-//         } catch (error) {
-//             console.error('Ошибка:', error);
-//         }
-//     }
-//
-//     const generatePdf = async () => {
-//         const updatedPages = await saveCurrentPage(editorView);
-//         try {
-//             const response = await fetch(`${API_URL}/api/pdf/generate`, {
-//                 method: 'POST',
-//                 headers: {'Content-Type': 'application/json'},
-//                 body: JSON.stringify(updatedPages),
-//             });
-// //нужно доделать чтобы отображались русские символы и линия чтобы была до края при 100%
-//             const blob = await response.blob();
-//             const url = window.URL.createObjectURL(blob);
-//             const link = document.createElement('a');
-//             link.href = url;
-//             link.download = 'report.pdf';
-//             link.click();
-//         } catch (error) {
-//             console.error('Ошибка:', error);
-//         }
-//     }
-
-
+    );
 }

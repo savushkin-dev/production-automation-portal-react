@@ -6,7 +6,10 @@ import "./../reportsConstruct/ReportEditor.css";
 import plugin from 'grapesjs-blocks-basic';
 import grapesjs from "grapesjs";
 import grapesjspresetwebpage from 'grapesjs-preset-webpage/dist/index.js';
+
+import chartjsPlugin from 'grapesjs-chartjs-plugin';
 import ru from 'grapesjs/locale/ru';
+import ruCharts from "../../locale/ru-charts";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import Dropdown from "../dropdown/Dropdown";
@@ -28,6 +31,7 @@ import yaml from "js-yaml";
 import {GlobalVars} from "./GlobalVars";
 import {ModalErrorScriptCompile} from "./ModalErrorScriptCompile";
 import {defaultScript} from "../../data/report";
+import {processChartsOnLoad} from "./utils/chartUtils";
 
 
 const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
@@ -43,7 +47,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [pages, setPages] = useState([
             {id: 1, content: "", styles: ""}
         ]);
-        const [currentPage, setCurrentPage] = useState(1); // Активная страница
+        const [currentPage, setCurrentPage] = useState(1);
 
         const [dataBandsOpt, setDataBandsOpt] = useState(["main", "main-child"])
         const [dataBandsOptDropDown, setDataDropDown] = useState([
@@ -111,19 +115,42 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 container: editorRef.current,
                 telemetry: false,
                 fromElement: true,
-                height: 1200 + "px",
+                height: 1300 + "px",
                 width: 'auto',
                 default_locale: 'ru',
                 i18n: {
                     locale: 'ru',
                     detectLocale: true,
                     localeFallback: 'ru',
-                    messages: {ru},
+                    messages: {
+                        ru: {
+                            ...ru, // ru конструктора
+                            ...ruCharts // переводы для графиков
+                        }
+                    },
                 },
                 dragMode: 'absolute',
                 selectorManager: {componentFirst: true},
-                storageManager: false, // Отключаем сохранение
-                plugins: [grapesjspresetwebpage, plugin],
+                storageManager: false,
+                plugins: [grapesjspresetwebpage, plugin, chartjsPlugin],
+                pluginsOpts: {
+                    [chartjsPlugin]: {
+                        // Выбираем только нужные типы графиков
+                        blocks: ['chartjs-bar', 'chartjs-pie', 'chartjs-line', 'chartjs-doughnut', 'chartjs-polarArea',
+                            'chartjs-radar',
+                            // 'chartjs-bubble', 'chartjs-scatter'
+                        ],
+                        category: {
+                            id: 'chartjs',
+                            label: 'Графики'
+                        },
+                        chartjsOptions: {
+                            maintainAspectRatio: false,
+                            responsive: true,
+                            devicePixelRatio: 2,
+                        }
+                    }
+                },
                 blockManager: {
                     blocks: []
                 },
@@ -134,6 +161,29 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 },
             });
 
+            //Синхронизация размера графика при изменении размера
+            editor.on('component:resize:end', (data) => {
+                const component = data.component;
+                if (component && component.get('type') === 'chartjs') {
+                    const el = component.view?.el;
+                    if (el) {
+                        const width = el.offsetWidth;
+                        const height = el.offsetHeight;
+
+                        const widthTrait = component.getTrait('cjs-chart-width');
+                        const heightTrait = component.getTrait('cjs-chart-height');
+
+                        if (widthTrait && widthTrait.getValue() !== width) {
+                            widthTrait.setValue(width);
+                            component.addAttributes({ 'cjs-chart-width': width });
+                        }
+                        if (heightTrait && heightTrait.getValue() !== height) {
+                            heightTrait.setValue(height);
+                            component.addAttributes({ 'cjs-chart-height': height });
+                        }
+                    }
+                }
+            });
 
             setTimeout(() => {
                 const { width, height } = getPageDimensions(isBookOrientation);
@@ -174,8 +224,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                       outline-offset: -2px;
                 }
                 
-
-              `);
+            `);
 
             // Добавляем блоки для перетаскивания
             const blocks = [
@@ -186,7 +235,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     category: "Текст",
                     draggable: true,
                     droppable: false,
-                    //Нужно разрешить перемещать только в элементы котиорые являются бэндами!
+                    //Нужно разрешить перемещать только в элементы которые являются бэндами!
                 },
             ];
 
@@ -207,12 +256,30 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             editor.BlockManager.remove('map')
 
 
-            // Переименовываем категории у базового блока изобюражения
+            // Переименовываем категории у базового блока изображения
             editor.BlockManager.getAll().forEach(block => {
                 if (block.getCategoryLabel() === 'Basic') {
                     block.set('category', 'Графика');
                     block.set('label', 'Изображение');
                 }
+            });
+
+            setEditorView(editor);
+
+            // Добавьте обработчик монтирования компонентов
+            editor.on('component:mount', (component) => {
+                setTimeout(() => {
+                    const attrs = component.getAttributes();
+                    if (attrs['band-parent'] === 'true') {
+                        component.addAttributes({
+                            'data-locked-band': 'true',
+                            'data-gjs-type': 'locked-band',
+                            'data-position-locked': 'true'
+                        });
+                        component.set('draggable', false);
+                        component.set('resizable', false);
+                    }
+                }, 10);
             });
 
 
@@ -313,7 +380,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
             });
 
-
             //для того чтобы сдвигать описание футера страницы при изменении высоты
             editor.on('component:styleUpdate:height', (component) => {
                 if (component.getId() === 'pageFooter') {
@@ -363,6 +429,30 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         checkElementAndMove();
                     }, 500);
                 }
+            });
+
+            editor.on('component:mount', function onMount(component) {
+                setTimeout(() => {
+                    const attrs = component.getAttributes();
+                    if (attrs['band'] === 'true' || attrs['band-parent'] === 'true' || attrs['data-band'] === 'true' || attrs['data-band-child'] === 'true') {
+                        component.set('draggable', false);
+                        component.set('resizable', false);
+
+                        // Получаем текущий toolbar и фильтруем
+                        let toolbar = component.get('toolbar');
+                        if (toolbar && toolbar.length > 0) {
+                            toolbar = toolbar.filter(btn => {
+                                const command = btn.command;
+                                // Убираем иконки изменение размера и дублирование
+                                return command !== 'move' &&
+                                    command !== 'tlb-move' &&
+                                    command !== 'duplicate' &&
+                                    command !== 'tlb-clone';
+                            });
+                            component.set('toolbar', toolbar);
+                        }
+                    }
+                }, 50);
             });
 
             function moveComponentToTarget(param, isTarget) {
@@ -608,12 +698,12 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 {
                     id: 'zoom-',
                     className: 'fa fa-magnifying-glass-minus',
-                    command: () => changeZoom(-10),
+                    command: () => changeZoom(-2),
                     attributes: {title: 'Уменьшить масштаб'},
                 }, {
                     id: 'zoom+',
                     className: 'fa fa-magnifying-glass-plus',
-                    command: () => changeZoom(10),
+                    command: () => changeZoom(2),
                     attributes: {title: 'Увеличить масштаб'},
                 },
             ]);
@@ -770,141 +860,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             setupCanvas(editorView, width, height);
         }, [isBookOrientation]);
 
-        const exportYAML = async () => {
-            saveCurrentPage(editorView).then((updatedPages) => {
-                let css = cleanCSS(updatedPages[0].styles).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-
-                const toOneLine = (value) => {
-                    if (typeof value === 'string') {
-                        return value.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-                    }
-                    if (value === null || value === undefined) return '';
-                    if (typeof value === 'object') return JSON.stringify(value);
-                    return String(value);
-                };
-
-                let resultWithoutScript = {
-                    dbUrl: settingDB.url,
-                    dbUsername: settingDB.username,
-                    dbPassword: settingDB.password,
-                    dbDriver: settingDB.driverClassName,
-                    sql,
-                    reportName: reportName,
-                    reportCategory: reportCategory,
-                    content: updatedPages[0].content,
-                    styles: css,
-                    sqlMode: isSqlMode,
-                    dataBands: JSON.stringify(dataBandsOpt),
-                    bookOrientation: isBookOrientation,
-                    layoutParamSettings: toOneLine(layoutParamSettings),
-                    layoutParam: toOneLine(layoutParam),
-                    parameters: parameters,
-                }
-
-                try {
-                    let yamlString = yaml.dump(resultWithoutScript, {indent: 2, lineWidth: -1, noRefs: true});
-
-                    const cleanScript = script.replace(/\\r\\n/g, '\n').replace(/\\r/g, '\n');
-                    const scriptLines = cleanScript.split('\n');
-                    const scriptBlock = 'script: |-\n' + scriptLines.map(line => '  ' + line).join('\n');
-                    const finalYaml = yamlString + scriptBlock + '\n';
-
-                    const blob = new Blob([finalYaml], {type: "application/yaml"});
-                    const link = document.createElement("a");
-                    link.href = URL.createObjectURL(blob);
-                    link.download = reportName + ".yaml";
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                } catch (error) {
-                    console.error("Ошибка при экспорте отчета:", error);
-                    setModalMsg("Ошибка при экспорте отчета.");
-                    showModalNotif();
-                }
-            });
-        };
-
-
-        const importYAML = () => {
-            const fileInput = document.createElement("input");
-            fileInput.type = "file";
-            fileInput.accept = ".yaml,.yml";
-            fileInput.style.display = "none";
-
-            // Обратная функция для toOneLine
-            const fromOneLine = (value) => {
-                if (typeof value === 'string') {
-                    if (value.trim().startsWith('{') || value.trim().startsWith('[')) {
-                        try {
-                            return JSON.parse(value);
-                        } catch {
-                            return value;
-                        }
-                    }
-                    return value;
-                }
-                return value;
-            };
-
-            fileInput.addEventListener("change", (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-
-                reader.onload = (e) => {
-                    try {
-                        const yamlContent = e.target.result;
-                        const importedData = yaml.load(yamlContent);
-
-                        setPages([{id: 1, content: "", styles: ""}]);
-                        setCurrentPage(1);
-
-                        setSettingDB({
-                            url: importedData.dbUrl,
-                            username: importedData.dbUsername,
-                            password: importedData.dbPassword,
-                            driverClassName: importedData.dbDriver
-                        });
-
-                        setSql(importedData.sql);
-                        setReportName(importedData.reportName);
-                        setReportCategory(importedData.reportCategory);
-
-                        editorView.setComponents(importedData.content);
-                        editorView.setStyle(importedData.styles);
-
-                        setParameters(importedData.parameters || []);
-                        setIsSqlMode(importedData.sqlMode);
-                        setScript(importedData.script || '');
-
-                        setDataBandsOpt(JSON.parse(importedData.dataBands));
-                        setIsBookOrientation(importedData.bookOrientation ?? true);
-
-                        // Применяем fromOneLine к полям, которые были через toOneLine
-                        setLayoutParamSettings(fromOneLine(importedData.layoutParamSettings));
-                        setLayoutParam(fromOneLine(importedData.layoutParam));
-
-                        setTimeout(() => defineBands(importedData.content), 200);
-
-                        setModalMsg("Отчет успешно импортирован!");
-                        showModalNotif();
-
-                    } catch (error) {
-                        console.error("Ошибка при импорте отчета:", error);
-                        setModalMsg("Ошибка импорта отчета! Проверьте данные на корректность.");
-                        showModalNotif();
-                    }
-                };
-                reader.readAsText(file);
-            });
-
-            document.body.appendChild(fileInput);
-            fileInput.click();
-            document.body.removeChild(fileInput);
-        };
-
-
         const updateCanvasZoom = (newZoom) => {
             if (!editorView) return;
             const frame = editorView.Canvas.getElement();
@@ -925,47 +880,47 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             if (editorView) updateCanvasZoom(zoom);
         }, [zoom]);
 
-        // Зум при зажатом Alt + колесо мыши
-        useEffect(() => {
-            if (!editorView) return;
-
-            let isAltPressed = false;
-
-            const handleKeyDown = (e) => {
-                if (e.altKey && !isAltPressed) {
-                    isAltPressed = true;
-                    document.body.classList.add('alt-zoom-active');
-                }
-            };
-
-            const handleKeyUp = (e) => {
-                if (!e.altKey && isAltPressed) {
-                    isAltPressed = false;
-                    document.body.classList.remove('alt-zoom-active');
-                }
-            };
-
-            const handleWheel = (e) => {
-                if (!isAltPressed && !e.altKey) return;
-
-                e.preventDefault();
-                e.stopPropagation();
-
-                const delta = e.deltaY > 0 ? -2 : 2;
-                changeZoom(delta);
-            };
-
-            window.addEventListener('wheel', handleWheel, { passive: false, capture: true });
-            window.addEventListener('keydown', handleKeyDown);
-            window.addEventListener('keyup', handleKeyUp);
-
-            return () => {
-                window.removeEventListener('wheel', handleWheel, { capture: true });
-                window.removeEventListener('keydown', handleKeyDown);
-                window.removeEventListener('keyup', handleKeyUp);
-                document.body.classList.remove('alt-zoom-active');
-            };
-        }, [editorView]);
+        // // Зум при зажатом Alt + колесо мыши
+        // useEffect(() => {
+        //     if (!editorView) return;
+        //
+        //     let isAltPressed = false;
+        //
+        //     const handleKeyDown = (e) => {
+        //         if (e.altKey && !isAltPressed) {
+        //             isAltPressed = true;
+        //             document.body.classList.add('alt-zoom-active');
+        //         }
+        //     };
+        //
+        //     const handleKeyUp = (e) => {
+        //         if (!e.altKey && isAltPressed) {
+        //             isAltPressed = false;
+        //             document.body.classList.remove('alt-zoom-active');
+        //         }
+        //     };
+        //
+        //     const handleWheel = (e) => {
+        //         if (!isAltPressed && !e.altKey) return;
+        //
+        //         e.preventDefault();
+        //         e.stopPropagation();
+        //
+        //         const delta = e.deltaY > 0 ? -2 : 2;
+        //         changeZoom(delta);
+        //     };
+        //
+        //     window.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+        //     window.addEventListener('keydown', handleKeyDown);
+        //     window.addEventListener('keyup', handleKeyUp);
+        //
+        //     return () => {
+        //         window.removeEventListener('wheel', handleWheel, { capture: true });
+        //         window.removeEventListener('keydown', handleKeyDown);
+        //         window.removeEventListener('keyup', handleKeyUp);
+        //         document.body.classList.remove('alt-zoom-active');
+        //     };
+        // }, [editorView]);
 
         function addBlocks(editor) {
 
@@ -1048,6 +1003,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: true,
@@ -1067,14 +1023,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                  <p data-field="true"  style="position: absolute; top: 60px; left: 20px; margin: 0px">Укажите поле из запроса в двойных скобках: {{field_1}}</p>
                               </div>
                           `,
-                        // script: function () {
-                        //     this.querySelector('.data-band-field').addEventListener('click', function () {
-                        //         alert('Будущее окно выбора поля из БД');
-                        //     });
-                        //     this.querySelector('.data-band-table').addEventListener('click', function () {
-                        //         alert('Будущее окно выбора таблицы из БД');
-                        //     });
-                        // },
                     },
                 },
             });
@@ -1087,6 +1035,9 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             } else {
                 components.add('<div data-gjs-type="data-band-block"></div>');
             }
+
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addChildDataBand(childName) {
@@ -1097,6 +1048,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: true,
@@ -1128,6 +1080,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             } else {
                 components.add('<div data-gjs-type="data-child-band-block"></div>');
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addPageHeaderBand() {
@@ -1137,6 +1091,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: false,
@@ -1170,6 +1125,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
                 setUsedBands(prevState => ({...prevState, headerPage: true}))
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addReportTitleBand() {
@@ -1179,6 +1136,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: false,
@@ -1207,6 +1165,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 components.add('<div data-gjs-type="reportTitle-band-block"></div>', {at: 0}); // Добавляем первым элементом
                 setUsedBands(prevState => ({...prevState, reportTitle: true}))
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addPageFooterBand() {
@@ -1216,6 +1176,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: false,
@@ -1248,6 +1209,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 components.add('<div data-gjs-type="pageFooter-band-block"></div>', {at: components.length});
                 setUsedBands(prevState => ({...prevState, footerPage: true}))
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addReportSummaryBand() {
@@ -1257,6 +1220,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: false,
@@ -1284,6 +1248,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 components.add('<div data-gjs-type="reportSummary-band-block"></div>', {at: components.length});
                 setUsedBands(prevState => ({...prevState, reportSummary: true}))
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
 
@@ -1314,11 +1280,35 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         async function enterPreviewMode(params) {
             params = ReportService.addDefaultParameters(params, parameters);
             setIsModalParameter(false);
+
             const data = await fetchReportData("", "", settingDB.url, settingDB.username,
                 settingDB.password, settingDB.driverClassName, sql, "", "", params, script, isSqlMode)
+
             if (!data) {
                 return
             }
+
+            // // ТЕСТОВЫЕ ДАННЫЕ С ТРЕМЯ ДАТАСЕТАМИ
+            // data.globalVar = {
+            //     dynamicLabels: ['Янв', 'Фев', 'Март', 'Апр', 'Май'],
+            //     dynamicData1: [100, 200, 150, 180, 220],
+            //     set0: [50, 80, 120, 90, 60],
+            //     dynamicData3: [30, 40, 60, 50, 45]
+            // };
+            //
+            // // Также добавляем данные в каждую строку таблицы
+            // if (data.tableData && data.tableData.length > 0) {
+            //     data.tableData = data.tableData.map(row => ({
+            //         ...row,
+            //         set0: ['Янв222', 'Фев', 'Март', 'Апр', 'Май'],
+            //         dynamicData1: [row.number_field, row.number_field + 100, row.number_field + 200, row.number_field + 150, row.number_field + 50],
+            //         dynamicData2: [row.number_field + 50, row.number_field + 15, row.number_field + 25, row.number_field + 20, row.number_field + 10],
+            //         dynamicData3: [row.number_field + 70, row.number_field + 45, row.number_field + 65, row.number_field + 80, row.number_field + 30],
+            //         set1: [160, 99, row.number_field + 12, row.number_field + 9, row.number_field + 4]
+            //     }));
+            // }
+            // // ДО СЮДА
+
             setDataParam(params)
             setData(data)
             setHtml(editorView.getHtml())
@@ -1418,16 +1408,161 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             return [...uniqueGlobalRules, ...otherRules].join('\n');
         }
 
+        const exportYAML = async () => {
+            saveCurrentPage(editorView).then((updatedPages) => {
+                let css = cleanCSS(updatedPages[0].styles).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                let content = updatedPages[0].content;
+                // Добавляем data-gjs-type="chartjs" ко всем графикам в HTML строке
+                content = content.replace(/(<div[^>]*cjs-chart-type[^>]*)/g, '$1 data-gjs-type="chartjs"');
+
+                const toOneLine = (value) => {
+                    if (typeof value === 'string') {
+                        return value.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                    }
+                    if (value === null || value === undefined) return '';
+                    if (typeof value === 'object') return JSON.stringify(value);
+                    return String(value);
+                };
+
+                let resultWithoutScript = {
+                    dbUrl: settingDB.url,
+                    dbUsername: settingDB.username,
+                    dbPassword: settingDB.password,
+                    dbDriver: settingDB.driverClassName,
+                    sql,
+                    reportName: reportName,
+                    reportCategory: reportCategory,
+                    content: content,
+                    styles: css,
+                    sqlMode: isSqlMode,
+                    dataBands: JSON.stringify(dataBandsOpt),
+                    bookOrientation: isBookOrientation,
+                    layoutParamSettings: toOneLine(layoutParamSettings),
+                    layoutParam: toOneLine(layoutParam),
+                    parameters: parameters,
+                }
+
+                try {
+                    let yamlString = yaml.dump(resultWithoutScript, {indent: 2, lineWidth: -1, noRefs: true});
+
+                    const cleanScript = script.replace(/\\r\\n/g, '\n').replace(/\\r/g, '\n');
+                    const scriptLines = cleanScript.split('\n');
+                    const scriptBlock = 'script: |-\n' + scriptLines.map(line => '  ' + line).join('\n');
+                    const finalYaml = yamlString + scriptBlock + '\n';
+
+                    const blob = new Blob([finalYaml], {type: "application/yaml"});
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = reportName + ".yaml";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (error) {
+                    console.error("Ошибка при экспорте отчета:", error);
+                    setModalMsg("Ошибка при экспорте отчета.");
+                    showModalNotif();
+                }
+            });
+        };
+
+
+        const importYAML = () => {
+            const fileInput = document.createElement("input");
+            fileInput.type = "file";
+            fileInput.accept = ".yaml,.yml";
+            fileInput.style.display = "none";
+
+            // Обратная функция для toOneLine
+            const fromOneLine = (value) => {
+                if (typeof value === 'string') {
+                    if (value.trim().startsWith('{') || value.trim().startsWith('[')) {
+                        try {
+                            return JSON.parse(value);
+                        } catch {
+                            return value;
+                        }
+                    }
+                    return value;
+                }
+                return value;
+            };
+
+            fileInput.addEventListener("change", (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+
+                reader.onload = (e) => {
+                    try {
+                        const yamlContent = e.target.result;
+                        const importedData = yaml.load(yamlContent);
+
+                        processChartsOnLoad(editorView, importedData.content);
+
+                        editorView.setComponents(importedData.content);
+                        editorView.setStyle(importedData.styles);
+
+                        setPages([{id: 1, content: "", styles: ""}]);
+                        setCurrentPage(1);
+
+                        setSettingDB({
+                            url: importedData.dbUrl,
+                            username: importedData.dbUsername,
+                            password: importedData.dbPassword,
+                            driverClassName: importedData.dbDriver
+                        });
+
+                        setSql(importedData.sql);
+                        setReportName(importedData.reportName);
+                        setReportCategory(importedData.reportCategory);
+
+                        setParameters(importedData.parameters || []);
+                        setIsSqlMode(importedData.sqlMode);
+                        setScript(importedData.script || '');
+
+                        setDataBandsOpt(JSON.parse(importedData.dataBands));
+                        setIsBookOrientation(importedData.bookOrientation ?? true);
+
+                        // Применяем fromOneLine к полям, которые были через toOneLine
+                        setLayoutParamSettings(fromOneLine(importedData.layoutParamSettings));
+                        setLayoutParam(fromOneLine(importedData.layoutParam));
+
+                        setTimeout(() => defineBands(importedData.content), 200);
+
+                        setModalMsg("Отчет успешно импортирован!");
+                        showModalNotif();
+
+                    } catch (error) {
+                        console.error("Ошибка при импорте отчета:", error);
+                        setModalMsg("Ошибка импорта отчета! Проверьте данные на корректность.");
+                        showModalNotif();
+                    }
+                };
+                reader.readAsText(file);
+            });
+
+            document.body.appendChild(fileInput);
+            fileInput.click();
+            document.body.removeChild(fileInput);
+
+            lockAllBand();
+            lockAllBandParents();
+        };
+
         async function saveReport(reportName) {
             showModalSaveReport();
 
             saveCurrentPage(editorView).then(async (updatedPages) => {
                 let css = cleanCSS(updatedPages[0].styles)
+                let content = updatedPages[0].content;
+                // Добавляем data-gjs-type="chartjs" ко всем графикам в HTML строке
+                content = content.replace(/(<div[^>]*cjs-chart-type[^>]*)/g, '$1 data-gjs-type="chartjs"');
                 try {
                     await ReportService.createReportTemplate(reportName, reportCategory,
                         encryptData(settingDB.url), encryptData(settingDB.username), encryptData(settingDB.password), settingDB.driverClassName, encryptData(sql),
                         parameters,
-                        updatedPages[0].content, css,
+                        content, css,
                         encryptData(script), isSqlMode, dataBandsOpt, isBookOrientation, layoutParamSettings, layoutParam);
                     setModalMsg("Документ успешно отправлен!");
 
@@ -1442,10 +1577,17 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         async function downloadReport(reportName) {
             try {
                 const response = await ReportService.getReportTemplateByReportName(reportName);
-                editorView.setComponents(response.data.content);
+                let content = response.data.content;
+
+                // Обработка графиков - одной строкой!
+                processChartsOnLoad(editorView, content);
+
+                editorView.setComponents(content);
                 editorView.setStyle(response.data.styles);
+
+                // Устанавливаем состояния
                 setReportName(response.data.reportName);
-                setReportCategory(response.data.reportCategory)
+                setReportCategory(response.data.reportCategory);
                 setSettingDB({
                     url: decryptData(response.data.dbUrl),
                     username: decryptData(response.data.dbUsername),
@@ -1461,9 +1603,59 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 setIsBookOrientation(response.data.bookOrientation);
                 setLayoutParam(JSON.parse(response.data.layoutParams));
                 setLayoutParamSettings(JSON.parse(response.data.layoutSettingsParams));
+
+                // //Это для миграции старых отчетов чтобы бэнды нельзя было перемещать и изменять размер мышью
+                // setTimeout(() => {
+                //     // Находим все бэнды в загруженном отчете
+                //     const wrapper = editorView.DomComponents.getWrapper();
+                //     if (!wrapper) return;
+                //
+                //     // Находим все родительские div у бэндов (те, у которых есть description-band внутри)
+                //     const allDivs = wrapper.find('div');
+                //     allDivs.forEach(div => {
+                //         // Проверяем есть ли внутри description-band
+                //         const hasDescription = div.components().some(child =>
+                //             child.getAttributes()?.['description-band'] === 'true'
+                //         );
+                //
+                //         // Проверяем есть ли внутри band="true"
+                //         const hasBand = div.components().some(child =>
+                //             child.getAttributes()?.['band'] === 'true' ||
+                //             child.getAttributes()?.['data-band'] === 'true'
+                //         );
+                //
+                //         // Если это контейнер бэнда - добавляем атрибут band-parent
+                //         if ((hasDescription || hasBand) && !div.getAttributes()?.['band-parent']) {
+                //             div.addAttributes({ 'band-parent': 'true' });
+                //             div.set('draggable', false);
+                //             div.set('resizable', false);
+                //         }
+                //     });
+                //
+                //     // Применяем CSS блокировку
+                //     const canvasDoc = editorView.Canvas.getDocument();
+                //     if (canvasDoc) {
+                //         const style = canvasDoc.createElement('style');
+                //         style.textContent = `
+                //             [band-parent="true"] {
+                //                 pointer-events: none !important;
+                //                 user-select: none !important;
+                //             }
+                //             [band-parent="true"] [band="true"],
+                //             [band-parent="true"] [data-band="true"],
+                //              [band-parent="true"] [data-band-child="true"]{
+                //                 pointer-events: auto !important;
+                //             }
+                //         `;
+                //         canvasDoc.head.appendChild(style);
+                //     }
+                // }, 200);
+
+                lockAllBand()
+                lockAllBandParents()
             } catch (error) {
-                console.error(error)
-                setModalMsg("Ошибка загрузки отчета с сервера! Попробуйте еще раз.")
+                console.error(error);
+                setModalMsg("Ошибка загрузки отчета с сервера! Попробуйте еще раз.");
                 showModalNotif();
             } finally {
                 showModalDownloadReport();
@@ -1473,7 +1665,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         useEffect(() => { //вызываем блокировку перемещения бэндов и других настроек при добавлении бэндов
             lockAllBandParents()
             lockAllBand()
-        }, [usedBands])
+        }, [usedBands, editorView])
 
         function lockAllBandParents() {
             const bandParents = editorView?.DomComponents?.getWrapper()?.find('[band-parent="true"]');
