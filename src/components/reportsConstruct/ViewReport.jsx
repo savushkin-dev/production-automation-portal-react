@@ -410,7 +410,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
 
                 // Применяем чередование фона
                 if (index > 0 && index % 2 !== 0) {
-                    bandCopy.style.backgroundColor = '#f6f6f6';
+                    bandCopy.style.backgroundColor = '#efefef';
                 }
 
                 counterBand++;
