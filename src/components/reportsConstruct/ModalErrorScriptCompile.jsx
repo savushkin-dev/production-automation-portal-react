@@ -78,51 +78,54 @@ export function ModalErrorScriptCompile({title, message, onClose}) {
                 onClick={onClose}
             />
             <div
-                className="w-full max-w-[900px] lg:w-[900px] p-5 z-30 rounded bg-white absolute left-1/2 px-8 max-h-[80vh] overflow-y-auto"
-                style={{zIndex: 100, top: '50%', transform: 'translate(-50%, -50%)'}}
+                className="w-full max-w-[70%] lg:w-[70%] z-30 rounded bg-white absolute left-1/2 flex flex-col"
+                style={{zIndex: 100, top: '50%', transform: 'translate(-50%, -50%)', maxHeight: '80vh'}}
             >
-                <div className="flex flex-row justify-start mb-4 sticky top-0 bg-white py-2 border-b">
-                    <h1 className="text-xl font-medium text-start">{title}</h1>
-                    <span className="text-red-600 pr-2 h-[20px] mt-1 ml-2 w-[20px]">
-                        <i className="fa-solid fa-triangle-exclamation"></i>
-                    </span>
+                <div className="flex flex-row justify-between items-center px-8 pt-4 pb-3 border-b flex-shrink-0">
+                    <h1 className="text-xl font-medium">{title}</h1>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <i className="fa-solid fa-xmark text-2xl"></i>
+                    </button>
                 </div>
 
-                <div className="flex flex-col space-y-6">
-                    {errors.length > 0 ? (
-                        errors.map((error, index) => (
-                            <div key={index} className="border-l-4 border-red-500 pl-3">
-                                <div className="text-sm font-medium text-red-600 mb-1">
-                                    Ошибка #{error.number} в строке {error.line}, колонка {error.column}
-                                </div>
-                                <div className="text-sm text-gray-700 mb-3 bg-red-50 p-2 rounded">
-                                    {error.message}
-                                </div>
+                <div className="overflow-y-auto px-8 py-4" style={{flex: 1, minHeight: 0}}>
+                    <div className="space-y-6">
+                        {errors.length > 0 ? (
+                            errors.map((error, index) => (
+                                <div key={index} className="border-l-4 border-red-500 pl-3">
+                                    <div className="text-sm font-medium text-red-600 mb-1">
+                                        Ошибка #{error.number} в строке {error.line}, колонка {error.column}
+                                    </div>
+                                    <div className="text-sm text-gray-700 mb-3 bg-red-50 p-2 rounded">
+                                        {error.message}
+                                    </div>
 
-                                {/* Отображаем код с отступом для птичек */}
-                                <div className="bg-gray-100 rounded border border-gray-200 overflow-x-auto">
-                                    <div className="p-3 font-mono text-sm whitespace-pre"
-                                         style={{minWidth: 'max-content'}}>
-                                        {formatCodeWithOffset(error.codeBlock)}
+                                    {/* Блок с кодом - горизонтальный скролл всегда виден */}
+                                    <div className="bg-gray-100 rounded border border-gray-200 overflow-x-auto overflow-y-scroll" style={{maxHeight: '300px'}}>
+                                        <div className="p-3 font-mono text-sm whitespace-pre"
+                                             style={{minWidth: 'max-content'}}>
+                                            {formatCodeWithOffset(error.codeBlock)}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))
-                    ) : (
-                        <pre
-                            className="text-red-600 font-mono text-sm whitespace-pre overflow-x-auto bg-gray-50 p-3 rounded border">
+                            ))
+                        ) : (
+                            <pre
+                                className="text-red-600 font-mono text-sm whitespace-pre overflow-x-auto overflow-y-scroll bg-gray-50 p-3 rounded border"
+                                style={{maxHeight: '500px'}}>
                             {rawMessage}
                         </pre>
-                    )}
-
-                    <div className="sticky bottom-0 bg-white py-3 flex justify-end border-t">
-                        <button
-                            onClick={onClose}
-                            className="px-6 h-8 rounded text-sm font-medium shadow-sm border bg-blue-800 hover:bg-blue-700 text-white"
-                        >
-                            Закрыть
-                        </button>
+                        )}
                     </div>
+                </div>
+
+                <div className="px-8 py-4 flex justify-end border-t flex-shrink-0">
+                    <button
+                        onClick={onClose}
+                        className="px-6 h-8 rounded text-sm font-medium shadow-sm border bg-blue-800 hover:bg-blue-700 text-white"
+                    >
+                        Закрыть
+                    </button>
                 </div>
             </div>
         </>

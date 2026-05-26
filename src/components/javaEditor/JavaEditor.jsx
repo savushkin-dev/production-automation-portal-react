@@ -91,9 +91,20 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
         });
     };
 
+    const getParamNumber = (key) => {
+        if (key === 'main-child') return 1;
+        const match = key.match(/main-child-(\d+)/);
+        return match ? parseInt(match[1]) : 0;
+    };
+
     const addDataChildParameter = () => {
         const existingChildParams = parameters.filter(param => param.key?.startsWith('main-child'));
-        const nextNumber = existingChildParams.length + 1;
+
+        const maxNumber = existingChildParams.reduce((max, param) => {
+            const num = getParamNumber(param.key);
+            return Math.max(max, num);
+        }, 0);
+        const nextNumber = maxNumber + 1;
 
         const newKey = nextNumber === 1 ? 'main-child' : `main-child-${nextNumber}`;
         const newName = nextNumber === 1 ? 'Дополнительный бэнд' : `Дополнительный бэнд ${nextNumber}`;

@@ -16,8 +16,8 @@ const myCompactor = getCompactor(null, false, true);
 export function DesignerParameter({parameters, layout, setLayout, onClose}) {
 
     const {width, containerRef, mounted, measureWidth} = useContainerWidth({
-        measureBeforeMount: false,  // Установить true для SSR
-        initialWidth: 1200  // Ширина до первого измерения
+        measureBeforeMount: false,
+        initialWidth: 1200
     });
 
     const [layoutLocal, setLayoutLocal] = useState([]);
@@ -26,7 +26,6 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
     const [textBlocks, setTextBlocks] = useState({});
     const [newTextBlockContent, setNewTextBlockContent] = useState('');
 
-    // Ссылки для хранения типов элементов
     const textBlocksRef = useRef(new Set());
 
     const [msg, setMsg] = useState("");
@@ -34,20 +33,91 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
 
     const [initialLayout, setInitialLayout] = useState(null);
 
+    const [values, setValues] = useState(() => {
+        const initialValues = {};
+        if (parameters && parameters.length > 0) {
+            parameters.forEach(param => {
+                initialValues[param.key] = param.default !== undefined ? param.default : '';
+            });
+        }
+        return initialValues;
+    });
+
     useEffect(() => {
+        const syncLayoutWithParameters = (savedLayout, currentParameters) => {
+            if (!currentParameters || currentParameters.length === 0) {
+                return [];
+            }
+
+            const currentParamKeys = new Set(currentParameters.map(p => p.key));
+
+            let filteredLayout = savedLayout.filter(item => {
+                if (item.isTextBlock) {
+                    return true;
+                }
+                return currentParamKeys.has(item.i);
+            });
+
+            const existingParamKeys = new Set(filteredLayout.map(item => item.i));
+            const newParams = currentParameters.filter(param => !existingParamKeys.has(param.key));
+
+            if (newParams.length > 0) {
+                let maxY = 0;
+                filteredLayout.forEach(item => {
+                    const bottomY = item.y + item.h;
+                    if (bottomY > maxY) {
+                        maxY = bottomY;
+                    }
+                });
+
+                const newParamLayouts = createDefaultLayout(newParams);
+
+                if (!newParamLayouts || newParamLayouts.length === 0) {
+                    return filteredLayout;
+                }
+
+                let currentY = maxY;
+                let currentX = 0;
+                const maxWidth = COLS;
+
+                const adjustedNewLayouts = newParamLayouts.map((item) => {
+
+                    if (currentX + item.w > maxWidth) {
+                        currentX = 0;
+                        currentY += item.h + 1;
+                    }
+
+                    const adjustedItem = {
+                        ...item,
+                        x: currentX,
+                        y: currentY,
+                        isTextBlock: false,
+                        text: ''
+                    };
+
+                    currentX += item.w + 1;
+                    return adjustedItem;
+                });
+
+                filteredLayout = [...filteredLayout, ...adjustedNewLayouts];
+            }
+
+            return filteredLayout;
+        };
+
         if (layout) {
             if (typeof layout === 'string') {
                 try {
                     const parsedLayout = JSON.parse(layout);
                     if (Array.isArray(parsedLayout)) {
-                        setLayoutLocal(parsedLayout);
-                        setInitialLayout(parsedLayout); // Сохраняем исходный layout
+                        const syncedLayout = syncLayoutWithParameters(parsedLayout, parameters);
+                        setLayoutLocal(syncedLayout);
+                        setInitialLayout(syncedLayout);
 
-                        // Восстанавливаем текстовые блоки
                         const newTextBlocks = {};
                         const newTextBlocksRef = new Set();
 
-                        parsedLayout.forEach(item => {
+                        syncedLayout.forEach(item => {
                             if (item.isTextBlock && item.text) {
                                 newTextBlocksRef.add(item.i);
                                 newTextBlocks[item.i] = item.text;
@@ -56,18 +126,35 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
 
                         textBlocksRef.current = newTextBlocksRef;
                         setTextBlocks(newTextBlocks);
+
+                        const initialValues = {};
+                        parameters.forEach(param => {
+                            initialValues[param.key] = param.default !== undefined ? param.default : '';
+                        });
+                        setValues(initialValues);
                     }
                 } catch (error) {
                     console.error('Ошибка парсинга layout:', error);
+                    if (parameters && parameters.length > 0) {
+                        const defaultLayout = createDefaultLayout(parameters);
+                        setLayoutLocal(defaultLayout);
+                        setInitialLayout(defaultLayout);
+                        const initialValues = {};
+                        parameters.forEach(param => {
+                            initialValues[param.key] = param.default !== undefined ? param.default : '';
+                        });
+                        setValues(initialValues);
+                    }
                 }
             } else if (Array.isArray(layout) && layout.length > 0) {
-                setLayoutLocal(layout);
-                setInitialLayout(layout);
+                const syncedLayout = syncLayoutWithParameters(layout, parameters);
+                setLayoutLocal(syncedLayout);
+                setInitialLayout(syncedLayout);
 
                 const newTextBlocks = {};
                 const newTextBlocksRef = new Set();
 
-                layout.forEach(item => {
+                syncedLayout.forEach(item => {
                     if (item.isTextBlock && item.text) {
                         newTextBlocksRef.add(item.i);
                         newTextBlocks[item.i] = item.text;
@@ -76,12 +163,28 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
 
                 textBlocksRef.current = newTextBlocksRef;
                 setTextBlocks(newTextBlocks);
+
+                const initialValues = {};
+                parameters.forEach(param => {
+                    initialValues[param.key] = param.default !== undefined ? param.default : '';
+                });
+                setValues(initialValues);
+            } else {
+                if (parameters && parameters.length > 0) {
+                    const defaultLayout = createDefaultLayout(parameters);
+                    setLayoutLocal(defaultLayout);
+                    setInitialLayout(defaultLayout);
+                    const initialValues = {};
+                    parameters.forEach(param => {
+                        initialValues[param.key] = param.default !== undefined ? param.default : '';
+                    });
+                    setValues(initialValues);
+                }
             }
         } else if (parameters && parameters.length > 0) {
             const defaultLayout = createDefaultLayout(parameters);
             setLayoutLocal(defaultLayout);
-            setInitialLayout(defaultLayout); // Сохраняем исходный layout
-
+            setInitialLayout(defaultLayout);
             const initialValues = {};
             parameters.forEach(param => {
                 initialValues[param.key] = param.default !== undefined ? param.default : '';
@@ -93,16 +196,6 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
             setValues({});
         }
     }, [parameters, layout]);
-
-    const [values, setValues] = useState(() => {
-        const initialValues = {};
-        if (parameters && parameters.length > 0) {
-            parameters.forEach(param => {
-                initialValues[param.key] = param.default !== undefined ? param.default : '';
-            });
-        }
-        return initialValues;
-    });
 
     const addTextBlock = () => {
         const newTextBlockId = `text-${Date.now()}-${textBlockCounter}`;
@@ -121,7 +214,8 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
             w: 16,
             h: 3,
             minW: 2,
-            minH: 2
+            minH: 2,
+            isTextBlock: true
         };
 
         textBlocksRef.current.add(newTextBlockId);
@@ -178,12 +272,11 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
             text: textBlocks[item.i] || ''
         }));
 
-        setLayout(layoutLocalToSave)
-        setMsg("Изменения успешно применены.")
+        setLayout(layoutLocalToSave);
+        setMsg("Изменения успешно применены.");
         setIsModalNotify(true);
     };
 
-    // Обновленная функция сброса
     const resetLayoutToInitial = () => {
         if (initialLayout) {
             setLayoutLocal(initialLayout);
@@ -255,7 +348,6 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
             );
         }
 
-        // ОБЫЧНЫЙ ПАРАМЕТР
         const param = parameters?.find(p => p.key === item.i);
 
         if (!param) {
@@ -406,7 +498,7 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
                                         Удалить все
                                         {textBlockCount > 0 && (
                                             <span
-                                                        className="ml-1 px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full text-xs">
+                                                className="ml-1 px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full text-xs">
                                                 {textBlockCount}
                                             </span>
                                         )}
