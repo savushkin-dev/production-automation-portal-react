@@ -36,6 +36,20 @@ function Authorization() {
         store.logout();
     }, [])
 
+    useEffect(() => {
+        const handleGlobalKeyPress = (event) => {
+            if (event.key === 'Enter') {
+                login();
+            }
+        };
+
+        window.addEventListener('keydown', handleGlobalKeyPress);
+
+        return () => {
+            window.removeEventListener('keydown', handleGlobalKeyPress);
+        };
+    }, [username, password]);
+
 
     return (
         <div
