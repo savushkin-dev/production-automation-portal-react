@@ -49,6 +49,7 @@ import {Context} from "../index";
 import AuthLabel from "../components/AuthLabel";
 import {ModalVersionSettings} from "../components/scheduler/ModalVersionSettings";
 import {SchedulerDataTables} from "../components/scheduler/SchedulerDataTables";
+import {ModalColorsSettings} from "../components/scheduler/ModalColorsSettings";
 
 
 function SchedulerPage() {
@@ -91,6 +92,7 @@ function SchedulerPage() {
     const [isModalSendToWork, setIsModalSendToWork] = useState(false);
     const [isModalSavePlan, setIsModalSavePlan] = useState(false);
     const [isModalUpdateDelay, setIsModalUpdateDelay] = useState(false);
+    const [isModalColorsSettings, setIsModalColorsSettings] = useState(false);
 
 
     const [isSolve, setIsSolve] = useState(false);
@@ -882,7 +884,7 @@ function SchedulerPage() {
         () => {
             return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay, selectDate)
         },
-        [selectedItems, selectedItem, activeDisplay]
+        [selectedItems, selectedItem, activeDisplay, timelineKey]
     );
 
     async function assignAllPauses() {
@@ -1324,6 +1326,11 @@ function SchedulerPage() {
                                           setPlanVersion={setPlanVersion}/>
                 }
 
+                {isModalColorsSettings &&
+                    <ModalColorsSettings onClose={() => setIsModalColorsSettings(false)}
+                                         onSave={()=>setTimelineKey(prev => prev + 1)}/>
+                }
+
 
                 <div className="flex items-center gap-4 mx-3 px-3 rounded-md  flex-wrap">
                     <div className="flex items-center gap-2">
@@ -1342,6 +1349,13 @@ function SchedulerPage() {
                         </div>
                         <span className="text-xs text-gray-600">Задание на выбранную дату</span>
                     </div>
+
+                    <button onClick={() => setIsModalColorsSettings(true)}
+                            className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
+                        Настройка цветов
+                        <i className="pl-2 fa-solid fa-palette"></i>
+                    </button>
+
                 </div>
 
                 <SchedulerDataTables

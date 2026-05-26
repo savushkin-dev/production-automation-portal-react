@@ -9,11 +9,16 @@ import {
     isMaintenanceItem,
     isMaintenancePackingOrLeveling, isSimpleItem
 } from "../../utils/scheduler/items";
+import {getStoredColor, STORAGE_KEYS} from "./utils/colorsUtils";
 
 /**
  * Фабрика для создания рендерера элементов таймлайна планировщика
  */
 export const createItemRendererScheduler = (selectedItems, selectedItem, activeDisplay, selectDate) => {
+
+    // Получаем сохраненные цвета из localStorage
+    const leftBorderColor = getStoredColor(STORAGE_KEYS.LEFT_BORDER_COLOR, '#436fff');
+    const bottomBorderColor = getStoredColor(STORAGE_KEYS.BOTTOM_BORDER_COLOR, '#c100cf');
 
     function defineStyle(activeDisplay, isFactEl, isLeveling, isSelected) {
         const { plan, fact, planFact } = activeDisplay || {};
@@ -62,11 +67,11 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
                 borderStyle: 'solid',
                 borderColor: '#aeaeae',
-                borderLeftColor: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '#436fff' : '#aeaeae',
+                borderLeftColor: isCleaningItem(item) && item.info.cleaningDelay < 0 ? leftBorderColor : '#aeaeae',
                 borderLeftWidth: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '3px' : '1px',
 
                 //Подсвечиваем задания на выбранную дату
-                borderBottomColor: isSimpleItem(item) && moment(item.info.dti).format('YYYY-MM-DD') === selectDate ? 'rgb(193,0,207)' : '#aeaeae',
+                borderBottomColor: isSimpleItem(item) && moment(item.info.dti).format('YYYY-MM-DD') === selectDate ? bottomBorderColor : '#aeaeae',
                 borderBottomWidth: isSimpleItem(item) && moment(item.info.dti).format('YYYY-MM-DD') === selectDate ? '2px' : '1px',
 
                 textAlign: 'start',
