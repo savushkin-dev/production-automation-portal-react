@@ -90,7 +90,7 @@ function SchedulerPage() {
     const [isModalUpdateServiceWork, setIsModalUpdateServiceWork] = useState(false);
     const [isModalSendToWork, setIsModalSendToWork] = useState(false);
     const [isModalSavePlan, setIsModalSavePlan] = useState(false);
-    const [isModalUpdateDelayJob, setIsModalUpdateDelayJob] = useState(false);
+    const [isModalUpdateDelay, setIsModalUpdateDelay] = useState(false);
 
 
     const [isSolve, setIsSolve] = useState(false);
@@ -460,10 +460,6 @@ function SchedulerPage() {
     const handleItemRightClick = (itemId, e) => {
         e.preventDefault();
 
-        if (itemId.includes('cleaning')) {
-            return;
-        }
-
         const clickedItem = planByHardware.find(item => item.id === itemId);
 
         if (isFactItem(clickedItem)) {
@@ -611,9 +607,7 @@ function SchedulerPage() {
     }
 
     function onItemSelect(itemId, e, time) {
-        if (itemId.includes('cleaning')) {
-            return;
-        }
+
         const itemsArray = planByHardware;
         const clickedItem = itemsArray.find(item => item.id === itemId);
 
@@ -873,9 +867,20 @@ function SchedulerPage() {
         }
     }
 
+    async function updateDelayCleaning(lineId, index, delayNote) {
+        try {
+            await SchedulerService.updateDelayCleaning(lineId, index, delayNote);
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка обновления отклонения мойки от плана: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
     const timelineRenderers = useMemo(
         () => {
-            return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay)
+            return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay, selectDate)
         },
         [selectedItems, selectedItem, activeDisplay]
     );
@@ -1278,7 +1283,7 @@ function SchedulerPage() {
                                                              updateServiceWork={() => setIsModalUpdateServiceWork(true)}
                                                              removeServiceWork={removeServiceWork}
                                                              sortRange={sortRange}
-                                                             updateDelayJob={() => setIsModalUpdateDelayJob(true)}
+                                                             updateDelay={() => setIsModalUpdateDelay(true)}
                 />}
 
                 {isModalMoveJobs &&
@@ -1306,9 +1311,10 @@ function SchedulerPage() {
                     />
                 }
 
-                {isModalUpdateDelayJob &&
-                    <ModalUpdateJobDelay onClose={() => setIsModalUpdateDelayJob(false)}
-                                         updateDelayJob={updateDelayJob} selectedItems={selectedItems}/>
+                {isModalUpdateDelay &&
+                    <ModalUpdateJobDelay onClose={() => setIsModalUpdateDelay(false)}
+                                         updateDelayJob={updateDelayJob} updateDelayCleaning={updateDelayCleaning}
+                                         selectedItems={selectedItems}/>
                 }
 
                 {isModalVersionSettings &&
@@ -1317,6 +1323,26 @@ function SchedulerPage() {
                                           setModalError={setIsModalNotifyError} setErrorMsg={setMsg}
                                           setPlanVersion={setPlanVersion}/>
                 }
+
+
+                <div className="flex items-center gap-4 mx-3 px-3 rounded-md  flex-wrap">
+                    <div className="flex items-center gap-2">
+                        <div
+                            className="w-12 h-5 border border-gray-400 relative bg-white text-[9px] flex items-center justify-center font-bold">
+                            <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#436fff]"></div>
+                            <span className="z-10">Мойка</span>
+                        </div>
+                        <span className="text-xs text-gray-600">Мойка быстрее плана</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div
+                            className="w-12 h-5 border border-gray-400 relative bg-white text-[9px] flex items-center justify-center font-bold">
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[rgb(193,0,207)]"></div>
+                            <span className="z-10">Задание</span>
+                        </div>
+                        <span className="text-xs text-gray-600">Задание на выбранную дату</span>
+                    </div>
+                </div>
 
                 <SchedulerDataTables
                     pdayData={pdayData}

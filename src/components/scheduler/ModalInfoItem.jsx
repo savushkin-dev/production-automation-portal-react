@@ -72,6 +72,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                         </div>
                     }
 
+
                     <div className="flex">
                         {/* Левая часть */}
                         <div className="w-[60%]">

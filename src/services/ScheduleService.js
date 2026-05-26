@@ -1,6 +1,6 @@
 import $apiSchedule, {API_URL_SCHEDULER} from "../http/scheduler";
 import moment from "moment/moment";
-import {isFactItem} from "../utils/scheduler/items";
+import {isCleaningItem, isDelayItem, isFactItem} from "../utils/scheduler/items";
 
 export let hardware = []
 export let planByHardware = []
@@ -21,6 +21,15 @@ const exampleTask = {
 
 }
 
+export const ItemType = {
+    SIMPLE: 'simple',
+    CLEANING: 'cleaning',
+    DELAY: 'delay',
+    FACT: 'fact',
+    MAINTENANCE: 'maintenance',
+    CLEANING_DELAY: 'cleaning_delay',
+};
+
 export default class ScheduleService {
 
     static async parseDateTimeSettings(json) {
@@ -40,6 +49,63 @@ export default class ScheduleService {
             });
     }
 
+    static async parseCleaningDelayByHardware(json) {
+        let filteredData = json.jobs.filter(item => {
+            return item.startCleaningDateTime !== item.startProductionDateTime;
+        });
+
+        filteredData = filteredData.filter(item => {
+            return item.cleaningDelay !== null && item.cleaningDelay > 0;
+        });
+
+        let cleaningDelayList = [];
+        for (let i = 0; i < filteredData.length; i++) {
+            if(!filteredData[i].line){
+                console.warn("Job with id " + filteredData[i].id + " has a null line field")
+                continue;
+            }
+
+            let cleaningDelay = Number(filteredData[i].cleaningDelay) || 0;
+
+            let cleaningDelayStartDateTime = new Date(new Date(filteredData[i].startProductionDateTime).getTime() - cleaningDelay * 60000);
+            let cleaningDelayEndDateTime = new Date(filteredData[i].startProductionDateTime);
+
+            let dur = Math.round(cleaningDelayEndDateTime - cleaningDelayStartDateTime) / 60000;
+
+            cleaningDelayList[i] = Object.assign({}, exampleTask);
+            cleaningDelayList[i].id = i + "cleaning-delay";
+            cleaningDelayList[i].start_time = cleaningDelayStartDateTime.getTime();
+            cleaningDelayList[i].end_time = cleaningDelayEndDateTime.getTime();
+            cleaningDelayList[i].title = "Отклонение от плана";
+            cleaningDelayList[i].group = filteredData[i].line?.id || "NAN";
+
+            let colorGrTo = "#f7faff";
+            let colorGr = "#e5f7ff";
+            cleaningDelayList[i].itemProps = {
+                style: {
+                    background: "linear-gradient(to right, " + colorGr +", " + colorGrTo +")",
+                    border: '1px solid #dcdcdc',
+                    color: "#0369a1",
+                },
+            };
+
+            cleaningDelayList[i].info = { //Доп информация
+                itemType: ItemType.CLEANING_DELAY, //Для идентификации элемента на плане
+                name: "Отклонение мойки от плана",
+                start: cleaningDelayStartDateTime,
+                end: cleaningDelayEndDateTime,
+                line: filteredData[i].line?.name || "NAN",
+                duration: dur,
+                pinned: false,
+                lineInfo: json.jobs[i].line,
+                delayNote: filteredData[i].cleaningDelayNote,
+                parentJobId: filteredData[i].id,
+                cleaningDelay: filteredData[i].cleaningDelay || 0
+            }
+        }
+        return cleaningDelayList;
+    }
+
     static async parseCleaningByHardware(json) {
         const filteredData = json.jobs.filter(item => {
             return item.startCleaningDateTime !== item.startProductionDateTime;
@@ -50,11 +116,24 @@ export default class ScheduleService {
                 console.warn("Job with id " + filteredData[i].id + " has a null line field")
                 continue;
             }
-            let dur = Math.round(new Date(filteredData[i].startProductionDateTime) - new Date(filteredData[i].startCleaningDateTime))/ 60000;
+
+            let cleaningDelay = Number(filteredData[i].cleaningDelay) || 0;
+
+            let cleaningStartDateTime = new Date(filteredData[i].startCleaningDateTime);
+            let cleaningEndDateTime;
+
+            if(cleaningDelay < 1){
+                cleaningEndDateTime = new Date(filteredData[i].startProductionDateTime);
+            } else {
+                cleaningEndDateTime = new Date(new Date(filteredData[i].startProductionDateTime).getTime() - cleaningDelay * 60000 );
+            }
+
+            let dur = Math.round(cleaningEndDateTime - cleaningStartDateTime) / 60000;
+
             cleaning[i] = Object.assign({}, exampleTask);
             cleaning[i].id = i + "cleaning";
-            cleaning[i].start_time = new Date(filteredData[i].startCleaningDateTime).getTime();
-            cleaning[i].end_time = new Date(filteredData[i].startProductionDateTime).getTime();
+            cleaning[i].start_time = cleaningStartDateTime.getTime()
+            cleaning[i].end_time = cleaningEndDateTime.getTime();
             cleaning[i].title = "Мойка, переналадка";
             cleaning[i].group = filteredData[i].line?.id || "NAN";
             cleaning[i].itemProps = {
@@ -65,13 +144,20 @@ export default class ScheduleService {
                 },
             };
             cleaning[i].info = { //Доп информация
+                itemType: ItemType.CLEANING, //Для идентификации элемента на плане
                 name: "Мойка",
-                start: filteredData[i].startCleaningDateTime,
-                end: filteredData[i].startProductionDateTime,
+                start: cleaningStartDateTime,
+                end: cleaningEndDateTime,
                 line: filteredData[i].line?.name || "NAN",
                 duration: dur,
                 pinned: false,
                 lineInfo: json.jobs[i].line,
+                delayNote: filteredData[i].cleaningDelayNote,
+                parentJobId: filteredData[i].id,
+                cleaningDelay: filteredData[i].cleaningDelay || 0,
+                cleaningDurationPlan: filteredData[i].cleaningDurationPlan || 0,
+                cleaningDurationFact: filteredData[i].cleaningDurationFact || 0,
+                cleaningDelayEndDateTime: filteredData[i].startProductionDateTime || 0,
             }
         }
         return cleaning;
@@ -100,12 +186,13 @@ export default class ScheduleService {
             let colorGr = "#fff2db";
             delayList[i].itemProps = {
                 style: {
-                    background: "linear-gradient(to right, #f4e9ff, " + colorGr +")",
+                    background: "linear-gradient(to right, #f9efff, " + colorGr +")",
                     border: '1px solid #dcdcdc',
                     color: "#0369a1",
                 },
             };
             delayList[i].info = { //Доп информация
+                itemType: ItemType.DELAY, //Для идентификации элемента на плане
                 name: "Отклонение от плана",
                 start: planEndDateTime,
                 end: endDateTime,
@@ -147,6 +234,7 @@ export default class ScheduleService {
                 }
             };
             factList[i].info = { //Доп информация
+                itemType: ItemType.FACT, //Для идентификации элемента на плане
                 name: filteredData[i].name,
                 start: filteredData[i].startProductionDateTime,
                 end: filteredData[i].endDateTime,
@@ -241,6 +329,7 @@ export default class ScheduleService {
                 }
             };
             planByHardware[i].info = { //Доп информация
+                itemType: ItemType.SIMPLE, //Для идентификации элемента на плане
                 name: json.jobs[i].name,
                 start: json.jobs[i].startProductionDateTime,
                 end: planEndDateTime,
@@ -275,8 +364,10 @@ export default class ScheduleService {
 
         let factList = await this.parseFactItemsByHardware(json)
         let cleaning = await this.parseCleaningByHardware(json)
+        let cleaningDelay = await this.parseCleaningDelayByHardware(json)
         let delay = await this.parseDelayByHardware(json)
         let result = [...planByHardware, ...cleaning]
+        result = [...result, ...cleaningDelay]
         result = result.filter(item => item !== undefined);
 
         result = ScheduleService.defineAssignedJobs(result, json)
@@ -297,7 +388,7 @@ export default class ScheduleService {
     static defineAssignedJobs(result, json){
         for (let i = 0; i < result.length; i++) {
             // Пропускаем cleaning элементы
-            if(result[i].id.includes('cleaning')) {
+            if(isCleaningItem(result[i])) {
                 continue;
             }
 
@@ -318,7 +409,7 @@ export default class ScheduleService {
 
     static defineGroupPositionDelayItems(result, json){
         for (let i = 0; i < result.length; i++) {
-            if(result[i].id.includes('delay')) {
+            if(isDelayItem(result[i]) || isCleaningItem(result[i])) {
                 if(result[i].group === ""){
                     return result
                 }
@@ -336,7 +427,7 @@ export default class ScheduleService {
 
         // Исключаем cleaning и фактические элементы из группы
         const groupItems = allItems.filter(i =>
-            i.group === item.group && !i.id.includes('cleaning') && !i.id.includes('delay') && !isFactItem(i)
+            i.group === item.group && !isCleaningItem(i) && !isDelayItem(i) && !isFactItem(i)
         )
 
         const sorted = groupItems.sort((a, b) =>
@@ -489,6 +580,10 @@ export default class ScheduleService {
 
     static async updateDelayJob(lineId, index, delayNote) {
         return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/delayNote`, {lineId, index, delayNote})
+    }
+
+    static async updateDelayCleaning(lineId, index, delayNote) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/cleaningDelay`, {lineId, index, delayNote})
     }
 
     static async getVersionList(startDate) {

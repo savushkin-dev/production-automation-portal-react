@@ -1,17 +1,25 @@
 import React, {useEffect, useState} from 'react'
 import {styleInputWithoutRounded} from "../../data/styles";
+import {isCleaningDelayItem, isCleaningItem} from "../../utils/scheduler/items";
 
 
-export function ModalUpdateJobDelay({onClose, selectedItems, updateDelayJob}) {
+export function ModalUpdateJobDelay({onClose, selectedItems, updateDelayJob, updateDelayCleaning}) {
 
 
-    const [descriptionOperation, setDescriptionOperation] = useState(selectedItems[0]?.info?.delayNote?.trim() || "");
+    let isCleaningDelayNote = isCleaningDelayItem(selectedItems[0]) || isCleaningItem(selectedItems[0]);
+    const [descriptionOperation, setDescriptionOperation] = useState(isCleaningDelayNote? (selectedItems[0]?.info?.delayNote?.trim() || "")
+        :(selectedItems[0]?.info?.cleaningDelayNote?.trim() || ""));
 
     function update() {
         const firstItem = selectedItems[0];
         const parentIndex = firstItem.info.groupIndex-1;
         const line = firstItem.group;
-        updateDelayJob(line, parentIndex, descriptionOperation)
+
+        if(isCleaningDelayNote){
+            updateDelayCleaning(line, parentIndex, descriptionOperation)
+        } else {
+            updateDelayJob(line, parentIndex, descriptionOperation)
+        }
     }
 
 

@@ -2,17 +2,18 @@
 import React, {useEffect} from "react";
 import moment from "moment/moment";
 import {
+    isCleaningDelayItem,
     isCleaningItem,
     isDelayItem,
     isFactItem,
     isMaintenanceItem,
-    isMaintenancePackingOrLeveling
+    isMaintenancePackingOrLeveling, isSimpleItem
 } from "../../utils/scheduler/items";
 
 /**
  * Фабрика для создания рендерера элементов таймлайна планировщика
  */
-export const createItemRendererScheduler = (selectedItems, selectedItem, activeDisplay) => {
+export const createItemRendererScheduler = (selectedItems, selectedItem, activeDisplay, selectDate) => {
 
     function defineStyle(activeDisplay, isFactEl, isLeveling, isSelected) {
         const { plan, fact, planFact } = activeDisplay || {};
@@ -45,7 +46,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
         const isLinesMatch = item.info?.lineIdFact === item.info?.lineInfo?.id;
 
         const factElBg = "#fafafa";
-        const factBg = "#f4e9ff";
+        const factBg = "#f9efff";
         const selectBg = "#cbff93";
 
         const isFactEl = isFactItem(item);
@@ -58,9 +59,16 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                 background: isSelected
                     ? (isSingleSelected ? selectBg : selectBg)
                     : (isFactEl ? factElBg : (isFact ? factBg : item.itemProps?.style?.background || '#fff')),
-                borderWidth: '1px',
+
                 borderStyle: 'solid',
                 borderColor: '#aeaeae',
+                borderLeftColor: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '#436fff' : '#aeaeae',
+                borderLeftWidth: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '3px' : '1px',
+
+                //Подсвечиваем задания на выбранную дату
+                borderBottomColor: isSimpleItem(item) && moment(item.info.dti).format('YYYY-MM-DD') === selectDate ? 'rgb(193,0,207)' : '#aeaeae',
+                borderBottomWidth: isSimpleItem(item) && moment(item.info.dti).format('YYYY-MM-DD') === selectDate ? '2px' : '1px',
+
                 textAlign: 'start',
                 color: item.itemProps?.style?.color || 'black',
                 margin: 0,
@@ -78,17 +86,38 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
         const {key, ...safeItemProps} = itemProps;
 
+        //Определяем подсказку при наведении
+        function defineHint(){
+            let result = `${item.title}`;
+
+            //Для моек
+            if(isCleaningItem(item)){
+                result = `${item.title}\nПлан: ${defineHoursAndMinToString(item.info.cleaningDurationPlan)}\nФакт: ${defineHoursAndMinToString(item.info.cleaningDurationFact)}`
+            }
+
+            return result;
+        }
+
+        function defineHoursAndMinToString(duration){
+            if(duration >= 60){
+                return `${Math.floor(duration / 60)} ч. ${duration % 60} мин.`;
+            } else {
+                return `${duration} мин.`
+            }
+        }
+
         return (
             <div
                 key={item.id}
                 {...safeItemProps}
                 className={isFactEl ? "rct-item-fact" : (isLeveling? "rct-item-alignment" : "rct-item")}
+                title={defineHint()}
             >
 
                 {!isFactEl ? (
                     <>
                         <div className="flex px-1 justify-between font-medium text-sm text-gray-800">
-                            {item.info?.pinned && !isFactEl ? (
+                            {item.info?.pinned && !isFactEl && !isCleaningDelayItem(item) ? (
                                 <>
                                     {isSelected && selectedItems.filter(item => !isFactItem(item)).length > 1 && (
                                         <div
@@ -109,12 +138,31 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                             {selectedItems.findIndex(el => el.id === item.id) + 1}
                                         </div>
                                     )}
-                                    {!isLeveling &&
+                                    {!isLeveling && !isCleaningItem(item) &&
                                         <span className="">{item.title}</span>
                                     }
-                                    {isLeveling &&
+                                    {isDelayItem(item) && !isCleaningDelayItem(item) &&
                                         <span className="">{item.info.delayNote !== null && item.info.delayNote !== "" ? item.info.delayNote : item.title}</span>
                                     }
+
+                                    {isCleaningDelayItem(item) &&
+                                        <span className="">{item.info.delayNote && item.info.delayNote !== "" ? item.info.delayNote : item.title}</span>
+                                    }
+
+                                    {isCleaningItem(item) &&
+                                        <div className="flex justify-start">
+                                            {/*{item.info.cleaningDelay < 0 &&*/}
+                                            {/*    <span className="text-blue-600 pr-2 h-[20px] w-[20px]">*/}
+                                            {/*        <i className="fa-solid fa-triangle-exclamation"></i>*/}
+                                            {/*    </span>*/}
+                                            {/*}*/}
+                                            <span className="">{item.title}</span>
+                                        </div>
+                                    }
+
+
+
+
                                 </>
                             )}
                         </div>
@@ -147,7 +195,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                 </span>
                             )}
 
-                            {item.info?.groupIndex && !isFact && !isLeveling && (
+                            {item.info?.groupIndex && !isFact && !isLeveling && !isCleaningItem(item) && (
                                 <span className="px-1 rounded">
                                       <span className="text-violet-600">{item.info.groupIndex}</span>
                                       <span className="pl-1">Позиция на линии</span>
@@ -361,9 +409,9 @@ export const createGroupRenderer = () => {
 /**
  * Функция для создания всех рендереров планировщика
  */
-export const createTimelineRenderersSheduler = (selectedItems, selectedItem, activeDisplay) => {
+export const createTimelineRenderersSheduler = (selectedItems, selectedItem, activeDisplay, selectDate) => {
     return {
-        itemRenderer: createItemRendererScheduler(selectedItems, selectedItem, activeDisplay),
+        itemRenderer: createItemRendererScheduler(selectedItems, selectedItem, activeDisplay, selectDate),
         groupRenderer: createGroupRenderer(),
     };
 };
