@@ -698,12 +698,12 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 {
                     id: 'zoom-',
                     className: 'fa fa-magnifying-glass-minus',
-                    command: () => changeZoom(-10),
+                    command: () => changeZoom(-2),
                     attributes: {title: 'Уменьшить масштаб'},
                 }, {
                     id: 'zoom+',
                     className: 'fa fa-magnifying-glass-plus',
-                    command: () => changeZoom(10),
+                    command: () => changeZoom(2),
                     attributes: {title: 'Увеличить масштаб'},
                 },
             ]);
@@ -880,47 +880,47 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             if (editorView) updateCanvasZoom(zoom);
         }, [zoom]);
 
-        // Зум при зажатом Alt + колесо мыши
-        useEffect(() => {
-            if (!editorView) return;
-
-            let isAltPressed = false;
-
-            const handleKeyDown = (e) => {
-                if (e.altKey && !isAltPressed) {
-                    isAltPressed = true;
-                    document.body.classList.add('alt-zoom-active');
-                }
-            };
-
-            const handleKeyUp = (e) => {
-                if (!e.altKey && isAltPressed) {
-                    isAltPressed = false;
-                    document.body.classList.remove('alt-zoom-active');
-                }
-            };
-
-            const handleWheel = (e) => {
-                if (!isAltPressed && !e.altKey) return;
-
-                e.preventDefault();
-                e.stopPropagation();
-
-                const delta = e.deltaY > 0 ? -2 : 2;
-                changeZoom(delta);
-            };
-
-            window.addEventListener('wheel', handleWheel, { passive: false, capture: true });
-            window.addEventListener('keydown', handleKeyDown);
-            window.addEventListener('keyup', handleKeyUp);
-
-            return () => {
-                window.removeEventListener('wheel', handleWheel, { capture: true });
-                window.removeEventListener('keydown', handleKeyDown);
-                window.removeEventListener('keyup', handleKeyUp);
-                document.body.classList.remove('alt-zoom-active');
-            };
-        }, [editorView]);
+        // // Зум при зажатом Alt + колесо мыши
+        // useEffect(() => {
+        //     if (!editorView) return;
+        //
+        //     let isAltPressed = false;
+        //
+        //     const handleKeyDown = (e) => {
+        //         if (e.altKey && !isAltPressed) {
+        //             isAltPressed = true;
+        //             document.body.classList.add('alt-zoom-active');
+        //         }
+        //     };
+        //
+        //     const handleKeyUp = (e) => {
+        //         if (!e.altKey && isAltPressed) {
+        //             isAltPressed = false;
+        //             document.body.classList.remove('alt-zoom-active');
+        //         }
+        //     };
+        //
+        //     const handleWheel = (e) => {
+        //         if (!isAltPressed && !e.altKey) return;
+        //
+        //         e.preventDefault();
+        //         e.stopPropagation();
+        //
+        //         const delta = e.deltaY > 0 ? -2 : 2;
+        //         changeZoom(delta);
+        //     };
+        //
+        //     window.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+        //     window.addEventListener('keydown', handleKeyDown);
+        //     window.addEventListener('keyup', handleKeyUp);
+        //
+        //     return () => {
+        //         window.removeEventListener('wheel', handleWheel, { capture: true });
+        //         window.removeEventListener('keydown', handleKeyDown);
+        //         window.removeEventListener('keyup', handleKeyUp);
+        //         document.body.classList.remove('alt-zoom-active');
+        //     };
+        // }, [editorView]);
 
         function addBlocks(editor) {
 
