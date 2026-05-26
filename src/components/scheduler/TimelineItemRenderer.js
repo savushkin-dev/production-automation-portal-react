@@ -9,16 +9,18 @@ import {
     isMaintenanceItem,
     isMaintenancePackingOrLeveling, isSimpleItem
 } from "../../utils/scheduler/items";
-import {getStoredColor, STORAGE_KEYS} from "./utils/colorsUtils";
+import {DEFAULT_COLORS, DEFAULT_WIDTHS, getStoredColor, getStoredWidth, STORAGE_KEYS} from "./utils/colorsUtils";
 
 /**
  * Фабрика для создания рендерера элементов таймлайна планировщика
  */
 export const createItemRendererScheduler = (selectedItems, selectedItem, activeDisplay, selectDate) => {
 
-    // Получаем сохраненные цвета из localStorage
-    const leftBorderColor = getStoredColor(STORAGE_KEYS.LEFT_BORDER_COLOR, '#436fff');
-    const bottomBorderColor = getStoredColor(STORAGE_KEYS.BOTTOM_BORDER_COLOR, '#c100cf');
+    // Получаем сохраненные цвета и толщину из localStorage
+    const leftBorderColor = getStoredColor(STORAGE_KEYS.LEFT_BORDER_COLOR, DEFAULT_COLORS.leftBorder);
+    const bottomBorderColor = getStoredColor(STORAGE_KEYS.BOTTOM_BORDER_COLOR, DEFAULT_COLORS.bottomBorder);
+    const leftBorderWidth = getStoredWidth(STORAGE_KEYS.LEFT_BORDER_WIDTH, DEFAULT_WIDTHS.leftBorder);
+    const bottomBorderWidth = getStoredWidth(STORAGE_KEYS.BOTTOM_BORDER_WIDTH, DEFAULT_WIDTHS.bottomBorder);
 
     function defineStyle(activeDisplay, isFactEl, isLeveling, isSelected) {
         const { plan, fact, planFact } = activeDisplay || {};
@@ -68,11 +70,11 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                 borderStyle: 'solid',
                 borderColor: '#aeaeae',
                 borderLeftColor: isCleaningItem(item) && item.info.cleaningDelay < 0 ? leftBorderColor : '#aeaeae',
-                borderLeftWidth: isCleaningItem(item) && item.info.cleaningDelay < 0 ? '3px' : '1px',
+                borderLeftWidth: isCleaningItem(item) && item.info.cleaningDelay < 0 ? `${leftBorderWidth}px` : '1px',
 
                 //Подсвечиваем задания на выбранную дату
                 borderBottomColor: isSimpleItem(item) && moment(item.info.dti).format('YYYY-MM-DD') === selectDate ? bottomBorderColor : '#aeaeae',
-                borderBottomWidth: isSimpleItem(item) && moment(item.info.dti).format('YYYY-MM-DD') === selectDate ? '2px' : '1px',
+                borderBottomWidth: isSimpleItem(item) && moment(item.info.dti).format('YYYY-MM-DD') === selectDate ? `${bottomBorderWidth}px` : '1px',
 
                 textAlign: 'start',
                 color: item.itemProps?.style?.color || 'black',

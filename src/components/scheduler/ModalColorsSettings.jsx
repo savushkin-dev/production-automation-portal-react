@@ -1,34 +1,44 @@
 import React, { useState, useEffect } from 'react'
-import {DEFAULT_COLORS, STORAGE_KEYS} from "./utils/colorsUtils";
-
-
+import { DEFAULT_COLORS, DEFAULT_WIDTHS, STORAGE_KEYS } from "./utils/colorsUtils";
 
 export function ModalColorsSettings({ onClose, onSave }) {
     const [leftBorderColor, setLeftBorderColor] = useState(DEFAULT_COLORS.leftBorder)
     const [bottomBorderColor, setBottomBorderColor] = useState(DEFAULT_COLORS.bottomBorder)
+    const [leftBorderWidth, setLeftBorderWidth] = useState(DEFAULT_WIDTHS.leftBorder)
+    const [bottomBorderWidth, setBottomBorderWidth] = useState(DEFAULT_WIDTHS.bottomBorder)
 
-    // Загрузка сохраненных цветов при открытии
+    // Загрузка сохраненных значений при открытии
     useEffect(() => {
         const savedLeftColor = localStorage.getItem(STORAGE_KEYS.LEFT_BORDER_COLOR)
         const savedBottomColor = localStorage.getItem(STORAGE_KEYS.BOTTOM_BORDER_COLOR)
+        const savedLeftWidth = localStorage.getItem(STORAGE_KEYS.LEFT_BORDER_WIDTH)
+        const savedBottomWidth = localStorage.getItem(STORAGE_KEYS.BOTTOM_BORDER_WIDTH)
 
         if (savedLeftColor) setLeftBorderColor(savedLeftColor)
         if (savedBottomColor) setBottomBorderColor(savedBottomColor)
+        if (savedLeftWidth) setLeftBorderWidth(savedLeftWidth)
+        if (savedBottomWidth) setBottomBorderWidth(savedBottomWidth)
     }, [])
 
-    // Сохранение цветов
+    // Сохранение настроек
     const handleSave = () => {
         localStorage.setItem(STORAGE_KEYS.LEFT_BORDER_COLOR, leftBorderColor)
         localStorage.setItem(STORAGE_KEYS.BOTTOM_BORDER_COLOR, bottomBorderColor)
+        localStorage.setItem(STORAGE_KEYS.LEFT_BORDER_WIDTH, leftBorderWidth)
+        localStorage.setItem(STORAGE_KEYS.BOTTOM_BORDER_WIDTH, bottomBorderWidth)
 
-        onSave();
+        if (onSave) {
+            onSave();
+        }
         onClose();
     }
 
-    // Сброс к стандартным цветам
+    // Сброс к стандартным значениям
     const handleReset = () => {
         setLeftBorderColor(DEFAULT_COLORS.leftBorder)
         setBottomBorderColor(DEFAULT_COLORS.bottomBorder)
+        setLeftBorderWidth(DEFAULT_WIDTHS.leftBorder)
+        setBottomBorderWidth(DEFAULT_WIDTHS.bottomBorder)
     }
 
     return (
@@ -42,59 +52,99 @@ export function ModalColorsSettings({ onClose, onSave }) {
                 className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none"
                 style={{ zIndex: 100 }}
             >
-                <div className="w-auto min-w-[500px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
+                <div className="w-auto min-w-[550px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
                     <h1 className="text-xl font-medium text-start mb-2">Настройки цветов планировщика</h1>
                     <hr className="mb-4"/>
 
                     <div className="my-3 space-y-4">
-                        {/* Цвет левой границы */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div
-                                    className="w-8 h-8 rounded border border-gray-300"
-                                    style={{ backgroundColor: leftBorderColor }}
+                        {/* Левая граница (мойка) */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div
+                                        className="w-8 h-8 rounded border border-gray-300"
+                                        style={{ backgroundColor: leftBorderColor }}
+                                    />
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Цвет левой границы
+                                        </label>
+                                        <p className="text-xs text-gray-500">
+                                            Для элементов очистки с задержкой (cleaningDelay &lt; 0)
+                                        </p>
+                                    </div>
+                                </div>
+                                <input
+                                    type="color"
+                                    value={leftBorderColor}
+                                    onChange={(e) => setLeftBorderColor(e.target.value)}
+                                    className="w-12 h-10 cursor-pointer rounded border border-gray-300"
                                 />
+                            </div>
+                            <div className="flex items-center justify-between ml-11">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">
-                                        Цвет левой границы
+                                        Толщина границы (px)
                                     </label>
                                     <p className="text-xs text-gray-500">
-                                        Для элементов очистки с задержкой (cleaningDelay &lt; 0)
+                                        Рекомендуемые значения: 2-5px
                                     </p>
                                 </div>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="10"
+                                    value={leftBorderWidth}
+                                    onChange={(e) => setLeftBorderWidth(e.target.value)}
+                                    className="w-20 h-10 px-2 rounded border border-gray-300 text-center"
+                                />
                             </div>
-                            <input
-                                type="color"
-                                value={leftBorderColor}
-                                onChange={(e) => setLeftBorderColor(e.target.value)}
-                                className="w-12 h-10 cursor-pointer rounded border border-gray-300"
-                            />
                         </div>
 
                         <hr className="my-3"/>
 
-                        {/* Цвет нижней границы */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div
-                                    className="w-8 h-8 rounded border border-gray-300"
-                                    style={{ backgroundColor: bottomBorderColor }}
+                        {/* Нижняя граница (выбранная дата) */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div
+                                        className="w-8 h-8 rounded border border-gray-300"
+                                        style={{ backgroundColor: bottomBorderColor }}
+                                    />
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Цвет нижней границы
+                                        </label>
+                                        <p className="text-xs text-gray-500">
+                                            Для элементов с выбранной датой (dti совпадает с selectDate)
+                                        </p>
+                                    </div>
+                                </div>
+                                <input
+                                    type="color"
+                                    value={bottomBorderColor}
+                                    onChange={(e) => setBottomBorderColor(e.target.value)}
+                                    className="w-12 h-10 cursor-pointer rounded border border-gray-300"
                                 />
+                            </div>
+                            <div className="flex items-center justify-between ml-11">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">
-                                        Цвет нижней границы
+                                        Толщина границы (px)
                                     </label>
                                     <p className="text-xs text-gray-500">
-                                        Для элементов с выбранной датой (dti совпадает с selectDate)
+                                        Рекомендуемые значения: 1-4px
                                     </p>
                                 </div>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="10"
+                                    value={bottomBorderWidth}
+                                    onChange={(e) => setBottomBorderWidth(e.target.value)}
+                                    className="w-20 h-10 px-2 rounded border border-gray-300 text-center"
+                                />
                             </div>
-                            <input
-                                type="color"
-                                value={bottomBorderColor}
-                                onChange={(e) => setBottomBorderColor(e.target.value)}
-                                className="w-12 h-10 cursor-pointer rounded border border-gray-300"
-                            />
                         </div>
 
                         {/* Предпросмотр */}
@@ -103,15 +153,21 @@ export function ModalColorsSettings({ onClose, onSave }) {
                             <div className="flex gap-6">
                                 <div className="flex items-center gap-2">
                                     <div
-                                        className="w-20 h-8 border border-gray-400 border-l-4"
-                                        style={{ borderLeftColor: leftBorderColor }}
+                                        className="w-20 h-8 border border-gray-400"
+                                        style={{
+                                            borderLeftColor: leftBorderColor,
+                                            borderLeftWidth: `${leftBorderWidth}px`
+                                        }}
                                     />
                                     <span className="text-xs">Задержка</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div
-                                        className="w-20 h-8 border border-gray-400 border-b-2"
-                                        style={{ borderBottomColor: bottomBorderColor }}
+                                        className="w-20 h-8 border border-gray-400"
+                                        style={{
+                                            borderBottomColor: bottomBorderColor,
+                                            borderBottomWidth: `${bottomBorderWidth}px`
+                                        }}
                                     />
                                     <span className="text-xs">Выбранная дата</span>
                                 </div>
