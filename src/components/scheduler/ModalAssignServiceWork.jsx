@@ -4,6 +4,8 @@ import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
 import {convertHoursMinutesToMinutes, validateHours, validateMinutes} from "../../utils/scheduler/serviceWork";
 import {calculateTimeToNext8AM, getLastItemIndexInGroup, getLastItemInGroup} from "../../utils/scheduler/items";
+import {GrayButton} from "./buttons/GrayButton";
+import {BlueButton} from "./buttons/BlueButton";
 
 
 export function ModalAssignServiceWork({
@@ -223,18 +225,12 @@ export function ModalAssignServiceWork({
 
 
                     <div className="flex flex-row justify-end ">
-                        <div className="flex flex-row justify-end items-center bg-white my-2">
-                            <button onClick={onClose}
-                                    className="min-w-[50px] px-2 mx-2 h-7 rounded text-xs font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
-                                Отмена
-                            </button>
-                            <button onClick={() => {
+                        <div className="flex flex-row justify-end items-center bg-white my-2 gap-2">
+                            <GrayButton text={"Отмена"} onClick={onClose}/>
+                            <BlueButton text={"Применить"} onClick={() => {
                                 assign();
                                 onClose()
-                            }}
-                                    className="min-w-[50px] text-xs h-7 font-medium px-2 py-1 rounded text-white bg-blue-800 hover:bg-blue-700">
-                                Применить
-                            </button>
+                            }} className={""}/>
                         </div>
                     </div>
 

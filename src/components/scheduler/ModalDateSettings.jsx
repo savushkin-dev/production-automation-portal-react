@@ -1,5 +1,6 @@
 import React from 'react'
 import {formatIsoToDatetimeWithoutSeconds} from "../../utils/date/date";
+import {GrayButton} from "./buttons/GrayButton";
 
 export function ModalDateSettings({lines, setLines, onClose,
                                   changeTime, changeMaxEndTime}) {
@@ -83,10 +84,7 @@ export function ModalDateSettings({lines, setLines, onClose,
 
                     <div className="flex flex-row justify-end ">
                         <div className="flex flex-row justify-end items-center bg-white my-2">
-                            <button onClick={onClose}
-                                    className="min-w-[50px] px-2 mx-2 h-7 rounded text-xs font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
-                                Закрыть
-                            </button>
+                            <GrayButton text={"Закрыть"} onClick={onClose}/>
                         </div>
                     </div>
 
