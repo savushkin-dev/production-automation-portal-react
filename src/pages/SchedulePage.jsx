@@ -1332,7 +1332,14 @@ function SchedulerPage() {
                 }
 
 
-                <div className="flex items-center gap-4 mx-3 px-3 rounded-md  flex-wrap">
+                <div className="flex items-center gap-4 mx-3 px-3 rounded-md flex-wrap">
+
+                    <button onClick={() => setIsModalColorsSettings(true)}
+                            className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
+                        Настройка цветов
+                        <i className="pl-2 fa-solid fa-palette"></i>
+                    </button>
+
                     <div className="flex items-center gap-2">
                         <div
                             className="w-12 h-5 border border-gray-400 relative bg-white text-[9px] flex items-center justify-center font-bold">
@@ -1350,11 +1357,6 @@ function SchedulerPage() {
                         <span className="text-xs text-gray-600">Задание на выбранную дату</span>
                     </div>
 
-                    <button onClick={() => setIsModalColorsSettings(true)}
-                            className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
-                        Настройка цветов
-                        <i className="pl-2 fa-solid fa-palette"></i>
-                    </button>
 
                 </div>
 
