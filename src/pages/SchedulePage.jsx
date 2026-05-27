@@ -49,6 +49,7 @@ import {Context} from "../index";
 import AuthLabel from "../components/AuthLabel";
 import {ModalVersionSettings} from "../components/scheduler/ModalVersionSettings";
 import {SchedulerDataTables} from "../components/scheduler/SchedulerDataTables";
+import {ModalColorsSettings} from "../components/scheduler/ModalColorsSettings";
 
 
 function SchedulerPage() {
@@ -91,6 +92,7 @@ function SchedulerPage() {
     const [isModalSendToWork, setIsModalSendToWork] = useState(false);
     const [isModalSavePlan, setIsModalSavePlan] = useState(false);
     const [isModalUpdateDelay, setIsModalUpdateDelay] = useState(false);
+    const [isModalColorsSettings, setIsModalColorsSettings] = useState(false);
 
 
     const [isSolve, setIsSolve] = useState(false);
@@ -882,7 +884,7 @@ function SchedulerPage() {
         () => {
             return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay, selectDate)
         },
-        [selectedItems, selectedItem, activeDisplay]
+        [selectedItems, selectedItem, activeDisplay, timelineKey]
     );
 
     async function assignAllPauses() {
@@ -981,8 +983,10 @@ function SchedulerPage() {
                     setSelectedItem(null);
                     setIsModalInfoItem(false);
                 }} lines={groups} determineFactPlace={determineFactPlace} determineCameraFact={determineCameraFact}
-                                                                   clickedCameras={clickedCameras} setClickedCameras={setClickedCameras}
-                                                                   setModalError={setIsModalNotifyError} setErrorMsg={setMsg}/>}
+                                                                   clickedCameras={clickedCameras}
+                                                                   setClickedCameras={setClickedCameras}
+                                                                   setModalError={setIsModalNotifyError}
+                                                                   setErrorMsg={setMsg}/>}
 
                 {isLoading &&
                     <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>
@@ -1324,20 +1328,41 @@ function SchedulerPage() {
                                           setPlanVersion={setPlanVersion}/>
                 }
 
+                {isModalColorsSettings &&
+                    <ModalColorsSettings onClose={() => setIsModalColorsSettings(false)}
+                                         onSave={() => setTimelineKey(prev => prev + 1)}/>
+                }
 
-                <div className="flex items-center gap-4 mx-3 px-3 rounded-md  flex-wrap">
+
+                {/* Блок с индикаторами и настройки цветов */}
+                <div key={timelineKey} className="flex items-center gap-4 mx-3 px-3 rounded-md flex-wrap">
+                    <button onClick={() => setIsModalColorsSettings(true)}
+                            className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
+                        Настройка цветов
+                        <i className="pl-2 fa-solid fa-palette"></i>
+                    </button>
+
                     <div className="flex items-center gap-2">
                         <div
-                            className="w-12 h-5 border border-gray-400 relative bg-white text-[9px] flex items-center justify-center font-bold">
-                            <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#436fff]"></div>
+                            className="w-12 h-5 border border-gray-400 relative bg-white text-[9px] flex items-center justify-center font-bold"
+                            style={{
+                                borderLeftColor: localStorage.getItem('scheduler_left_border_color') || '#436fff',
+                                borderLeftWidth: `${localStorage.getItem('scheduler_left_border_width') || '3'}px`
+                            }}
+                        >
                             <span className="z-10">Мойка</span>
                         </div>
                         <span className="text-xs text-gray-600">Мойка быстрее плана</span>
                     </div>
+
                     <div className="flex items-center gap-2">
                         <div
-                            className="w-12 h-5 border border-gray-400 relative bg-white text-[9px] flex items-center justify-center font-bold">
-                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[rgb(193,0,207)]"></div>
+                            className="w-12 h-5 border border-gray-400 relative bg-white text-[9px] flex items-center justify-center font-bold"
+                            style={{
+                                borderBottomColor: localStorage.getItem('scheduler_bottom_border_color') || '#c100cf',
+                                borderBottomWidth: `${localStorage.getItem('scheduler_bottom_border_width') || '2'}px`
+                            }}
+                        >
                             <span className="z-10">Задание</span>
                         </div>
                         <span className="text-xs text-gray-600">Задание на выбранную дату</span>
