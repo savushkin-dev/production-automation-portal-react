@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react'
 import {isCleaningItem, isDelayItem, isFactItem, isPackagedItem} from "../../utils/scheduler/items";
 import {formatIsoToDateOnly, formatIsoToDatetimeRegex} from "../../utils/date/date";
 import SchedulerService from "../../services/ScheduleService";
+import moment from "moment";
 
 export function ModalInfoItem({item, onClose, lines, determineFactPlace, determineCameraFact, clickedCameras, setClickedCameras,
                                   setModalError, setErrorMsg}) {
@@ -32,8 +33,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
     async function fetchDowntimePeriods() {
         try {
             const response = await SchedulerService.getDowntimePeriodsByIdBatch(item.info.idBatch)
-            const repeated = [].concat(...Array(3).fill(response.data.downtime));
-            setDowntimePeriods(repeated);
+            setDowntimePeriods(response.data.downtime);
         } catch (e) {
             setErrorMsg("Не удалось получить список версий плана: " + e.response.data.message)
             setModalError(true);
@@ -128,15 +128,42 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                                 </div>
                             }
 
-                            <div className="flex flex-row px-4">
-                                <span className={styleLable}>{!isDelayItem(item) ? "Начало по плану:" : "Начало:"}</span>
-                                <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.start) || "-"}</span>
-                            </div>
+                            {!isCleaningItem(item) &&
+                                <>
+                                    <div className="flex flex-row px-4">
+                                <span
+                                    className={styleLable}>{!isDelayItem(item) ? "Начало по плану:" : "Начало:"}</span>
+                                        <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.start) || "-"}</span>
+                                    </div>
 
-                            <div className="flex flex-row px-4">
-                                <span className={styleLable}>{!isDelayItem(item) ? "Конец по плану:" : "Конец:"}</span>
-                                <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.end) || ""}</span>
-                            </div>
+                                    <div className="flex flex-row px-4">
+                                        <span className={styleLable}>{!isDelayItem(item) ? "Конец по плану:" : "Конец:"}</span>
+                                        <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.end) || ""}</span>
+                                    </div>
+                                </>
+                            }
+
+                            {isCleaningItem(item) &&
+                                <>
+                                    <div className="flex flex-row px-4">
+                                <span
+                                    className={styleLable}>{"Начало по плану:"}</span>
+                                        <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.start) || "-"}</span>
+                                    </div>
+
+                                    <div className="flex flex-row px-4">
+                                        <span className={styleLable}>{"Конец по плану:"}</span>
+                                        <span className={styleInfo}>{formatIsoToDatetimeRegex(
+                                            moment(item.info.start).add(item.info.cleaningDurationPlan, 'minutes').format('YYYY-MM-DDTHH:mm:ss')) || ""}</span>
+                                    </div>
+
+                                    <div className="flex flex-row px-4">
+                                        <span className={styleLable}>{"Конец по факту:"}</span>
+                                        <span
+                                            className={styleInfo}>{formatIsoToDatetimeRegex(item.info.cleaningDelayEndDateTime) || ""}</span>
+                                    </div>
+                                </>
+                            }
 
                             {!isCleaningItem(item) && !isDelayItem(item) && !item.info.maintenance && isFact &&
                                 <div>
