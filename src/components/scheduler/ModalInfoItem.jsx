@@ -33,8 +33,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
     async function fetchDowntimePeriods() {
         try {
             const response = await SchedulerService.getDowntimePeriodsByIdBatch(item.info.idBatch)
-            const repeated = [].concat(...Array(3).fill(response.data.downtime));
-            setDowntimePeriods(repeated);
+            setDowntimePeriods(response.data.downtime);
         } catch (e) {
             setErrorMsg("Не удалось получить список версий плана: " + e.response.data.message)
             setModalError(true);
