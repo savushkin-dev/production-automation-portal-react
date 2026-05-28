@@ -44,8 +44,13 @@ export function Navigation(props) {
 
 
                 </div>
-                <div className="flex h-full flex-row  font-medium w-full px-3 text-white items-center bg-blue-800">
-                    <span className="font-medium  text-white px-3 w-full">Автоматизация производства</span>
+                <div className="flex flex-row h-full font-medium w-full px-3 text-white items-center bg-blue-800">
+                    <span className="font-medium text-white px-3 ">Автоматизация производства</span>
+
+                    <span className="mx-1 text-white">|</span>
+                    <span className="text-white font-medium px-3">
+                        {process.env.REACT_APP_PRODUCTION_BRANCH_NAME}
+                    </span>
 
                 </div>
             </div>
