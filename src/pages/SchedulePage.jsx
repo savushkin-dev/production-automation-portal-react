@@ -16,29 +16,19 @@ import {observer} from "mobx-react-lite";
 import {ModalConfirmation} from "../components/modal/ModalConfirmation";
 import {DropDownActionsItem} from "../components/scheduler/DropDownActionsItem";
 import {ModalMoveJobs} from "../components/scheduler/ModalMoveJobs";
-import {DataTable} from "../components/scheduler/DataTable";
 import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
 import {ModalUpdateServiceWork} from "../components/scheduler/ModalUpdateServiceWork";
 import {MyTimeline} from "../components/scheduler/MyTimeline";
 import {convertLinesWithTimeFields, isValidLinesDate} from "../utils/scheduler/lines";
 import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
 import {createTimelineRenderersSheduler} from "../components/scheduler/TimelineItemRenderer";
-import {
-    getDateCurrent,
-    getDateMinus1,
-    getDateMinus2,
-    getDatePlus1,
-    getDatePlus2,
-    getDatePlus3, getDatePlus4, getDatePlus5, getDatePlus6, getDatePlus7,
-    groupDataByDay
-} from "../utils/scheduler/pdayParsing";
+import {groupDataByDay} from "../utils/scheduler/pdayParsing";
 import {
     calculateTimeToNext8AM,
     filterGroupItems, getLastItemIndexInGroup,
     isCleaningItem,
     isDelayItem,
     isFactItem,
-    isMaintenanceItem,
     isPackagedItem
 } from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
@@ -110,6 +100,7 @@ function SchedulerPage() {
 
     const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0]);
     const [planVersion, setPlanVersion] = useState("Основной план");
+    const [isDropdownButtonOpen, setIsDropdownButtonOpen] = useState(false);
 
     const [modalSortConfig, setModalSortConfig] = useState({
         isOpen: false,
@@ -976,6 +967,17 @@ function SchedulerPage() {
         }
     }
 
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            // Проверяем, что клик был не по нашему dropdown контейнеру
+            const dropdownContainer = document.querySelector('.relative');
+            if (dropdownContainer && !dropdownContainer.contains(event.target)) {
+                setIsDropdownButtonOpen(false);
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
     return (
         <>
@@ -1010,13 +1012,7 @@ function SchedulerPage() {
                 </div>
 
                 <div className="flex flex-row">
-                    <div className="w-2/6 pl-4   flex justify-between">
-
-                        <button onClick={()=>{setIsModalReports(true)}}
-                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
-                            Экспорт отчетов
-                            <i className="pl-2 fa-solid fa-file-arrow-down"></i>
-                        </button>
+                    <div className="w-2/6 flex justify-start">
 
                         <div
                             className="ml-4 flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-gray-200 shadow-sm">
@@ -1025,43 +1021,101 @@ function SchedulerPage() {
                             <span className="text-sm font-medium text-gray-700 max-w-[180px] truncate">
                                 {planVersion}
                             </span>
-                            <button
-                                onClick={() => {
-                                    setIsModalVersionSettings(true)
-                                }}
-                                className="ml-1 px-2.5 h-6 rounded-full bg-gray-100 hover:bg-gray-600 text-gray-500 hover:text-white flex items-center justify-center gap-1.5 transition-all duration-200"
-                                title="Управление версиями"
-                            >
-                                <i className="fa-solid fa-pen text-xs"></i>
-                                <span className="text-xs font-medium hidden sm:inline">Управлять</span>
-                            </button>
                         </div>
 
                     </div>
 
+
                     <div className="w-4/6 py-1 flex justify-end pr-3 gap-1">
-                        <button onClick={assignAllPauses}
+
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsDropdownButtonOpen(!isDropdownButtonOpen)}
+                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600"
+                            >
+                                Доп. функции
+                                {isDropdownButtonOpen ? (
+                                    <i className="pl-2 fa-solid fa-chevron-up"></i>
+                                ) : (
+                                    <i className="pl-2 fa-solid fa-chevron-down"></i>
+                                )}
+                            </button>
+
+                            {/* Выпадающее меню */}
+                            {isDropdownButtonOpen && (
+                                <div
+                                    className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                                    <button
+                                        onClick={() => {
+                                            assignAllPauses();
+                                            setIsDropdownButtonOpen(false);
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-[0.900rem] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 flex items-center justify-between"
+                                    >
+                                        Добавить простои
+                                        <i className="fa-solid fa-stopwatch"></i>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            dailyCleaning();
+                                            setIsDropdownButtonOpen(false);
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-[0.900rem] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 flex items-center justify-between"
+                                    >
+                                        Добавить мойки
+                                        <i className="fa-solid fa-faucet-drip"></i>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            alignPlan();
+                                            setIsDropdownButtonOpen(false);
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-[0.900rem] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 flex items-center justify-between"
+                                    >
+                                        Выровнять план
+                                        <i className="fa-solid fa-align-right"></i>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            reloadDirectory();
+                                            setIsDropdownButtonOpen(false);
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-[0.900rem] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 flex items-center justify-between"
+                                    >
+                                        Обновить справочные данные
+                                        <i className="fa-solid fa-cloud-arrow-down"></i>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setIsModalVersionSettings(true);
+                                            setIsDropdownButtonOpen(false);
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-[0.900rem] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 flex items-center justify-between"
+                                    >
+                                        <span>Управление версиями</span>
+                                        <i className="fa-solid fa-code-branch "></i>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <button onClick={() => {
+                            setIsModalReports(true)
+                        }}
                                 className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
-                            Добавить простои
-                            <i className="pl-2 fa-solid fa-stopwatch"></i>
+                            Экспорт отчетов
+                            <i className="pl-2 fa-solid fa-file-arrow-down"></i>
                         </button>
 
-                        <button onClick={dailyCleaning}
-                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
-                            Добавить мойки
-                            <i className="pl-2 fa-solid fa-faucet-drip"></i>
-                        </button>
-
+                        {/* Основные кнопки */}
                         <button onClick={sortSchedule}
                                 className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
                             Отсортировать
                             <i className="pl-2 fa-solid fa-sort"></i>
-                        </button>
-
-                        <button onClick={alignPlan}
-                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
-                            Выровнять план
-                            <i className="pl-2 fa-solid fa-align-right"></i>
                         </button>
 
                         <button onClick={clickSavePlan}
@@ -1070,11 +1124,6 @@ function SchedulerPage() {
                             <i className="pl-2 fa-solid fa-floppy-disk"></i>
                         </button>
 
-                        <button onClick={reloadDirectory}
-                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
-                            Обновить справочные данные
-                            <i className="pl-2 fa-solid fa-cloud-arrow-down"></i>
-                        </button>
                     </div>
                 </div>
 
