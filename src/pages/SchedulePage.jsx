@@ -50,6 +50,7 @@ import AuthLabel from "../components/AuthLabel";
 import {ModalVersionSettings} from "../components/scheduler/ModalVersionSettings";
 import {SchedulerDataTables} from "../components/scheduler/SchedulerDataTables";
 import {ModalColorsSettings} from "../components/scheduler/ModalColorsSettings";
+import {ModalReports} from "../components/scheduler/ModalReports";
 
 
 function SchedulerPage() {
@@ -93,6 +94,7 @@ function SchedulerPage() {
     const [isModalSavePlan, setIsModalSavePlan] = useState(false);
     const [isModalUpdateDelay, setIsModalUpdateDelay] = useState(false);
     const [isModalColorsSettings, setIsModalColorsSettings] = useState(false);
+    const [isModalReports, setIsModalReports] = useState(false);
 
 
     const [isSolve, setIsSolve] = useState(false);
@@ -1008,7 +1010,13 @@ function SchedulerPage() {
                 </div>
 
                 <div className="flex flex-row">
-                    <div className="w-2/6 flex justify-end">
+                    <div className="w-2/6 pl-4   flex justify-between">
+
+                        <button onClick={()=>{setIsModalReports(true)}}
+                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
+                            Экспорт отчетов
+                            <i className="pl-2 fa-solid fa-file-arrow-down"></i>
+                        </button>
 
                         <div
                             className="ml-4 flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-gray-200 shadow-sm">
@@ -1331,6 +1339,11 @@ function SchedulerPage() {
                 {isModalColorsSettings &&
                     <ModalColorsSettings onClose={() => setIsModalColorsSettings(false)}
                                          onSave={() => setTimelineKey(prev => prev + 1)}/>
+                }
+
+                {isModalReports &&
+                    <ModalReports onClose={()=>{setIsModalReports(false)}}
+                                  setModalError={setIsModalNotifyError} setErrorMsg={setMsg}/>
                 }
 
 
