@@ -32,9 +32,6 @@ function Authorization() {
         });
     }
 
-    useEffect(() => {
-        store.logout();
-    }, [])
 
     useEffect(() => {
         const handleGlobalKeyPress = (event) => {
