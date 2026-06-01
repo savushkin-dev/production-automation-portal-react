@@ -1,4 +1,3 @@
-// store.js
 import {makeAutoObservable} from "mobx";
 import AuthService from "../services/AuthService";
 

@@ -1,4 +1,3 @@
-// http/index.js
 import axios from "axios";
 
 export const API_URL = `${process.env.REACT_APP_API_BASE_URL}`
@@ -25,7 +24,7 @@ const processQueue = (error, token = null) => {
 
 // Request interceptor
 $api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('accessToken'); // ИСПРАВИЛ название
+    const token = localStorage.getItem('accessToken');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }

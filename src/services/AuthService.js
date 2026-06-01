@@ -1,4 +1,3 @@
-// AuthService.js
 import $api, {API_URL} from "../http";
 
 export default class AuthService {
@@ -6,14 +5,9 @@ export default class AuthService {
     static async login(username, password) {
         const response = await $api.post(`${API_URL}/api/authentication/authenticate`, {username, password});
 
-        // ДОБАВЬ ЭТОТ ЛОГ:
-        console.log('Login response:', response.data);
-
-        // Сохраняем оба токена
         if (response.data.accessToken && response.data.refreshToken) {
             localStorage.setItem('accessToken', response.data.accessToken);
             localStorage.setItem('refreshToken', response.data.refreshToken);
-            console.log('Tokens saved successfully');
         } else {
             console.error('No tokens in response!', response.data);
         }
@@ -41,7 +35,6 @@ export default class AuthService {
         return response;
     }
 
-    // Logout
     static async logout() {
         try {
             const accessToken = localStorage.getItem('accessToken');
