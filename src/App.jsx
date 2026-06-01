@@ -29,6 +29,10 @@ function App() {
         }
     }, [])
 
+    setInterval(() => {
+        store.checkAuth();
+    }, 30000);
+
 
     if (isCheckAuth) {
         return (
