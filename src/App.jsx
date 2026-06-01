@@ -16,7 +16,6 @@ import AuthorizationScheduler from "./pages/AuthorizationScheduler";
 
 function App() {
 
-
     const {store} = useContext(Context);
 
     const [isCheckAuth, setIsCheckAuth] = useState(false);
@@ -42,12 +41,11 @@ function App() {
                     <Route path="/tracktrace" element={<TrackTracePage/>}/>
 
 
-
-                    <Route path="/designer" element={<PrivateRoute requiredRoles={['ROLE_ADMIN', 'ROLE_EDITOR']} />}>
+                    <Route path="/designer" element={<PrivateRoute requiredRoles={['ROLE_EDITOR']} />}>
                         <Route index element={<ReportDesignerPage/>}/>
                     </Route>
 
-                    {/*<Route path="/scheduler" element={<PrivateRoute requiredRoles={['ROLE_ADMIN', 'ROLE_SCHEDULER']} />}>*/}
+                    {/*<Route path="/scheduler" element={<PrivateRoute requiredRoles={['ROLE_SCHEDULER']} />}>*/}
                     {/*    <Route index element={<SchedulePage/>}/>*/}
                     {/*</Route>*/}
 
