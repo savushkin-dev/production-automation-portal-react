@@ -599,7 +599,7 @@ export default class ScheduleService {
     }
 
     static async getDowntimePeriodsByIdBatch(idBatch) {
-        return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/downtimePeriods/` + idBatch)
+        return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/downtimePeriods/` + idBatch + "?duration=5")
     }
 
     static async getUserLogReport(from, to) {
