@@ -77,6 +77,10 @@ $api.interceptors.response.use(
                         localStorage.setItem('refreshToken', response.data.refreshToken);
                     }
 
+                    if (window.store && window.store.checkAuth) {
+                        await window.store.checkAuth();
+                    }
+
                     processQueue(null, response.data.accessToken);
                     originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
                     return $api(originalRequest);

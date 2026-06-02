@@ -11,6 +11,8 @@ import 'react-resizable/css/styles.css';
 
 const store = new Store();
 
+window.store = store;
+
 export const Context = createContext({
     store,
 })
