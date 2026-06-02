@@ -32,10 +32,6 @@ function AuthorizationScheduler() {
         });
     }
 
-    useEffect(() => {
-        store.logout();
-    }, [])
-
 
     return (
         <div
