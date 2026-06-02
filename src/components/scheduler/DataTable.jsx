@@ -19,6 +19,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
             UX: item.priority || 0,
             PDTN: item.startProductionDateTime || null,
             isSelected: selectJobs[item.snpz].isSelect || false,
+            isLabeling: item.handPackaging || false,
 
             startPlan: item.startProductionDateTime,
             line: item.lineId
