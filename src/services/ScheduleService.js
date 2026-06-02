@@ -602,4 +602,16 @@ export default class ScheduleService {
         return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/downtimePeriods/` + idBatch)
     }
 
+    static async getUserLogReport(from, to) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/userLogReport`, {from, to}, {
+            responseType: 'blob'
+        })
+    }
+
+    static async getCleaningReport(from, to) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/cleaningReport`, {from, to}, {
+            responseType: 'blob'
+        })
+    }
+
 }

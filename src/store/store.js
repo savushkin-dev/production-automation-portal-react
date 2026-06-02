@@ -6,18 +6,22 @@ export default class Store {
     user = {
         username: "",
         userRoles: []
-    } ;
+    };
     isAuth = false;
     isAuthInProgress = false;
-
     solverSessionId = null;
 
     constructor() {
-        makeAutoObservable(this)
+        makeAutoObservable(this);
         this.restoreSession();
+
+        // Проверяем авторизацию при загрузке
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            this.checkAuth();
+        }
     }
 
-    // Восстановление сессии
     restoreSession() {
         const saved = sessionStorage.getItem('solverSessionId');
         if (saved) {
@@ -27,7 +31,6 @@ export default class Store {
         }
     }
 
-    // Создание новой сессии
     async createSession() {
         try {
             const sessionId = `id_${Date.now()}`;
@@ -35,94 +38,87 @@ export default class Store {
             sessionStorage.setItem('solverSessionId', sessionId);
             return sessionId;
         } catch (error) {
-            console.error("Ошибка получения IP:", error);
+            console.error("Ошибка создания сессии:", error);
             return null;
         }
     }
 
-    // Очистка сессии
     clearSession() {
         this.solverSessionId = null;
         sessionStorage.removeItem('solverSessionId');
     }
 
-    setAuth(bool){
+    setAuth(bool) {
         this.isAuth = bool;
     }
 
-    setUser(user){
+    setUser(user) {
         this.user = user;
-        this.userRoles = user.roles || [];
+        this.user.userRoles = user.roles || [];
     }
 
-    async login(username, password){
+    async login(username, password) {
         this.isAuthInProgress = true;
         try {
-            localStorage.removeItem('tokenAutomationProduction');
-            const response = await AuthService.login(username,password);
-            localStorage.setItem('tokenAutomationProduction', response.data.uuid);
-            await this.checkAuth()
-        } catch (e){
+            const response = await AuthService.login(username, password);
+            await this.checkAuth(); // Загружаем данные пользователя
+            return response;
+        } catch (e) {
+            console.error('Login error:', e);
             throw e;
         } finally {
             this.isAuthInProgress = false;
         }
     }
 
-    async logout(){
+    async logout() {
         try {
-            // const response = await AuthService.logout(); //не реализовано на сервере
-            localStorage.removeItem('tokenAutomationProduction');
+            await AuthService.logout();
+        } catch (e) {
+            console.log(e.response?.data?.message);
+        } finally {
             this.setAuth(false);
             this.setUser({});
-        } catch (e){
-            console.log(e.response?.data?.message)
         }
     }
 
-    async checkAuth(){
+    async checkAuth() {
         this.isAuthInProgress = true;
         try {
-            // const response = await AuthService.getAuthorizedUserData();
-            // console.log(response)
-            this.setAuth(true);
-            const token = AuthService.decodeToken(localStorage.getItem("tokenAutomationProduction"));
-            this.user.username = token?.username || "";
-            this.user.userRoles = token?.roles || [];
-            // console.log( this.user.userRoles)
-        } catch (e){
-            console.log(e.response?.data?.message)
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                this.setAuth(false);
+                return;
+            }
+
+            // Декодируем токен для получения информации о пользователе
+            const decoded = AuthService.decodeToken(token);
+            if (decoded && decoded.username) {
+                this.user.username = decoded.username;
+                this.user.userRoles = decoded.roles || [];
+                this.setAuth(true);
+            } else {
+                this.setAuth(false);
+            }
+        } catch (e) {
+            console.error('Check auth error:', e);
+            this.setAuth(false);
         } finally {
             this.isAuthInProgress = false;
         }
     }
 
-    async updateAuth(){
-        try {
-            const response = await AuthService.getAuthorizedUserData(); //временно, после доделать запрос на refresh и валидность токена
-            // console.log(response)
-            this.setAuth(true);
-            this.setUser(response.data);
-        } catch (e){
-            console.log(e.response?.data?.message)
-        }
-    }
-
-    // метод проверки ролей
     hasRole(requiredRoles) {
         if (!requiredRoles || requiredRoles.length === 0) return true;
         return requiredRoles.some(role => this.user.userRoles.includes(role));
     }
 
-    // метод проверки любой из ролей
     hasAnyRole(requiredRoles) {
         return this.hasRole(requiredRoles);
     }
 
-    // метод проверки всех ролей
     hasAllRoles(requiredRoles) {
         if (!requiredRoles || requiredRoles.length === 0) return true;
         return requiredRoles.every(role => this.user.userRoles.includes(role));
     }
-
 }

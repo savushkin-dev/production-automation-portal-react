@@ -11,13 +11,10 @@ import SchedulePage from "./pages/SchedulePage";
 import AdminPanelPage from "./pages/AdminPanelPage";
 import TrackTracePage from "./pages/TrackTracePage";
 import {configureMomentLocale} from "./utils/date/momentConfig";
-import {TestGrid} from "./components/reportsConstruct/TestGrid";
-import {TestApp} from "./components/reportsConstruct/TestApp";
 import AuthorizationScheduler from "./pages/AuthorizationScheduler";
 
 
 function App() {
-
 
     const {store} = useContext(Context);
 
@@ -25,7 +22,7 @@ function App() {
 
     useEffect(() => {
         configureMomentLocale();
-        if (localStorage.getItem('tokenAutomationProduction')) {
+        if (localStorage.getItem('accessToken')) {
             store.checkAuth().then(() => setIsCheckAuth(true));
         } else {
             setIsCheckAuth(true)
@@ -43,16 +40,12 @@ function App() {
                     <Route path="/scheduler" element={<SchedulePage/>}/>
                     <Route path="/tracktrace" element={<TrackTracePage/>}/>
 
-                    <Route path="/testparam" element={<TestGrid/>}/>
-                    <Route path="/test-layout" element={<TestApp />} />
 
-
-
-                    <Route path="/designer" element={<PrivateRoute requiredRoles={['ROLE_ADMIN', 'ROLE_EDITOR']} />}>
+                    <Route path="/designer" element={<PrivateRoute requiredRoles={['ROLE_EDITOR']} />}>
                         <Route index element={<ReportDesignerPage/>}/>
                     </Route>
 
-                    {/*<Route path="/scheduler" element={<PrivateRoute requiredRoles={['ROLE_ADMIN', 'ROLE_SCHEDULER']} />}>*/}
+                    {/*<Route path="/scheduler" element={<PrivateRoute requiredRoles={['ROLE_SCHEDULER']} />}>*/}
                     {/*    <Route index element={<SchedulePage/>}/>*/}
                     {/*</Route>*/}
 
