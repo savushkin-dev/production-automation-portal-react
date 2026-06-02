@@ -5,6 +5,7 @@ import Loading from "../components/loading/Loading";
 import React, {useEffect, useState} from "react";
 import UserService from "../services/UserService";
 import {ModalNotify} from "../components/modal/ModalNotify";
+import {ModalConfirmation} from "../components/modal/ModalConfirmation";
 
 function AdminPanelPage() {
 
@@ -12,12 +13,22 @@ function AdminPanelPage() {
     const [msg, setMsg] = useState(null);
 
     const [isModalNotify, setIsModalNotify] = useState(false);
+    const [isModalAddUser, setIsModalAddUser] = useState(false);
+    const [isModalConfirmation, setIsModalConfirmation] = useState(false);
 
     const [users, setUsers] = useState([])
     const [selectedUser, setSelectedUser] = useState(null);
     const [selectedRoles, setSelectedRoles] = useState([]);
     const [availableRoles, setAvailableRoles] = useState([])
 
+    const [userToDelete, setUserToDelete] = useState(null);
+
+    // Данные для нового пользователя
+    const [newUser, setNewUser] = useState({
+        username: '',
+        password: '',
+        roles: ['ROLE_VIEWER']
+    });
 
     useEffect(() => {
         fetchUsers();
@@ -31,7 +42,7 @@ function AdminPanelPage() {
             const response = await UserService.getAllUsers();
             setUsers(response.data);
         } catch (e) {
-            setMsg(e.response.data.message);
+            setMsg(e.response?.data?.message || "Ошибка при загрузке пользователей");
             setIsModalNotify(true);
         } finally {
             setIsLoading(false);
@@ -44,7 +55,7 @@ function AdminPanelPage() {
             const response = await UserService.getAvailableRoles();
             setAvailableRoles(response.data.map(role => role.name));
         } catch (e) {
-            setMsg(e.response.data.message);
+            setMsg(e.response?.data?.message || "Ошибка при загрузке ролей");
             setIsModalNotify(true);
         } finally {
             setIsLoading(false);
@@ -77,11 +88,103 @@ function AdminPanelPage() {
             setSelectedUser(null);
             setSelectedRoles([]);
         } catch (e) {
-            setMsg(e.response.data.message);
+            setMsg(e.response?.data?.message || "Ошибка при обновлении ролей");
         } finally {
             setIsLoading(false);
             setIsModalNotify(true);
         }
+    };
+
+    const handleDeleteUser = async (user) => {
+        setUserToDelete(user);
+        setMsg(`Вы уверены, что хотите удалить пользователя "${user.username}"?`);
+        setIsModalConfirmation(true)
+    };
+
+    const deleteUser = async () => {
+        if (!userToDelete) return;
+
+        try {
+            setIsLoading(true);
+            await UserService.deleteUser(userToDelete.id);
+            setUsers(prevUsers => prevUsers.filter(u => u.id !== userToDelete.id));
+            if (selectedUser?.id === userToDelete.id) {
+                setSelectedUser(null);
+                setSelectedRoles([]);
+            }
+            setMsg(`Пользователь "${userToDelete.username}" успешно удален`);
+            setIsModalNotify(true);
+        } catch (e) {
+            setMsg(e.response?.data?.message || "Ошибка при удалении пользователя");
+            setIsModalNotify(true);
+        } finally {
+            setIsLoading(false);
+            setIsModalConfirmation(false);
+            setUserToDelete(null);
+        }
+    };
+
+
+    const handleAddUser = async () => {
+        // Валидация
+        if (!newUser.username.trim()) {
+            setMsg("Введите имя пользователя");
+            setIsModalNotify(true);
+            return;
+        }
+
+        if (!newUser.password) {
+            setMsg("Введите пароль");
+            setIsModalNotify(true);
+            return;
+        }
+
+        if (newUser.password.length < 4) {
+            setMsg("Пароль должен содержать минимум 4 символа");
+            setIsModalNotify(true);
+            return;
+        }
+
+        // Убираем ROLE_VIEWER из выбранных ролей, так как она добавится автоматически на бэке
+        const rolesToSend = newUser.roles.filter(role => role !== "ROLE_VIEWER");
+
+        try {
+            setIsLoading(true);
+            const response = await UserService.createUser({
+                username: newUser.username,
+                password: newUser.password,
+                roles: rolesToSend
+            });
+            setUsers(prevUsers => [...prevUsers, response.data]);
+            setMsg(`Пользователь "${newUser.username}" успешно создан`);
+            setIsModalAddUser(false);
+            resetNewUserForm();
+            setIsModalNotify(true);
+        } catch (e) {
+            setMsg(e.response?.data?.message || "Ошибка при создании пользователя");
+            setIsModalNotify(true);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const resetNewUserForm = () => {
+        setNewUser({
+            username: '',
+            password: '',
+            roles: ['ROLE_VIEWER']
+        });
+    };
+
+    const handleNewUserRoleToggle = (role) => {
+        if (role === "ROLE_VIEWER") return;
+
+        setNewUser(prev => ({
+            ...prev,
+            roles: prev.roles.includes(role)
+                ? prev.roles.filter(r => r !== role)
+                : [...prev.roles, role]
+        }));
     };
 
     function handleCloseEdit() {
@@ -115,14 +218,19 @@ function AdminPanelPage() {
                 {isLoading && <Loading/>}
 
                 {!isLoading && <>
-                    {/* Шапка с заголовком */}
                     <div className="flex flex-row py-3 px-8 border-b-2 bg-white shadow-sm">
                         <div
                             className="flex justify-between w-2/6 text-2xl font-medium items-center text-center">
                             <span className="text-xl font-bold text-gray-800">Панель администратора</span>
                         </div>
                         <div className="flex flex-row justify-end w-4/6">
-
+                            <button onClick={() => {
+                                setIsModalAddUser(true)
+                            }}
+                                    className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md bg-blue-800 hover:bg-blue-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]">
+                                Добавить пользователя
+                                <i className="pl-2 fa-solid fa-user-plus"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -131,7 +239,7 @@ function AdminPanelPage() {
                             <div className="w-[4px] h-8 bg-blue-600 rounded-full flex-shrink-0"></div>
                             <div className="flex-1">
                                 <p className="text-sm text-gray-600 leading-relaxed">
-                                    Управление пользователями и их ролями. Выберите пользователя для
+                                Управление пользователями и их ролями. Выберите пользователя для
                                     редактирования
                                     и назначьте ему соответствующие роли из списка доступных.
                                 </p>
@@ -144,7 +252,6 @@ function AdminPanelPage() {
                         </div>
                     </div>
 
-                    {/* Основной контент */}
                     <div className="px-8 py-6">
                         <div className="flex flex-row gap-6">
                             <div className="border rounded-lg bg-white shadow-sm w-3/4">
@@ -187,8 +294,8 @@ function AdminPanelPage() {
                                                         {user.roles.map((role, idx) => (
                                                             <span key={idx}
                                                                   className={`${getBgColor(role.name)} px-2 py-0.5 rounded-full text-sm font-medium text-white inline-block`}>
-                                                    {role.name.substring(5)}
-                                                </span>
+                                                                {role.name.substring(5)}
+                                                            </span>
                                                         ))}
                                                     </div>
                                                 ) : (
@@ -198,13 +305,20 @@ function AdminPanelPage() {
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="w-1/5 py-1 px-1 text-center">
+                                            <div className="w-1/5 py-1 px-1 text-center flex gap-2 justify-center">
                                                 <button
                                                     className="px-3 py-1 text-sm font-medium border rounded bg-gray-100 text-gray-700 hover:bg-gray-700 hover:text-white transition-colors"
                                                     onClick={() => handleUserSelect(user)}
+                                                    title="Редактировать роли"
                                                 >
-                                                    Редактировать
-                                                    <i className=" pl-2 fa-solid fa-user-pen"></i>
+                                                    <i className="fa-solid fa-user-pen"></i>
+                                                </button>
+                                                <button
+                                                    className="px-3 py-1 text-sm font-medium border rounded bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-colors"
+                                                    onClick={() => handleDeleteUser(user)}
+                                                    title="Удалить пользователя"
+                                                >
+                                                    <i className="fa-solid fa-trash"></i>
                                                 </button>
                                             </div>
                                         </div>
@@ -259,8 +373,8 @@ function AdminPanelPage() {
                                                                 onChange={() => handleRoleToggle(role)}
                                                             />
                                                             <span className="ml-3 text-sm text-gray-700">
-                                                    {role.substring(5)}
-                                                </span>
+                                                                {role.substring(5)}
+                                                            </span>
                                                             {role === "ROLE_VIEWER" && (
                                                                 <span
                                                                     className="ml-2 text-xs text-gray-400">(обязательная)</span>
@@ -292,15 +406,103 @@ function AdminPanelPage() {
                     </div>
                 </>}
 
+                {/* Модальное окно добавления пользователя */}
+                {isModalAddUser && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+                            <div className="px-6 py-4 border-b bg-blue-800 text-white rounded-t-lg">
+                                <h3 className="text-lg font-medium">Добавление пользователя</h3>
+                            </div>
+
+                            <div className="p-6">
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Логин *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newUser.username}
+                                            onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Введите логин (3-30 символов)"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Пароль *
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={newUser.password}
+                                            onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Введите пароль (мин. 4 символа)"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Роли
+                                        </label>
+                                        <div className="space-y-2 border rounded-md p-3 max-h-48 overflow-auto">
+                                            {availableRoles.map((role, index) => (
+                                                <label key={index}
+                                                       className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 rounded border-gray-300 text-blue-800 focus:ring-blue-500"
+                                                        disabled={role === "ROLE_VIEWER"}
+                                                        checked={newUser.roles.includes(role)}
+                                                        onChange={() => handleNewUserRoleToggle(role)}
+                                                    />
+                                                    <span className="ml-3 text-sm text-gray-700">
+                                                        {role.substring(5)}
+                                                    </span>
+                                                    {role === "ROLE_VIEWER" && (
+                                                        <span className="ml-2 text-xs text-gray-400">(обязательная)</span>
+                                                    )}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="px-6 py-4 border-t bg-gray-50 rounded-b-lg flex justify-end gap-2">
+                                <button
+                                    onClick={() => {
+                                        setIsModalAddUser(false);
+                                        resetNewUserForm();
+                                    }}
+                                    className="px-4 py-2 text-sm font-medium rounded border border-gray-300 hover:bg-gray-50 transition-colors"
+                                >
+                                    Отмена
+                                </button>
+                                <button
+                                    onClick={handleAddUser}
+                                    className="px-4 py-2 text-sm font-medium rounded bg-blue-800 text-white hover:bg-blue-700 transition-colors"
+                                >
+                                    Создать
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {isModalNotify &&
                     <ModalNotify title={"Результат операции"} message={msg}
                                  onClose={() => setIsModalNotify(false)}/>
                 }
+
+                {isModalConfirmation &&
+                    <ModalConfirmation title={"Подтверждение удаления"} message={msg} onClose={()=> setIsModalConfirmation(false)}
+                    onAgree={deleteUser} onDisagree={()=> setIsModalConfirmation(false)}/>
+                }
             </div>
-
-
         </div>
     </>)
 }
 
-export default observer(AdminPanelPage)
+export default observer(AdminPanelPage);
