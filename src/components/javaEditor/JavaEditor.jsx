@@ -277,7 +277,7 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
 
                             <div
                                 ref={containerRef}
-                                className="overflow-x-hidden overflow-y-scroll"
+                                className="overflow-x-hidden overflow-y-scroll py-1"
                                 style={{position: 'relative', maxHeight: 'calc(100vh - 300px)'}}
                             >
                                 {parameters.length > 0 ? (
