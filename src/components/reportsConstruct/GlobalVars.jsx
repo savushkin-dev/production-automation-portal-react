@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { ModalNotify } from "../modal/ModalNotify";
 import ReportService from "../../services/ReportService";
 import {decryptData, encryptData} from "../../utils/Сrypto";
+import {BlueButton} from "./buttons/BlueButton";
+import {GrayButton} from "./buttons/GrayButton";
+import {WhiteButton} from "./buttons/WhiteButton";
 
 export function GlobalVars({ onClose }) {
     const [variables, setVariables] = useState([]);
@@ -359,24 +362,13 @@ export function GlobalVars({ onClose }) {
         <div className="flex flex-col h-screen bg-gray-50">
             <div className="flex flex-row py-3 px-8 border-b-2 bg-white shadow-sm">
                 <div className="flex justify-between w-2/6 text-2xl font-medium items-center text-center">
-                    <span className="gjs-pn-btn font-medium gjs-two-color">Глобальные переменные</span>
+                    <span className="text-xl font-bold text-gray-700">Глобальные переменные</span>
                 </div>
 
-                <div className="flex flex-row justify-end w-4/6 gap-2">
-                    <button
-                        onClick={saveAllChanges}
-                        className={`min-w-[50px] px-3 h-7 rounded text-sm font-medium text-white bg-blue-800 hover:bg-blue-700 flex items-center gap-2 ${editingKey ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        disabled={!!editingKey}
-                        title={editingKey ? "Сначала завершите редактирование" : "Сохранить переменные"}
-                    >
-                        Сохранить переменные
-                    </button>
-                    <button
-                        onClick={onClose}
-                        className="min-w-[50px] px-3 mx-2 h-7 rounded text-sm font-medium shadow-sm border border-slate-400 hover:bg-gray-200"
-                    >
-                        Закрыть
-                    </button>
+                <div className="flex flex-row justify-end w-4/6 gap-3">
+                    <BlueButton onClick={saveAllChanges} text={"Сохранить переменные"} disabled={!!editingKey}
+                                title={editingKey ? "Сначала завершите редактирование" : "Сохранить переменные"}/>
+                    <WhiteButton onClick={onClose} text={"Вернуться в конструктор"}/>
                 </div>
             </div>
 

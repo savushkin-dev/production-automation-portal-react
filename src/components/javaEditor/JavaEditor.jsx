@@ -222,7 +222,7 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
             <div className="flex flex-col">
                 <div className="flex flex-row py-3 px-8">
                     <div className="flex justify-between w-3/5 items-center text-center">
-                        <span className="text-xl font-medium text-gray-800">Редактор скрипта</span>
+                        <span className="text-xl font-bold text-gray-700">Редактор скрипта</span>
                         <div className="flex justify-end gap-3">
                             <WhiteButton onClick={importFile} text={"Импортировать отредактированный файл"} icon={"fa-solid fa-download"}/>
                             <WhiteButton onClick={exportJavaFile} text={"Экспортировать файл для редактирования"} icon={"fa-solid fa-upload"}/>

@@ -1800,7 +1800,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                     <div className=" gjs-two-color gjs-one-bg flex flex-row justify-between gjs-pn-commands py-1">
                         <div className="flex justify-between text-center items-center pl-2 w-1/2">
-                            <div>
+                            <div className="pl-4">
                                 <span className="text-lg font-medium">Конструктор отчетов</span>
                                 <span className="px-2 text-lg">
                                      <i className="fa-solid fa-pencil"></i>

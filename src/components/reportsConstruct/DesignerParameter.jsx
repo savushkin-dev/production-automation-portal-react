@@ -10,6 +10,8 @@ import {
     ROW_HEIGHT
 } from "../../utils/report/designerParameter";
 import {ModalNotify} from "../modal/ModalNotify";
+import {BlueButton} from "./buttons/BlueButton";
+import {WhiteButton} from "./buttons/WhiteButton";
 
 const myCompactor = getCompactor(null, false, true);
 
@@ -402,19 +404,12 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
 
             <div className="flex flex-row py-3 px-8 border-b-2 mb-4">
                 <div className="flex justify-between w-2/6 text-2xl font-medium items-center text-center">
-                    <span className="text-xl font-bold text-gray-800">Дизайнер параметров отчета</span>
+                    <span className="text-xl font-bold text-gray-700">Дизайнер параметров отчета</span>
                 </div>
 
-                <div className="flex flex-row justify-end w-4/6">
-                    <button onClick={saveLayout}
-                            className="min-w-[50px] text-sm h-7 font-medium px-3 py-1 rounded text-white bg-blue-800 hover:bg-blue-700">
-                        Применить разметку
-                    </button>
-                    <button
-                        onClick={onClose}
-                        className="min-w-[50px] px-3 mx-2 h-7 rounded text-sm font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
-                        Закрыть
-                    </button>
+                <div className="flex flex-row justify-end w-4/6 gap-3">
+                    <BlueButton onClick={saveLayout} text={"Применить разметку"}/>
+                    <WhiteButton onClick={onClose} text={"Вернуться в конструктор"}/>
                 </div>
             </div>
 
