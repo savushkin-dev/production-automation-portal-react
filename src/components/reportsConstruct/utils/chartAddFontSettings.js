@@ -3,7 +3,7 @@
 /**
  * Категория для настроек шрифтов в панели свойств
  */
-const fontCategory = { id: 'fontChart', label: 'Шрифты', open: true };
+const fontCategory = { id: 'fontChart', label: 'Шрифты', open: true, order: 1 };
 
 /**
  * Список доступных семейств шрифтов
@@ -28,8 +28,7 @@ const fontFamilyOptions = [
  */
 const fontWeightOptions = [
     { id: 'normal', label: 'Обычный' },
-    { id: 'bold', label: 'Жирный' },
-    { id: 'lighter', label: 'Тонкий' }
+    { id: 'bold', label: 'Жирный' }
 ];
 
 /**
@@ -49,7 +48,10 @@ export const addFontSettings = (component) => {
 
     addFamilyTrait(component);
     addColorTrait(component);
+    addLegendDisplayTrait(component);
     addLegendSizeTrait(component);
+    addTitleFontSizeTrait(component);
+    addSubtitleFontSizeTrait(component);
     addXAxisSizeTrait(component);
     addYAxisSizeTrait(component);
     addWeightTrait(component);
@@ -57,6 +59,22 @@ export const addFontSettings = (component) => {
 
     setupHandlers(component);
     restoreSavedSettings(component);
+};
+
+/**
+ * Добавляет настройку отображения наборов данных
+ */
+const addLegendDisplayTrait = (component) => {
+    component.addTrait({
+        type: 'checkbox',
+        label: 'Отображать наименования наборов данных',
+        name: 'legendDisplay',
+        changeProp: true,
+        valueTrue: 'true',
+        valueFalse: 'false',
+        value: 'true',
+        category: fontCategory
+    });
 };
 
 /**
@@ -94,12 +112,44 @@ const addColorTrait = (component) => {
 const addLegendSizeTrait = (component) => {
     component.addTrait({
         type: 'number',
-        label: 'Размер шрифта легенды',
+        label: 'Размер шрифта данных',
         name: 'legendFontSize',
         changeProp: true,
         value: 12,
-        min: 8,
-        max: 24,
+        min: 6,
+        max: 40,
+        category: fontCategory
+    });
+};
+
+/**
+ * Добавляет настройку размера шрифта заголовка (не применяется в самом редакторе)
+ */
+const addTitleFontSizeTrait = (component) => {
+    component.addTrait({
+        type: 'number',
+        label: 'Размер шрифта заголовка',
+        name: 'titleFontSize',
+        changeProp: true,
+        value: 16,
+        min: 6,
+        max: 40,
+        category: fontCategory
+    });
+};
+
+/**
+ * Добавляет настройку размера шрифта подзаголовка (не применяется в самом редакторе)
+ */
+const addSubtitleFontSizeTrait = (component) => {
+    component.addTrait({
+        type: 'number',
+        label: 'Размер шрифта подзаголовка',
+        name: 'subtitleFontSize',
+        changeProp: true,
+        value: 14,
+        min: 6,
+        max: 40,
         category: fontCategory
     });
 };
@@ -114,8 +164,8 @@ const addXAxisSizeTrait = (component) => {
         name: 'xAxisFontSize',
         changeProp: true,
         value: 11,
-        min: 8,
-        max: 20,
+        min: 6,
+        max: 40,
         category: fontCategory
     });
 };
@@ -130,8 +180,8 @@ const addYAxisSizeTrait = (component) => {
         name: 'yAxisFontSize',
         changeProp: true,
         value: 11,
-        min: 8,
-        max: 20,
+        min: 6,
+        max: 40,
         category: fontCategory
     });
 };
@@ -181,7 +231,10 @@ export const applyFontSettings = (component) => {
     const fontColor = component.get('fontColor');
     const fontWeight = component.get('fontWeight');
     const fontStyle = component.get('fontStyle');
+    const legendDisplay = component.get('legendDisplay');
     const legendFontSize = component.get('legendFontSize');
+    const titleFontSize = component.get('titleFontSize');
+    const subtitleFontSize = component.get('subtitleFontSize');
     const xAxisFontSize = component.get('xAxisFontSize');
     const yAxisFontSize = component.get('yAxisFontSize');
 
@@ -196,7 +249,7 @@ export const applyFontSettings = (component) => {
     if (!chartjsOptions.options.plugins) chartjsOptions.options.plugins = {};
     if (!chartjsOptions.options.plugins.legend) chartjsOptions.options.plugins.legend = {};
     if (!chartjsOptions.options.plugins.legend.labels) chartjsOptions.options.plugins.legend.labels = {};
-
+    chartjsOptions.options.plugins.legend.display = (legendDisplay !== "false" && legendDisplay !== null && legendDisplay === "true");
     chartjsOptions.options.plugins.legend.labels.font = {
         size: legendFontSize || 12,
         family: fontFamily || 'Arial',
@@ -204,6 +257,24 @@ export const applyFontSettings = (component) => {
         style: fontStyle || 'normal'
     };
     chartjsOptions.options.plugins.legend.labels.color = fontColor || '#333333';
+
+    // Применяем к заголовку
+    if (!chartjsOptions.options.plugins.title) chartjsOptions.options.plugins.title = {};
+    chartjsOptions.options.plugins.title.font = {
+        size: titleFontSize || 16,
+        family: fontFamily || 'Arial',
+        style: fontStyle || 'normal'
+    };
+    chartjsOptions.options.plugins.title.color = fontColor || '#333333';
+
+    // Применяем к подзаголовку
+    if (!chartjsOptions.options.plugins.subtitle) chartjsOptions.options.plugins.subtitle = {};
+    chartjsOptions.options.plugins.subtitle.font = {
+        size: subtitleFontSize || 14,
+        family: fontFamily || 'Arial',
+        style: fontStyle || 'normal'
+    };
+    chartjsOptions.options.plugins.subtitle.color = fontColor || '#333333';
 
     // Применяем к оси X
     if (!chartjsOptions.options.scales) chartjsOptions.options.scales = {};
@@ -231,15 +302,6 @@ export const applyFontSettings = (component) => {
     chartjsOptions.options.scales.y.ticks.color = fontColor || '#333333';
 
     component.set('chartjsOptions', chartjsOptions);
-    console.log('✅ Font settings applied:', {
-        family: fontFamily,
-        weight: fontWeight,
-        style: fontStyle,
-        color: fontColor,
-        legendSize: legendFontSize,
-        xAxisSize: xAxisFontSize,
-        yAxisSize: yAxisFontSize
-    });
 };
 
 /**
@@ -252,7 +314,10 @@ const saveSettingsToAttributes = (component) => {
         'cjs-font-color': component.get('fontColor'),
         'cjs-font-weight': component.get('fontWeight'),
         'cjs-font-style': component.get('fontStyle'),
+        'cjs-legend-display': component.get('legendDisplay'),
         'cjs-legend-font-size': component.get('legendFontSize'),
+        'cjs-title-font-size': component.get('titleFontSize'),
+        'cjs-subtitle-font-size': component.get('subtitleFontSize'),
         'cjs-x-axis-font-size': component.get('xAxisFontSize'),
         'cjs-y-axis-font-size': component.get('yAxisFontSize')
     });
@@ -281,10 +346,13 @@ const forceUpdate = (component) => {
  * @param {Object} component - компонент графика
  */
 const setupHandlers = (component) => {
-    const handlers = ['fontFamily', 'fontColor', 'fontWeight', 'fontStyle', 'legendFontSize', 'xAxisFontSize', 'yAxisFontSize'];
+    const handlers = [
+        'fontFamily', 'fontColor', 'fontWeight', 'fontStyle',
+        'legendDisplay', 'legendFontSize', 'titleFontSize', 'subtitleFontSize',
+        'xAxisFontSize', 'yAxisFontSize'
+    ];
     handlers.forEach(prop => {
         component.on(`change:${prop}`, () => {
-            console.log(`🔵 Font property changed: ${prop} = ${component.get(prop)}`);
             applyFontSettings(component);
             saveSettingsToAttributes(component);
             forceUpdate(component);
@@ -299,6 +367,11 @@ const setupHandlers = (component) => {
 const restoreSavedSettings = (component) => {
     const attrs = component.getAttributes();
     let needUpdate = false;
+
+    if (!component.view) {
+        setTimeout(() => restoreSavedSettings(component), 100);
+        return;
+    }
 
     if (attrs['cjs-font-family']) {
         component.set('fontFamily', attrs['cjs-font-family']);
@@ -316,8 +389,20 @@ const restoreSavedSettings = (component) => {
         component.set('fontStyle', attrs['cjs-font-style']);
         needUpdate = true;
     }
+    if (attrs['cjs-legend-display'] !== undefined) {
+        component.set('legendDisplay', (attrs['cjs-legend-display'] !== null && attrs['cjs-legend-display'] !== "false")? "true" : "false");
+        needUpdate = true;
+    }
     if (attrs['cjs-legend-font-size']) {
         component.set('legendFontSize', parseInt(attrs['cjs-legend-font-size']));
+        needUpdate = true;
+    }
+    if (attrs['cjs-title-font-size']) {
+        component.set('titleFontSize', parseInt(attrs['cjs-title-font-size']));
+        needUpdate = true;
+    }
+    if (attrs['cjs-subtitle-font-size']) {
+        component.set('subtitleFontSize', parseInt(attrs['cjs-subtitle-font-size']));
         needUpdate = true;
     }
     if (attrs['cjs-x-axis-font-size']) {
@@ -346,5 +431,10 @@ export const initFontSettings = (component) => {
         applyFontSettings(component);
         saveSettingsToAttributes(component);
         forceUpdate(component);
+
+        // Устанавливаем галочку по умолчанию для отображения названия наборов данных, если оно не задано
+        if (component.get('legendDisplay') === undefined || component.get('legendDisplay') === null) {
+            component.set('legendDisplay', "true");
+        }
     }, 100);
 };
