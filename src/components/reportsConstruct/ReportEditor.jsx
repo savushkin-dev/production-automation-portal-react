@@ -32,6 +32,7 @@ import {GlobalVars} from "./GlobalVars";
 import {ModalErrorScriptCompile} from "./ModalErrorScriptCompile";
 import {defaultScript} from "../../data/report";
 import {processChartsOnLoad} from "./utils/chartUtils";
+import {addFontSettings, initFontSettings} from "./utils/chartAddFontSettings";
 
 
 const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
@@ -688,6 +689,14 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 editor.getComponents().forEach((comp) => {
                     comp.removeClass("droppable-hover");
                 });
+            });
+
+            // Добавляем настройки шрифтов для графиков
+            editor.on('component:add', (component) => {
+                if (component.get('type') === 'chartjs') {
+                    addFontSettings(component);
+                    initFontSettings(component);
+                }
             });
 
 

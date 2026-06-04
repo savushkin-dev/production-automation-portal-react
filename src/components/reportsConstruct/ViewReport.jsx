@@ -81,6 +81,16 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                 const chartTitle = div.getAttribute('cjs-chart-title');
                                 const chartSubtitle = div.getAttribute('cjs-chart-subtitle');
                                 
+                                // ========== ЧИТАЕМ НАСТРОЙКИ ШРИФТОВ ==========
+const fontFamily = div.getAttribute('cjs-font-family') || 'Arial';
+const fontColor = div.getAttribute('cjs-font-color') || '#333333';
+const fontWeight = div.getAttribute('cjs-font-weight') || 'normal';
+const fontStyle = div.getAttribute('cjs-font-style') || 'normal';
+const legendFontSize = parseInt(div.getAttribute('cjs-legend-font-size')) || 12;
+const xAxisFontSize = parseInt(div.getAttribute('cjs-x-axis-font-size')) || 11;
+const yAxisFontSize = parseInt(div.getAttribute('cjs-y-axis-font-size')) || 11;
+// =============================================
+                                
                                 if (!chartType) return;
                                 
                                 const isBubbleOrScatter = chartType === 'bubble' || chartType === 'scatter';
@@ -213,27 +223,69 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                 canvas.style.height = '100%';
                                 
                                 // Конфиг графика
-                                const chartConfig = {
-                                    type: chartType,
-                                    data: {
-                                        datasets: datasets
-                                    },
-                                    options: {
-                                        responsive: true,
-                                        maintainAspectRatio: false,
-                                        devicePixelRatio: 2,
-                                        plugins: {
-                                            title: {
-                                                display: !!(chartTitle && chartTitle !== 'undefined' && chartTitle !== ''),
-                                                text: (chartTitle && chartTitle !== 'undefined') ? chartTitle : ''
-                                            },
-                                            subtitle: {
-                                                display: !!(chartSubtitle && chartSubtitle !== 'undefined' && chartSubtitle !== ''),
-                                                text: (chartSubtitle && chartSubtitle !== 'undefined') ? chartSubtitle : ''
-                                            }
-                                        }
-                                    }
-                                };
+const chartConfig = {
+    type: chartType,
+    data: {
+        datasets: datasets
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        devicePixelRatio: 2,
+        
+        // ========== НАСТРОЙКИ ШРИФТОВ ==========
+        font: {
+            family: fontFamily,
+            weight: fontWeight,
+            style: fontStyle
+        },
+        plugins: {
+            legend: {
+                labels: {
+                    font: {
+                        size: legendFontSize,
+                        family: fontFamily,
+                        weight: fontWeight,
+                        style: fontStyle
+                    },
+                    color: fontColor
+                }
+            },
+            title: {
+                display: !!(chartTitle && chartTitle !== 'undefined' && chartTitle !== ''),
+                text: (chartTitle && chartTitle !== 'undefined') ? chartTitle : ''
+            },
+            subtitle: {
+                display: !!(chartSubtitle && chartSubtitle !== 'undefined' && chartSubtitle !== ''),
+                text: (chartSubtitle && chartSubtitle !== 'undefined') ? chartSubtitle : ''
+            }
+        },
+        scales: !isBubbleOrScatter ? {
+            x: {
+                ticks: {
+                    font: {
+                        size: xAxisFontSize,
+                        family: fontFamily,
+                        weight: fontWeight,
+                        style: fontStyle
+                    },
+                    color: fontColor
+                }
+            },
+            y: {
+                ticks: {
+                    font: {
+                        size: yAxisFontSize,
+                        family: fontFamily,
+                        weight: fontWeight,
+                        style: fontStyle
+                    },
+                    color: fontColor
+                }
+            }
+        } : undefined
+    }
+};
                                 
                                 // Добавляем лейблы для обычных графиков
                                 if (!isBubbleOrScatter && chartLabels) {
