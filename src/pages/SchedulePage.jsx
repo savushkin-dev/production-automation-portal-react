@@ -1,5 +1,5 @@
 import "./../App.css";
-import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
 import moment from 'moment';
 import 'moment/locale/ru';
@@ -16,39 +16,36 @@ import {observer} from "mobx-react-lite";
 import {ModalConfirmation} from "../components/modal/ModalConfirmation";
 import {DropDownActionsItem} from "../components/scheduler/DropDownActionsItem";
 import {ModalMoveJobs} from "../components/scheduler/ModalMoveJobs";
-import {DataTable} from "../components/scheduler/DataTable";
 import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
 import {ModalUpdateServiceWork} from "../components/scheduler/ModalUpdateServiceWork";
 import {MyTimeline} from "../components/scheduler/MyTimeline";
 import {convertLinesWithTimeFields, isValidLinesDate} from "../utils/scheduler/lines";
 import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
 import {createTimelineRenderersSheduler} from "../components/scheduler/TimelineItemRenderer";
-import {
-    getDateCurrent,
-    getDateMinus1,
-    getDateMinus2,
-    getDatePlus1,
-    getDatePlus2,
-    getDatePlus3, getDatePlus4, getDatePlus5, getDatePlus6, getDatePlus7,
-    groupDataByDay
-} from "../utils/scheduler/pdayParsing";
+import {groupDataByDay} from "../utils/scheduler/pdayParsing";
 import {
     calculateTimeToNext8AM,
     filterGroupItems, getLastItemIndexInGroup,
     isCleaningItem,
     isDelayItem,
     isFactItem,
-    isMaintenanceItem,
     isPackagedItem
 } from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
 import {ModalUpdateJobDelay} from "../components/scheduler/ModalUpdateJobDelay";
 import {convertHoursMinutesToMinutes} from "../utils/scheduler/serviceWork";
+import {Context} from "../index";
+import AuthLabel from "../components/AuthLabel";
+import {ModalVersionSettings} from "../components/scheduler/ModalVersionSettings";
+import {SchedulerDataTables} from "../components/scheduler/SchedulerDataTables";
+import {ModalColorsSettings} from "../components/scheduler/ModalColorsSettings";
+import {ModalReports} from "../components/scheduler/ModalReports";
 
 
 function SchedulerPage() {
 
+    const {store} = useContext(Context);
     const navigate = useNavigate();
     const from = '/'
 
@@ -85,7 +82,9 @@ function SchedulerPage() {
     const [isModalUpdateServiceWork, setIsModalUpdateServiceWork] = useState(false);
     const [isModalSendToWork, setIsModalSendToWork] = useState(false);
     const [isModalSavePlan, setIsModalSavePlan] = useState(false);
-    const [isModalUpdateDelayJob, setIsModalUpdateDelayJob] = useState(false);
+    const [isModalUpdateDelay, setIsModalUpdateDelay] = useState(false);
+    const [isModalColorsSettings, setIsModalColorsSettings] = useState(false);
+    const [isModalReports, setIsModalReports] = useState(false);
 
 
     const [isSolve, setIsSolve] = useState(false);
@@ -93,12 +92,15 @@ function SchedulerPage() {
     const [solverStatus, setSolverStatus] = useState("");
 
     const [isModalDateSettings, setIsModalDateSettings] = useState(false);
+    const [isModalVersionSettings, setIsModalVersionSettings] = useState(false);
     const [isModalAnalyze, setIsModalAnalyze] = useState(false);
 
     const [downloadedPlan, setDownloadedPlan] = useState(null);
     const [analyzeObj, setAnalyzeObj] = useState(null);
 
-    const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0])
+    const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0]);
+    const [planVersion, setPlanVersion] = useState("Основной план");
+    const [isDropdownButtonOpen, setIsDropdownButtonOpen] = useState(false);
 
     const [modalSortConfig, setModalSortConfig] = useState({
         isOpen: false,
@@ -132,7 +134,7 @@ function SchedulerPage() {
     const [selectedItems, setSelectedItems] = useState([]);
     const [lastSelectedItem, setLastSelectedItem] = useState(null);
 
-    const heightGroupScheduler = activeDisplay.fact || activeDisplay.plan? 100 : 164;
+    const heightGroupScheduler = activeDisplay.fact || activeDisplay.plan ? 100 : 164;
 
     const [clickedCameras, setClickedCameras] = useState({});
 
@@ -167,6 +169,7 @@ function SchedulerPage() {
             setPdayData(groupedData);
 
             setSelectJobs(groupedData.selectJobs);
+            return true;
         } catch (e) {
             console.error(e)
             setMsg("Ошибка инициализации: " + e.response.data.message)
@@ -184,15 +187,15 @@ function SchedulerPage() {
                 dayPlus5: [],
                 dayPlus6: [],
                 dayPlus7: [],
-                // selectJobs: []
             });
+            return false;
         }
     }
 
     useEffect(() => {
         setPlanByHardware([])
         if (startTimeLines) {
-             init(selectDate);
+            init(selectDate);
         }
     }, [selectDate])
 
@@ -219,35 +222,43 @@ function SchedulerPage() {
         }
     }
 
-    async function agreeSorting(){
+    async function agreeSorting() {
         setModalSortConfig(prevState => ({...prevState, isOpen: false}))
         await sortSchedule();
         await modalSortConfig.onConfirm?.();
     }
 
-    async function disagreeSorting(){
+    async function disagreeSorting() {
         setModalSortConfig(prevState => ({...prevState, isOpen: false}))
         await modalSortConfig.onConfirm?.();
     }
 
-    function openModalSendToWork(){
+    function openModalSendToWork() {
         setMsg("Вы уверены что хотите отправить план в работу?")
         setIsModalSendToWork(true);
     }
 
-    function openModalSavePlan(){
+    function openModalSavePlan() {
         setMsg("Вы уверены что хотите сохранить план?")
         setIsModalSavePlan(true);
     }
 
     function clickSendToWork() {
         setMsg("Вы хотите отсортировать план перед отправкой в работу?")
-        modalSortConfig.isSort? openModalSendToWork() : setModalSortConfig(prevState => ({...prevState, isOpen: true, onConfirm: ()=> openModalSendToWork()}));
+        modalSortConfig.isSort ? openModalSendToWork() : setModalSortConfig(prevState => ({
+            ...prevState,
+            isOpen: true,
+            onConfirm: () => openModalSendToWork()
+        }));
     }
 
-    function clickSavePlan(){
+    function clickSavePlan() {
         setMsg("Вы хотите отсортировать план перед сохранением?")
-        modalSortConfig.isSort? openModalSavePlan() : setModalSortConfig(prevState => ({...prevState, isOpen: true, onConfirm: ()=> openModalSavePlan()}));
+        modalSortConfig.isSort ? openModalSavePlan() : setModalSortConfig(prevState => ({
+            ...prevState,
+            isOpen: true,
+            onConfirm: () => openModalSavePlan()
+        }));
     }
 
     async function savePlan() {
@@ -395,10 +406,10 @@ function SchedulerPage() {
     }, [downloadedPlan]);
 
     async function solve() {
-        (isValidLinesDate(startTimeLines))? await fetchSolve() : setLinesDateError();
+        (isValidLinesDate(startTimeLines)) ? await fetchSolve() : setLinesDateError();
     }
 
-    function setLinesDateError(){
+    function setLinesDateError() {
         setMsg("Перед началом планирования или дозагрузки требуется настроить время начала и максимальное время линий в разделе \"Настройка линий\")")
         setIsModalNotifyError(true);
     }
@@ -443,10 +454,6 @@ function SchedulerPage() {
 
     const handleItemRightClick = (itemId, e) => {
         e.preventDefault();
-
-        if (itemId.includes('cleaning')) {
-            return;
-        }
 
         const clickedItem = planByHardware.find(item => item.id === itemId);
 
@@ -496,7 +503,7 @@ function SchedulerPage() {
     };
 
     const handleCanvasRightClick = (groupId, time, e) => {
-        if(activeDisplay.fact){
+        if (activeDisplay.fact) {
             return
         }
         setSelectedItems([]);
@@ -595,9 +602,7 @@ function SchedulerPage() {
     }
 
     function onItemSelect(itemId, e, time) {
-        if (itemId.includes('cleaning')) {
-            return;
-        }
+
         const itemsArray = planByHardware;
         const clickedItem = itemsArray.find(item => item.id === itemId);
 
@@ -630,18 +635,18 @@ function SchedulerPage() {
         let idFact = null;
         const prefix = "fact_camera";
 
-        if(!isPackagedItem(clickedItem)){
+        if (!isPackagedItem(clickedItem)) {
             return
         }
 
-        if(!isFactItem(clickedItem)){
+        if (!isFactItem(clickedItem)) {
             idFact = clickedItem.id + prefix;
         } else {
             idFact = clickedItem.id.slice(0, -prefix.length);
         }
 
         const clickedFactItem = itemsArray.find(item => item.id === idFact);
-        if(clickedFactItem){
+        if (clickedFactItem) {
             setSelectedItems([clickedItem, clickedFactItem]);
         }
     }
@@ -688,7 +693,7 @@ function SchedulerPage() {
 
     async function assignServiceWork(lineId, insertIndex, time, duration, type, description, isEmptyLine) {
         try {
-            if(isEmptyLine){
+            if (isEmptyLine) {
                 await SchedulerService.assignServiceWorkEmptyLine(lineId, time, duration, type, description);
             } else {
                 await SchedulerService.assignServiceWork(lineId, insertIndex, duration, type, description);
@@ -765,8 +770,8 @@ function SchedulerPage() {
         }
     }
 
-    async function ClickReloadPlan(){
-        (isValidLinesDate(startTimeLines))? await reloadPlan() : setLinesDateError();
+    async function ClickReloadPlan() {
+        (isValidLinesDate(startTimeLines)) ? await reloadPlan() : setLinesDateError();
     }
 
     async function reloadPlan() {
@@ -819,12 +824,12 @@ function SchedulerPage() {
         const sortedSelected = filteredItems
             .sort((a, b) => a.start_time - b.start_time);
         const firstItem = sortedSelected[0];
-        const firstItemIndex = firstItem.info.groupIndex-1;
+        const firstItemIndex = firstItem.info.groupIndex - 1;
 
         sortRangeScheduler(firstItemIndex, filteredItems.length, groupId, sortUp)
     }
 
-    async function sortRangeScheduler(fromIndex, sortCount, lineId, sortUp){
+    async function sortRangeScheduler(fromIndex, sortCount, lineId, sortUp) {
         try {
             await SchedulerService.sortRangeScheduler(fromIndex, sortCount, lineId, sortUp);
             await fetchPlan()
@@ -835,7 +840,7 @@ function SchedulerPage() {
         }
     }
 
-    async function dailyCleaning(){
+    async function dailyCleaning() {
         try {
             await SchedulerService.dailyCleaning();
             await fetchPlan()
@@ -846,7 +851,7 @@ function SchedulerPage() {
         }
     }
 
-    async function updateDelayJob(lineId, index, delayNote){
+    async function updateDelayJob(lineId, index, delayNote) {
         try {
             await SchedulerService.updateDelayJob(lineId, index, delayNote);
             await fetchPlan();
@@ -857,10 +862,22 @@ function SchedulerPage() {
         }
     }
 
+    async function updateDelayCleaning(lineId, index, delayNote) {
+        try {
+            await SchedulerService.updateDelayCleaning(lineId, index, delayNote);
+            await fetchPlan();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка обновления отклонения мойки от плана: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
     const timelineRenderers = useMemo(
         () => {
-            return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay)},
-        [selectedItems, selectedItem, activeDisplay]
+            return createTimelineRenderersSheduler(selectedItems, selectedItem, activeDisplay, selectDate)
+        },
+        [selectedItems, selectedItem, activeDisplay, timelineKey]
     );
 
     async function assignAllPauses() {
@@ -934,7 +951,7 @@ function SchedulerPage() {
                 }
             } catch (error) {
                 errorCount++;
-                errors.push({ lineId, error: error.response?.data?.message || error.message });
+                errors.push({lineId, error: error.response?.data?.message || error.message});
                 console.error(`Ошибка при добавлении на линию ${lineId}:`, error);
             }
         }
@@ -950,88 +967,176 @@ function SchedulerPage() {
         }
     }
 
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            // Проверяем, что клик был не по нашему dropdown контейнеру
+            const dropdownContainer = document.querySelector('.relative');
+            if (dropdownContainer && !dropdownContainer.contains(event.target)) {
+                setIsDropdownButtonOpen(false);
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
     return (
         <>
             <div className="w-full text-gray-800">
 
                 {isModalInfoItem && selectedItem && <ModalInfoItem item={selectedItem} onClose={() => {
-                        setSelectedItem(null);
-                        setIsModalInfoItem(false);
-                    }} lines={groups} determineFactPlace={determineFactPlace} determineCameraFact={determineCameraFact}
-                    clickedCameras={clickedCameras} setClickedCameras={setClickedCameras}/>}
+                    setSelectedItem(null);
+                    setIsModalInfoItem(false);
+                }} lines={groups} determineFactPlace={determineFactPlace} determineCameraFact={determineCameraFact}
+                                                                   clickedCameras={clickedCameras}
+                                                                   setClickedCameras={setClickedCameras}
+                                                                   setModalError={setIsModalNotifyError}
+                                                                   setErrorMsg={setMsg}/>}
 
                 {isLoading &&
                     <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>
                 }
 
-                <div>
-                    <h1 className=" font-bold text-center text-2xl mb-4 mt-4">Планировщик задач</h1>
+                <div className="flex items-center justify-between mb-4 mt-4 px-4">
+                    <button onClick={() => {
+                        navigate(from, {replace: true})
+                    }} className="py-1 px-2 rounded text-blue-800 hover:bg-blue-50 whitespace-nowrap">
+                        Вернуться назад
+                    </button>
+
+                    <h1 className="font-bold text-gray-800 text-center text-2xl absolute left-1/2 -translate-x-1/2">Планировщик
+                        задач</h1>
+
+                    <div className="flex items-center gap-3">
+                        <AuthLabel loginPath={'/login-scheduler'} logoutPath={'/login-scheduler'}/>
+                    </div>
                 </div>
 
                 <div className="flex flex-row">
-                    <div className="w-2/6 ">
-                        <button onClick={() => {
-                            navigate(from, {replace: true})
-                        }} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Вернуться назад
-                        </button>
-                        {/*<button onClick={() => {*/}
-                        {/*    navigate("/tracktrace", {replace: true})*/}
-                        {/*}} className=" ml-4 py-1 px-2 rounded text-blue-800  hover:bg-blue-50">Мониторинг*/}
-                        {/*</button>*/}
+                    <div className="w-2/6 flex justify-start">
+
+                        <div
+                            className="ml-4 flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-gray-200 shadow-sm">
+                            <i className="fa-solid fa-code-branch text-gray-400 text-sm"></i>
+                            <span className="text-sm text-gray-400">Версия:</span>
+                            <span className="text-sm font-medium text-gray-700 max-w-[180px] truncate">
+                                {planVersion}
+                            </span>
+                        </div>
+
                     </div>
 
-                    <div className="w-4/6 py-1 flex justify-end pr-3">
 
-                        <button onClick={assignAllPauses}
-                                className="mr-1 rounded border border-slate-300 hover:bg-gray-100  px-3 h-[30px] font-medium text-[0.950rem]">
-                            Добавить простои
-                            <i className="pl-2 fa-solid fa-stopwatch"></i>
+                    <div className="w-4/6 py-1 flex justify-end pr-3 gap-1">
+
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsDropdownButtonOpen(!isDropdownButtonOpen)}
+                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600"
+                            >
+                                Доп. функции
+                                {isDropdownButtonOpen ? (
+                                    <i className="pl-2 fa-solid fa-chevron-up"></i>
+                                ) : (
+                                    <i className="pl-2 fa-solid fa-chevron-down"></i>
+                                )}
+                            </button>
+
+                            {/* Выпадающее меню */}
+                            {isDropdownButtonOpen && (
+                                <div
+                                    className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                                    <button
+                                        onClick={() => {
+                                            assignAllPauses();
+                                            setIsDropdownButtonOpen(false);
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-[0.900rem] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 flex items-center justify-between"
+                                    >
+                                        Добавить простои
+                                        <i className="fa-solid fa-stopwatch"></i>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            dailyCleaning();
+                                            setIsDropdownButtonOpen(false);
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-[0.900rem] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 flex items-center justify-between"
+                                    >
+                                        Добавить мойки
+                                        <i className="fa-solid fa-faucet-drip"></i>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            alignPlan();
+                                            setIsDropdownButtonOpen(false);
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-[0.900rem] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 flex items-center justify-between"
+                                    >
+                                        Выровнять план
+                                        <i className="fa-solid fa-align-right"></i>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            reloadDirectory();
+                                            setIsDropdownButtonOpen(false);
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-[0.900rem] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 flex items-center justify-between"
+                                    >
+                                        Обновить справочные данные
+                                        <i className="fa-solid fa-cloud-arrow-down"></i>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setIsModalVersionSettings(true);
+                                            setIsDropdownButtonOpen(false);
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-[0.900rem] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 flex items-center justify-between"
+                                    >
+                                        <span>Управление версиями</span>
+                                        <i className="fa-solid fa-code-branch "></i>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <button onClick={() => {
+                            setIsModalReports(true)
+                        }}
+                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
+                            Экспорт отчетов
+                            <i className="pl-2 fa-solid fa-file-arrow-down"></i>
                         </button>
 
-                        <button onClick={dailyCleaning}
-                                className="mr-1 rounded border border-slate-300 hover:bg-gray-100 mx-2 px-3 h-[30px] font-medium text-[0.950rem]">
-                            Добавить мойки
-                            <i className="pl-2 fa-solid fa-faucet-drip"></i>
-                        </button>
-
+                        {/* Основные кнопки */}
                         <button onClick={sortSchedule}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
+                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
                             Отсортировать
                             <i className="pl-2 fa-solid fa-sort"></i>
                         </button>
 
-                        <button onClick={alignPlan}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
-                            Выровнять план
-                            <i className="pl-2 fa-solid fa-align-right"></i>
-                        </button>
-
                         <button onClick={clickSavePlan}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
+                                className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
                             Сохранить
                             <i className="pl-2 fa-solid fa-floppy-disk"></i>
                         </button>
-
-                        <button onClick={reloadDirectory}
-                                className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
-                            Обновить справочные данные
-                            <i className="pl-2 fa-solid fa-cloud-arrow-down"></i>
-                        </button>
-
 
                     </div>
                 </div>
 
                 <div className="flex flex-row justify-between my-4 px-4">
 
-                    <div className="w-2/5 inline-flex justify-between">
+                    <div className="w-2/5 inline-flex justify-between pr-10">
 
-                        <div
-                            className="inline-flex px-2 h-[32px] items-center border rounded-md selection:border-0">
-                            <span className="py-1 font-medium text-nowrap ">Дата:</span>
+                        <div className="inline-flex items-center h-[30px] border border-gray-200 rounded-md">
+                            <span className="px-3 text-[0.950rem] font-medium text-gray-600 border-r border-gray-200">
+                                Дата:
+                            </span>
                             <input
-                                className={"pl-2 font-medium cursor-pointer focus:outline-none focus:ring-0 focus:border-transparent"}
+                                className="px-2 text-[0.950rem] font-medium text-gray-700 cursor-pointer focus:outline-none bg-transparent"
                                 type="date"
                                 value={selectDate}
                                 onChange={(e) => onChangeSelectDate(e.target.value)}
@@ -1041,12 +1146,14 @@ function SchedulerPage() {
                         <button onClick={() => {
                             setIsModalDateSettings(true)
                         }}
-                                className={"ml-3 mr-3 rounded border border-slate-300 bg-blue-800 hover:bg-blue-700 text-white px-2 h-[30px] font-medium text-[0.950rem]"}>
+                                className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md bg-blue-800 hover:bg-blue-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]">
                             Настройка линий
+                            <i className="pl-2 fa-solid fa-gears"></i>
                         </button>
 
                         <DisplayButtons activeDisplay={activeDisplay}
-                                        setActiveDisplay={(newDisplay) => {setTimelineKey(prev => prev + 1);
+                                        setActiveDisplay={(newDisplay) => {
+                                            setTimelineKey(prev => prev + 1);
                                             setActiveDisplay(newDisplay);
                                         }}
                         />
@@ -1056,72 +1163,65 @@ function SchedulerPage() {
 
                     <div className="flex flex-row w-3/5 justify-between" style={{zIndex: 20}}>
 
-                        <div className="inline-flex">
+                        <div className="inline-flex items-center gap-3">
                             {!isSolve &&
-                                <div onClick={solve}>
-                                    <button disabled={isLoadingSolve}
-                                            className="rounded text-white px-1 bg-green-600 hover:bg-green-500 h-[30px] w-36 font-medium text-[0.950rem]">
-                                        <i className="fa-solid fa-play"></i>
-                                        <span className="pl-1">Планировать</span>
-                                    </button>
-                                </div>
+                                <button onClick={solve} disabled={isLoadingSolve}
+                                        className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md bg-green-600 hover:bg-green-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-1">
+                                    <i className="fa-solid fa-play text-xs pt-0.5"></i>
+                                    <span>Планировать</span>
+                                </button>
                             }
                             {isSolve &&
-                                <div onClick={stopSolving}>
-                                    <button disabled={isLoadingSolve}
-                                            className="rounded text-white px-1 bg-red-600 hover:bg-red-500 h-[30px] w-36 font-medium text-[0.950rem]">
-                                        <i className="fa-solid fa-stop"></i>
-                                        <span className="pl-1">Остановить</span>
-                                    </button>
-                                </div>
+                                <button onClick={stopSolving} disabled={isLoadingSolve}
+                                        className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md bg-red-600 hover:bg-red-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-1">
+                                    <i className="fa-solid fa-stop text-xs pt-0.5"></i>
+                                    <span>Остановить</span>
+                                </button>
                             }
 
                             <button onClick={() => {
-                                ClickReloadPlan();
+                                ClickReloadPlan()
                             }}
-                                    className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-gray-100 font-medium text-[0.950rem]">
-                                Догрузить план
-                                <i className="pl-2 fa-solid fa-arrows-rotate"></i>
+                                    className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md border border-gray-200 hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600 transition-all duration-200 flex items-center gap-1">
+                                <span>Догрузить план</span>
+                                <i className="fa-solid fa-arrows-rotate text-xs pt-0.5"></i>
                             </button>
-
-
 
                             <button onClick={() => {
                                 clickSendToWork()
                             }}
-                                    className="h-[30px] px-2 mx-2 rounded border border-slate-300 hover:bg-cyan-500 bg-cyan-600 text-white font-medium text-[0.950rem]">
-                                Отправить в работу
-                                <i className="pl-2 fa-solid fa-paper-plane"></i>
+                                    className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md bg-cyan-600 hover:bg-cyan-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-1">
+                                <span>Отправить в работу</span>
+                                <i className="fa-solid fa-paper-plane text-xs pt-0.5"></i>
                             </button>
                         </div>
 
-
-                        <div className="flex items-center border rounded-md ml-2 ">
+                        <div className="flex items-center border border-gray-200 rounded-md overflow-hidden h-[30px]">
                             <div
-                                className="font-medium flex flex-row justify-between px-2 text-md text-gray-700 w-96 h-[30px]">
-                                <div className="flex flex-col text-center w-1/3">
-                                    <span className="px-1 mt-[-3px]">{score.hard}</span>
-                                    <span className="text-xs mt-[-6px]">Ошибки</span>
+                                className="flex items-center justify-between px-2 text-md font-medium text-gray-700 w-96 h-full">
+                                <div className="flex flex-col items-center justify-center flex-1">
+                                    <span className="text-[0.900rem] px-1 mt-[-3px] text-gray-800">{score.hard}</span>
+                                    <span className="text-[0.750rem] mt-[-8px] text-gray-500">Ошибки</span>
                                 </div>
-                                <span className="text-lg">|</span>
-                                <div className="flex flex-col text-center w-1/3">
-                                    <span className="px-1 mt-[-3px]">{score.medium}</span>
-                                    <span className="text-xs my-1 mt-[-6px]">Время простоя</span>
+                                <span className="text-gray-500 text-lg leading-none">|</span>
+                                <div className="flex flex-col items-center justify-center flex-1">
+                                    <span className="text-[0.900rem] px-1 mt-[-3px] text-gray-800">{score.medium}</span>
+                                    <span className="text-[0.750rem] mt-[-8px] text-gray-500">Время простоя</span>
                                 </div>
-                                <span className="text-lg">|</span>
-                                <div className="flex flex-col text-center w-1/3">
-                                    <span className="px-1 mt-[-3px]">{score.soft}</span>
-                                    <span className="text-xs my-1 mt-[-6px]">Время выполнения</span>
+                                <span className="text-gray-500 text-lg leading-none">|</span>
+                                <div className="flex flex-col items-center justify-center flex-1">
+                                    <span className="text-[0.900rem] px-1 mt-[-3px] text-gray-800">{score.soft}</span>
+                                    <span
+                                        className="text-[0.750rem] text-xs mt-[-8px] text-gray-500">Время выполнения</span>
                                 </div>
                             </div>
                             <button onClick={() => {
-                                fetchAnalyze();
+                                fetchAnalyze()
                             }}
-                                    className={" h-full rounded-r px-2 bg-blue-800 hover:bg-blue-700 text-white font-medium text-[0.950rem]"}>
+                                    className="h-full px-2 bg-blue-800 hover:bg-blue-700 text-white font-medium text-[0.950rem] transition-all duration-200">
                                 Подробнее
                             </button>
                         </div>
-
 
                     </div>
 
@@ -1190,10 +1290,13 @@ function SchedulerPage() {
                     </Timeline>
                 </div>
 
-                {isModalDateSettings && <ModalDateSettings onClose={() => {setIsModalDateSettings(false)}}
+                {isModalDateSettings && <ModalDateSettings onClose={() => {
+                    setIsModalDateSettings(false)
+                }}
                                                            lines={startTimeLines}
                                                            setLines={setStartTimeLines}
-                                                           changeTime={assignLineStart} changeMaxEndTime={assignMaxEndDateTime}
+                                                           changeTime={assignLineStart}
+                                                           changeMaxEndTime={assignMaxEndDateTime}
                 />}
 
                 {isModalAnalyze && <ModalAnalyze onClose={() => setIsModalAnalyze(false)}
@@ -1204,7 +1307,8 @@ function SchedulerPage() {
                     <ModalNotify title={"Результат операции"} message={msg} onClose={() => setIsModalNotify(false)}/>}
 
                 {isModalNotifyError &&
-                    <ModalNotifyError title={"Ошибка операции"} message={msg} onClose={() => setIsModalNotifyError(false)}/>}
+                    <ModalNotifyError title={"Ошибка операции"} message={msg}
+                                      onClose={() => setIsModalNotifyError(false)}/>}
 
                 {isModalSendToWork &&
                     <ModalConfirmation title={"Подтверждение действия"} message={msg}
@@ -1225,8 +1329,12 @@ function SchedulerPage() {
                 {modalSortConfig.isOpen &&
                     <ModalConfirmation title={"Подтверждение действия"} message={msg}
                                        onClose={() => setModalSortConfig(prev => ({...prev, isOpen: false}))}
-                                       onAgree={() => {agreeSorting()}}
-                                       onDisagree={() => {disagreeSorting()}}/>}
+                                       onAgree={() => {
+                                           agreeSorting()
+                                       }}
+                                       onDisagree={() => {
+                                           disagreeSorting()
+                                       }}/>}
 
                 {contextMenu.visible && <DropDownActionsItem contextMenu={contextMenu} pin={pinItems} unpin={unpinLine}
                                                              isDisplayByHardware={isDisplayByHardware}
@@ -1236,7 +1344,7 @@ function SchedulerPage() {
                                                              updateServiceWork={() => setIsModalUpdateServiceWork(true)}
                                                              removeServiceWork={removeServiceWork}
                                                              sortRange={sortRange}
-                                                             updateDelayJob={() => setIsModalUpdateDelayJob(true)}
+                                                             updateDelay={() => setIsModalUpdateDelay(true)}
                 />}
 
                 {isModalMoveJobs &&
@@ -1264,62 +1372,74 @@ function SchedulerPage() {
                     />
                 }
 
-                {isModalUpdateDelayJob &&
-                    <ModalUpdateJobDelay onClose={() => setIsModalUpdateDelayJob(false)}
-                    updateDelayJob={updateDelayJob} selectedItems={selectedItems}/>
+                {isModalUpdateDelay &&
+                    <ModalUpdateJobDelay onClose={() => setIsModalUpdateDelay(false)}
+                                         updateDelayJob={updateDelayJob} updateDelayCleaning={updateDelayCleaning}
+                                         selectedItems={selectedItems}/>
                 }
-                
 
-                <DataTable data={pdayData.dayMinus2} setData={(newData) => setPdayData(prev => ({
-                    ...prev,
-                    dayMinus2: newData
-                }))} dateData={getDateMinus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} /> 
+                {isModalVersionSettings &&
+                    <ModalVersionSettings date={selectDate} onInit={init} onFetchPlan={fetchPlan}
+                                          onClose={() => setIsModalVersionSettings(false)}
+                                          setModalError={setIsModalNotifyError} setErrorMsg={setMsg}
+                                          setPlanVersion={setPlanVersion}/>
+                }
 
-                <DataTable data={pdayData.dayMinus1} setData={(newData) => setPdayData(prev => ({
-                    ...prev,
-                    dayMinus1: newData
-                }))} dateData={getDateMinus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+                {isModalColorsSettings &&
+                    <ModalColorsSettings onClose={() => setIsModalColorsSettings(false)}
+                                         onSave={() => setTimelineKey(prev => prev + 1)}/>
+                }
 
-                <DataTable data={pdayData.currentDay} setData={(newData) => setPdayData(prev => ({
-                    ...prev,
-                    currentDay: newData
-                }))} dateData={getDateCurrent(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+                {isModalReports &&
+                    <ModalReports onClose={()=>{setIsModalReports(false)}}
+                                  setModalError={setIsModalNotifyError} setErrorMsg={setMsg}/>
+                }
 
-                <DataTable data={pdayData.dayPlus1} setData={(newData) => setPdayData(prev => ({
-                    ...prev,
-                    dayPlus1: newData
-                }))} dateData={getDatePlus1(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
 
-                <DataTable data={pdayData.dayPlus2} setData={(newData) => setPdayData(prev => ({
-                    ...prev,
-                    dayPlus2: newData
-                }))} dateData={getDatePlus2(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+                {/* Блок с индикаторами и настройки цветов */}
+                <div key={timelineKey} className="flex items-center gap-4 mx-3 px-3 rounded-md flex-wrap">
+                    <button onClick={() => setIsModalColorsSettings(true)}
+                            className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
+                        Настройка цветов
+                        <i className="pl-2 fa-solid fa-palette"></i>
+                    </button>
 
-                <DataTable data={pdayData.dayPlus3} setData={(newData) => setPdayData(prev => ({
-                    ...prev,
-                    dayPlus3: newData
-                }))} dateData={getDatePlus3(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+                    <div className="flex items-center gap-2">
+                        <div
+                            className="w-12 h-5 border border-gray-400 relative bg-white text-[9px] flex items-center justify-center font-bold"
+                            style={{
+                                borderLeftColor: localStorage.getItem('scheduler_left_border_color') || '#436fff',
+                                borderLeftWidth: `${localStorage.getItem('scheduler_left_border_width') || '3'}px`
+                            }}
+                        >
+                            <span className="z-10">Мойка</span>
+                        </div>
+                        <span className="text-xs text-gray-600">Мойка быстрее плана</span>
+                    </div>
 
-                <DataTable data={pdayData.dayPlus4} setData={(newData) => setPdayData(prev => ({
-                    ...prev,
-                    dayPlus4: newData
-                }))} dateData={getDatePlus4(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
+                    <div className="flex items-center gap-2">
+                        <div
+                            className="w-12 h-5 border border-gray-400 relative bg-white text-[9px] flex items-center justify-center font-bold"
+                            style={{
+                                borderBottomColor: localStorage.getItem('scheduler_bottom_border_color') || '#c100cf',
+                                borderBottomWidth: `${localStorage.getItem('scheduler_bottom_border_width') || '2'}px`
+                            }}
+                        >
+                            <span className="z-10">Задание</span>
+                        </div>
+                        <span className="text-xs text-gray-600">Задание на выбранную дату</span>
+                    </div>
+                </div>
 
-                <DataTable data={pdayData.dayPlus5} setData={(newData) => setPdayData(prev => ({
-                    ...prev,
-                    dayPlus5: newData
-                }))} dateData={getDatePlus5(selectDate)}selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
-
-                <DataTable data={pdayData.dayPlus6} setData={(newData) => setPdayData(prev => ({
-                    ...prev,
-                    dayPlus6: newData
-                }))} dateData={getDatePlus6(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
-
-                <DataTable data={pdayData.dayPlus7} setData={(newData) => setPdayData(prev => ({
-                    ...prev,
-                    dayPlus7: newData
-                }))} dateData={getDatePlus7(selectDate)} selectJobs={selectJobs} setSelectJobs={setSelectJobs} lines={startTimeLines} />
-
+                <SchedulerDataTables
+                    pdayData={pdayData}
+                    setPdayData={setPdayData}
+                    selectDate={selectDate}
+                    selectJobs={selectJobs}
+                    setSelectJobs={setSelectJobs}
+                    lines={startTimeLines}
+                    isReadOnly={planVersion !== "Основной план"}
+                />
 
             </div>
         </>

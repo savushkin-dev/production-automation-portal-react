@@ -1,70 +1,145 @@
-
-
+/**
+ * Получает следующий день в формате YYYY-MM-DD (локальное время)
+ * @param {Date|string} date - объект Date или строка даты
+ * @returns {string} дата в формате YYYY-MM-DD
+ */
 export function getNextDateStr(date) {
     const newDate = new Date(date);
     newDate.setDate(newDate.getDate() + 1);
-    return newDate.toISOString().split('T')[0];
+    return formatLocalDateOnly(newDate);
 }
 
+/**
+ * Получает предыдущий день в формате YYYY-MM-DD (локальное время)
+ * @param {Date|string} date - объект Date или строка даты
+ * @returns {string} дата в формате YYYY-MM-DD
+ */
 export function getPredDateStr(date) {
     const newDate = new Date(date);
     newDate.setDate(newDate.getDate() - 1);
-    return newDate.toISOString().split('T')[0];
+    return formatLocalDateOnly(newDate);
 }
 
-export function getNext2DateStr(date){
+/**
+ * Получает день после следующего в формате YYYY-MM-DD (локальное время)
+ * @param {Date|string} date - объект Date или строка даты
+ * @returns {string} дата в формате YYYY-MM-DD
+ */
+export function getNext2DateStr(date) {
     return getNextDateStr(getNextDateStr(date));
 }
 
 /**
- * Преобразует ISO дату в формат YYYY-MM-DD HH:mm:ss
- * Убирает T и миллисекунды (если они есть)
- * @param {string} isoDate - дата в ISO формате (2026-01-26T17:58:04.653 или 2026-01-26T17:58:04)
+ * Форматирует Date объект в YYYY-MM-DD (локальное время)
+ * @param {Date} date - объект Date
+ * @returns {string} дата в формате YYYY-MM-DD
+ */
+function formatLocalDateOnly(date) {
+    if (!date || isNaN(date.getTime())) return '';
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+}
+
+/**
+ * Форматирует Date объект в YYYY-MM-DD HH:mm:ss (локальное время)
+ * @param {Date} date - объект Date
  * @returns {string} дата в формате YYYY-MM-DD HH:mm:ss или пустая строка при ошибке
  */
-export function formatIsoToDatetimeRegex(isoDate) {
-    if (!isoDate) return '';
+function formatLocalDateTime(date) {
+    if (!date || isNaN(date.getTime())) return '';
 
-    const match = isoDate.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})/);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
 
-    if (match) {
-        return `${match[1]} ${match[2]}`;
-    }
-
-    return '';
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 /**
- * Преобразует ISO дату в формат YYYY-MM-DD HH:mm
- * Убирает T, миллисекунды и секунды (если они есть)
- * @param {string} isoDate - дата в ISO формате (2026-01-26T17:58:04.653 или 2026-01-26T17:58:04)
+ * Форматирует Date объект в YYYY-MM-DD HH:mm (локальное время, без секунд)
+ * @param {Date} date - объект Date
  * @returns {string} дата в формате YYYY-MM-DD HH:mm или пустая строка при ошибке
  */
-export function formatIsoToDatetimeWithoutSeconds(isoDate) {
-    if (!isoDate) return '';
+function formatLocalDateTimeWithoutSeconds(date) {
+    if (!date || isNaN(date.getTime())) return '';
 
-    const match = isoDate.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
 
-    if (match) {
-        return `${match[1]} ${match[2]}`;
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+}
+
+/**
+ * Преобразует Date или ISO строку в формат YYYY-MM-DD HH:mm:ss
+ * @param {Date|string} dateTime - объект Date или ISO строка
+ * @returns {string} дата в формате YYYY-MM-DD HH:mm:ss или пустая строка при ошибке
+ */
+export function formatIsoToDatetimeRegex(dateTime) {
+    if (!dateTime) return '';
+
+    if (dateTime instanceof Date && !isNaN(dateTime)) {
+        return formatLocalDateTime(dateTime);
+    }
+
+    if (typeof dateTime === 'string') {
+        const match = dateTime.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})/);
+        if (match) {
+            return `${match[1]} ${match[2]}`;
+        }
     }
 
     return '';
 }
 
 /**
- * Преобразует ISO дату в формат YYYY-MM-DD
- * Убирает T и всё что после неё
- * @param {string} isoDate - дата в ISO формате (2026-01-26T17:58:04.653 или 2026-01-26T17:58:04)
+ * Преобразует Date или ISO строку в формат YYYY-MM-DD HH:mm (без секунд)
+ * @param {Date|string} dateTime - объект Date или ISO строка
+ * @returns {string} дата в формате YYYY-MM-DD HH:mm или пустая строка при ошибке
+ */
+export function formatIsoToDatetimeWithoutSeconds(dateTime) {
+    if (!dateTime) return '';
+
+    if (dateTime instanceof Date && !isNaN(dateTime)) {
+        return formatLocalDateTimeWithoutSeconds(dateTime);
+    }
+
+    if (typeof dateTime === 'string') {
+        const match = dateTime.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+        if (match) {
+            return `${match[1]} ${match[2]}`;
+        }
+    }
+
+    return '';
+}
+
+/**
+ * Преобразует Date или ISO строку в формат YYYY-MM-DD
+ * @param {Date|string} dateTime - объект Date или ISO строка
  * @returns {string} дата в формате YYYY-MM-DD или пустая строка при ошибке
  */
-export function formatIsoToDateOnly(isoDate) {
-    if (!isoDate) return '';
+export function formatIsoToDateOnly(dateTime) {
+    if (!dateTime) return '';
 
-    const match = isoDate.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (dateTime instanceof Date && !isNaN(dateTime)) {
+        return formatLocalDateOnly(dateTime);
+    }
 
-    if (match) {
-        return match[1];
+    if (typeof dateTime === 'string') {
+        const match = dateTime.match(/^(\d{4}-\d{2}-\d{2})/);
+        if (match) {
+            return match[1];
+        }
     }
 
     return '';

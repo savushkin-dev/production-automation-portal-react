@@ -1,69 +1,62 @@
 import React from "react";
 
-
-export function DisplayButtons({activeDisplay, setActiveDisplay}) {
-
+export function DisplayButtons({ activeDisplay, setActiveDisplay }) {
     const handleChangePlanFact = () => {
-        setActiveDisplay(prevState => ({...prevState,
+        setActiveDisplay({
             planFact: true,
             plan: false,
             fact: false
-        }))
-    }
+        });
+    };
 
     const handleChangePlan = () => {
-        setActiveDisplay(prevState => ({...prevState,
+        setActiveDisplay({
             planFact: false,
             plan: true,
             fact: false
-        }))
-    }
+        });
+    };
 
     const handleChangeFact = () => {
-        setActiveDisplay(prevState => ({...prevState,
+        setActiveDisplay({
             planFact: false,
             plan: false,
             fact: true
-        }))
-    }
-
-
+        });
+    };
 
     return (
-        <>
-            <div
-                className="flex flex-row items-center border rounded-md font-medium justify-between text-md text-gray-700 w-64 h-[32px]">
-                <div className="flex flex-col text-center w-1/3 cursor-pointer rounded-l-md hover:bg-gray-100 hover:border pl-2" onClick={handleChangePlanFact}>
-                    <input
-                        className="mt-[2px] cursor-pointer"
-                        type="radio"
-                        checked={activeDisplay.planFact}
-                        onChange={handleChangePlanFact}
-                    />
-                    <span className="text-xs mt-[-2px]">План и факт</span>
-                </div>
-                <span className="text-lg">|</span>
-                <div className="flex flex-col text-center w-1/3 cursor-pointer hover:bg-gray-100 hover:border" onClick={handleChangePlan}>
-                    <input
-                        className="mt-[2px] cursor-pointer"
-                        type="radio"
-                        checked={activeDisplay.plan}
-                        onChange={handleChangePlan}
-                    />
-                    <span className="text-xs mt-[-2px]">План</span>
-                </div>
-                <span className="text-lg">|</span>
-                <div className="flex flex-col text-center w-1/3 cursor-pointer rounded-r-md hover:bg-gray-100 hover:border pr-2" onClick={handleChangeFact}>
-                    <input
-                        className="mt-[2px] cursor-pointer"
-                        type="radio"
-                        checked={activeDisplay.fact}
-                        onChange={handleChangeFact}
-                    />
-                    <span className="text-xs mt-[-2px]">Факт</span>
-                </div>
-            </div>
-            <br/>
-        </>
-    )
+        <div className="flex items-center gap-1 h-[32px] border border-gray-200  rounded">
+            <button
+                onClick={handleChangePlanFact}
+                className={`px-3 py-1 text-[0.800rem] font-medium transition-all duration-200 border-b-2 ${
+                    activeDisplay.planFact
+                        ? 'text-blue-700 border-blue-600'
+                        : 'text-gray-600 border-transparent hover:text-gray-800'
+                }`}
+            >
+                План и факт
+            </button>
+            <button
+                onClick={handleChangePlan}
+                className={`px-3 py-1 text-[0.800rem] font-medium transition-all duration-200 border-b-2 ${
+                    activeDisplay.plan
+                        ? 'text-blue-700 border-blue-600'
+                        : 'text-gray-600 border-transparent hover:text-gray-800'
+                }`}
+            >
+                План
+            </button>
+            <button
+                onClick={handleChangeFact}
+                className={`px-3 py-1 text-[0.800rem] font-medium transition-all duration-200 border-b-2 ${
+                    activeDisplay.fact
+                        ? 'text-blue-700 border-blue-600'
+                        : 'text-gray-600 border-transparent hover:text-gray-800'
+                }`}
+            >
+                Факт
+            </button>
+        </div>
+    );
 }

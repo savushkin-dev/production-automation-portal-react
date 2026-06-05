@@ -1,20 +1,15 @@
 import React, {forwardRef, useEffect, useRef, useState} from 'react';
+
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./../reportsConstruct/ReportEditor.css";
 
 import plugin from 'grapesjs-blocks-basic';
-
-
-import * as XLSX from "xlsx";
-import html2canvas from "html2canvas";
-
-import jsPDF from "jspdf";
 import grapesjs from "grapesjs";
-
 import grapesjspresetwebpage from 'grapesjs-preset-webpage/dist/index.js';
 
+import chartjsPlugin from 'grapesjs-chartjs-plugin';
 import ru from 'grapesjs/locale/ru';
-
+import ruCharts from "../../locale/ru-charts";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import Dropdown from "../dropdown/Dropdown";
@@ -36,10 +31,9 @@ import yaml from "js-yaml";
 import {GlobalVars} from "./GlobalVars";
 import {ModalErrorScriptCompile} from "./ModalErrorScriptCompile";
 import {defaultScript} from "../../data/report";
+import {processChartsOnLoad} from "./utils/chartUtils";
+import {addFontSettings, initFontSettings} from "./utils/chartAddFontSettings";
 
-
-// Добавляем шрифт Roboto в виртуальную файловую систему pdfmake
-// pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
@@ -54,7 +48,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [pages, setPages] = useState([
             {id: 1, content: "", styles: ""}
         ]);
-        const [currentPage, setCurrentPage] = useState(1); // Активная страница
+        const [currentPage, setCurrentPage] = useState(1);
 
         const [dataBandsOpt, setDataBandsOpt] = useState(["main", "main-child"])
         const [dataBandsOptDropDown, setDataDropDown] = useState([
@@ -81,7 +75,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
         const [optReportsName, setOptReportsName] = useState([]);
 
-        const [reportName, setReportName] = useState("");
+        const [reportName, setReportName] = useState("report");
         const [reportCategory, setReportCategory] = useState("");
         const [parameters, setParameters] = useState([]);
         const [layoutParam, setLayoutParam] = useState("");
@@ -110,6 +104,9 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         const [isBookOrientation, setIsBookOrientation] = useState(true);
         const widthPage = isBookOrientation ? "794" : "1123";
 
+        const CANVAS_PADDING_HORIZONTAL = 100;
+        const CANVAS_PADDING_VERTICAL = 30;
+
 
         pdfMake.addVirtualFileSystem(pdfFonts);
 
@@ -119,61 +116,79 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 container: editorRef.current,
                 telemetry: false,
                 fromElement: true,
-                height: 1200 + "px",
+                height: 1300 + "px",
                 width: 'auto',
                 default_locale: 'ru',
                 i18n: {
                     locale: 'ru',
                     detectLocale: true,
                     localeFallback: 'ru',
-                    messages: {ru},
+                    messages: {
+                        ru: {
+                            ...ru, // ru конструктора
+                            ...ruCharts // переводы для графиков
+                        }
+                    },
                 },
-                dragMode: 'absolute',  //https://github.com/GrapesJS/grapesjs/issues/1936 почитать, полезные вещи
+                dragMode: 'absolute',
                 selectorManager: {componentFirst: true},
-                storageManager: false, // Отключаем сохранение
-
-                plugins: [grapesjspresetwebpage, plugin],
-
+                storageManager: false,
+                plugins: [grapesjspresetwebpage, plugin, chartjsPlugin],
+                pluginsOpts: {
+                    [chartjsPlugin]: {
+                        // Выбираем только нужные типы графиков
+                        blocks: ['chartjs-bar', 'chartjs-pie', 'chartjs-line', 'chartjs-doughnut', 'chartjs-polarArea',
+                            'chartjs-radar',
+                            // 'chartjs-bubble', 'chartjs-scatter'
+                        ],
+                        category: {
+                            id: 'chartjs',
+                            label: 'Графики'
+                        },
+                        chartjsOptions: {
+                            maintainAspectRatio: false,
+                            responsive: true,
+                            devicePixelRatio: 2,
+                        }
+                    }
+                },
                 blockManager: {
                     blocks: []
                 },
-                style: [],
+                style: ` `,
                 canvas: {},
-                // Очищаем список устройств
                 deviceManager: {
-                    devices: [], // Полностью убираем все предустановленные размеры
+                    devices: [], // Очищаем список устройств
                 },
             });
 
+            //Синхронизация размера графика при изменении размера
+            editor.on('component:resize:end', (data) => {
+                const component = data.component;
+                if (component && component.get('type') === 'chartjs') {
+                    const el = component.view?.el;
+                    if (el) {
+                        const width = el.offsetWidth;
+                        const height = el.offsetHeight;
+
+                        const widthTrait = component.getTrait('cjs-chart-width');
+                        const heightTrait = component.getTrait('cjs-chart-height');
+
+                        if (widthTrait && widthTrait.getValue() !== width) {
+                            widthTrait.setValue(width);
+                            component.addAttributes({ 'cjs-chart-width': width });
+                        }
+                        if (heightTrait && heightTrait.getValue() !== height) {
+                            heightTrait.setValue(height);
+                            component.addAttributes({ 'cjs-chart-height': height });
+                        }
+                    }
+                }
+            });
 
             setTimeout(() => {
-
-                const canvasElement = editor.Canvas.getElement()
-
-                // Устанавливаем размеры канваса (формат A4)
-                if (isBookOrientation) {
-                    canvasElement.style.width = '794px';
-                    canvasElement.style.height = '1123px';
-                    canvasElement.style.marginLeft = '15%';
-                    editor.Canvas.getBody().style.width = '794px';
-                    editor.Canvas.getBody().style.height = '1123px';
-                } else {
-                    canvasElement.style.width = '1123px';
-                    canvasElement.style.height = '794px';
-                    canvasElement.style.padding = '20px'
-                    editor.Canvas.getBody().style.width = '1123px';
-                    editor.Canvas.getBody().style.height = '794px';
-                    editor.Canvas.getBody().style.margin = '20px';
-
-                }
-
-                canvasElement.style.backgroundColor = '#949494';
-                canvasElement.style.border = '5px';
-                canvasElement.style.overflow = 'hidden';
-
-                editor.Canvas.getBody().style.backgroundColor = '#9a9a9a';
-                editor.Canvas.getBody().style.backgroundColor = '#ffffff';
-                editor.Canvas.getBody().style.overflow = 'hidden';
+                const { width, height } = getPageDimensions(isBookOrientation);
+                setupCanvas(editor, width, height);
             }, 200);
 
             editor.setComponents(pages[0].content);
@@ -181,17 +196,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             // Добавляем стили для блоков
             editor.Css.addRules(`
-                .report-page {
-                  width: 297mm;
-                  height: 210mm;
-                  padding: 20mm;
-                  border: 1px solid #000;
-                  margin-bottom: 20px;
-                  background: #fff;
-               
-                  display: flex;
-                  flex-direction: column;
-                }
+
                 .band {
                   width: 100%;
                   padding: 10px;
@@ -213,7 +218,14 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                   border: 2px solid #00ff00 !important; /* Зеленая рамка при наведении */
                   background-color: rgba(0, 255, 0, 0.2);
                 }
-              `);
+                
+                /* Стиль для выделенного элемента */
+                .gjs-selected {
+                      outline: 2px solid #325ee1 !important;
+                      outline-offset: -2px;
+                }
+                
+            `);
 
             // Добавляем блоки для перетаскивания
             const blocks = [
@@ -224,7 +236,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     category: "Текст",
                     draggable: true,
                     droppable: false,
-                    //Нужно разрешить перемещать только в элементы котиорые являются бэндами!
+                    //Нужно разрешить перемещать только в элементы которые являются бэндами!
                 },
             ];
 
@@ -245,12 +257,30 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             editor.BlockManager.remove('map')
 
 
-            // Переименовываем категории у базового блока изобюражения
+            // Переименовываем категории у базового блока изображения
             editor.BlockManager.getAll().forEach(block => {
                 if (block.getCategoryLabel() === 'Basic') {
                     block.set('category', 'Графика');
                     block.set('label', 'Изображение');
                 }
+            });
+
+            setEditorView(editor);
+
+            // Добавьте обработчик монтирования компонентов
+            editor.on('component:mount', (component) => {
+                setTimeout(() => {
+                    const attrs = component.getAttributes();
+                    if (attrs['band-parent'] === 'true') {
+                        component.addAttributes({
+                            'data-locked-band': 'true',
+                            'data-gjs-type': 'locked-band',
+                            'data-position-locked': 'true'
+                        });
+                        component.set('draggable', false);
+                        component.set('resizable', false);
+                    }
+                }, 10);
             });
 
 
@@ -264,8 +294,92 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     style.left = style.left || '0px';
                     component.setStyle(style);
                 }
+
+                // Включаем изменение размеров (тянуть за стороны) для всех новых компонентов
+                component.set('resizable', true);
             });
 
+            //Изменение размера с помощью мыши с учетом отступов канваса если элемент не вложенный
+            editor.on('component:resize', (data) => {
+                const component = data.component;
+                const el = data.el;
+                const type = data.type;
+
+                if (!el || !component) return;
+
+                const parent = component.parent();
+                const isNested = parent && parent.getStyle &&
+                    (parent.getStyle().position === 'relative' || parent.getStyle().position === 'absolute');
+
+                if (type === 'start') {
+                    const style = component.getStyle();
+                    el.dataset.resizeStartLeft = parseFloat(style.left) || 0;
+                    el.dataset.resizeStartTop = parseFloat(style.top) || 0;
+                    return;
+                }
+
+                if (type === 'move') {
+                    if (el.dataset.resizeStartLeft !== undefined) {
+                        let currentLeft = parseFloat(component.getStyle().left) || 0;
+                        let currentTop = parseFloat(component.getStyle().top) || 0;
+                        let currentWidth = parseFloat(component.getStyle().width) || el.offsetWidth;
+                        let currentHeight = parseFloat(component.getStyle().height) || el.offsetHeight;
+
+                        let newLeft = currentLeft;
+                        let newTop = currentTop;
+
+                        if (isNested) {
+                            // Для вложенных - компенсируем смещение на 1px влево и вверх
+                            newLeft = currentLeft + 1;
+                            newTop = currentTop + 1;
+                        } else {
+                            // Для корневых - компенсируем padding
+                            newLeft = currentLeft - CANVAS_PADDING_HORIZONTAL;
+                            newTop = currentTop - CANVAS_PADDING_VERTICAL;
+                            if (newLeft < 0) newLeft = 0;
+                            if (newTop < 0) newTop = 0;
+                        }
+
+                        component.addStyle({
+                            left: newLeft + 'px',
+                            top: newTop + 'px',
+                            width: currentWidth + 'px',
+                            height: currentHeight + 'px'
+                        });
+                    }
+                    return;
+                }
+
+                if (type === 'end') {
+                    let finalLeft = parseFloat(component.getStyle().left) || 0;
+                    let finalTop = parseFloat(component.getStyle().top) || 0;
+                    let finalWidth = parseFloat(component.getStyle().width) || el.offsetWidth;
+                    let finalHeight = parseFloat(component.getStyle().height) || el.offsetHeight;
+
+                    let correctedLeft = finalLeft;
+                    let correctedTop = finalTop;
+
+                    if (isNested) {
+                        correctedLeft = finalLeft + 1;
+                        correctedTop = finalTop + 1;
+                    } else {
+                        correctedLeft = finalLeft - CANVAS_PADDING_HORIZONTAL;
+                        correctedTop = finalTop - CANVAS_PADDING_VERTICAL;
+                        if (correctedLeft < 0) correctedLeft = 0;
+                        if (correctedTop < 0) correctedTop = 0;
+                    }
+
+                    component.addStyle({
+                        left: correctedLeft + 'px',
+                        top: correctedTop + 'px',
+                        width: finalWidth + 'px',
+                        height: finalHeight + 'px'
+                    });
+
+                    delete el.dataset.resizeStartLeft;
+                    delete el.dataset.resizeStartTop;
+                }
+            });
 
             //для того чтобы сдвигать описание футера страницы при изменении высоты
             editor.on('component:styleUpdate:height', (component) => {
@@ -318,6 +432,30 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
             });
 
+            editor.on('component:mount', function onMount(component) {
+                setTimeout(() => {
+                    const attrs = component.getAttributes();
+                    if (attrs['band'] === 'true' || attrs['band-parent'] === 'true' || attrs['data-band'] === 'true' || attrs['data-band-child'] === 'true') {
+                        component.set('draggable', false);
+                        component.set('resizable', false);
+
+                        // Получаем текущий toolbar и фильтруем
+                        let toolbar = component.get('toolbar');
+                        if (toolbar && toolbar.length > 0) {
+                            toolbar = toolbar.filter(btn => {
+                                const command = btn.command;
+                                // Убираем иконки изменение размера и дублирование
+                                return command !== 'move' &&
+                                    command !== 'tlb-move' &&
+                                    command !== 'duplicate' &&
+                                    command !== 'tlb-clone';
+                            });
+                            component.set('toolbar', toolbar);
+                        }
+                    }
+                }, 50);
+            });
+
             function moveComponentToTarget(param, isTarget) {
                 let model;
                 if (isTarget) {
@@ -332,76 +470,113 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     return;
                 }
 
-                const parentEl = modelEl.parentElement;
-                const parentRect = parentEl.getBoundingClientRect();
-                const modelRect = modelEl.getBoundingClientRect();
-
-                const initialTop = modelRect.top - parentRect.top;
-                // console.log("initialTop " + initialTop)
-
                 const modelRectBefore = modelEl.getBoundingClientRect();
 
                 const x = modelRectBefore.left + modelRectBefore.width / 2;
                 const y = modelRectBefore.top + modelRectBefore.height / 2;
 
-                // console.log("modelRectBefore.top " + modelRectBefore.top)
-
                 const target = findTargetComponentAtPoint(editor.DomComponents.getComponents(), x, y, modelEl);
 
+                // Получаем текущего родителя модели
+                const currentParent = model.parent();
 
-                if (target && target !== param.parent) {
-                    const targetEl = target.view?.el;
+                // Проверяем, является ли цель бэндом
+                const isTargetBand = target && target.view?.el && (
+                    target.view.el.hasAttribute('data-band') ||
+                    target.view.el.hasAttribute('band') ||
+                    target.view.el.hasAttribute('data-band-child')
+                );
 
-                    if (targetEl) {
+                // Проверяем, является ли текущий родитель бэндом
+                const isCurrentParentBand = currentParent && currentParent.view?.el && (
+                    currentParent.view.el.hasAttribute('data-band') ||
+                    currentParent.view.el.hasAttribute('band') ||
+                    currentParent.view.el.hasAttribute('data-band-child')
+                );
+
+                // Случай 1: Перетаскивание НАД бэндом, который НЕ является текущим родителем
+                if (isTargetBand && target !== currentParent) {
+                    const modelTopBefore = modelRectBefore.top;
+                    const modelLeftBefore = modelRectBefore.left;
+
+                    // Вставляем модель внутрь нового бэнда
+                    target.append(model);
+
+                    // Компенсация отступа при перетаскивании
+                    requestAnimationFrame(() => {
+                        const modelElAfter = model.view?.el;
+                        if (!modelElAfter) return;
+
+                        const modelRectAfter = modelElAfter.getBoundingClientRect();
+                        const deltaY = modelTopBefore - modelRectAfter.top;
+                        const deltaX = modelLeftBefore - modelRectAfter.left;
+
+                        const currentStyle = model.getStyle();
+                        let currentLeft = parseFloat(currentStyle.left) || 0;
+                        let currentTop = parseFloat(currentStyle.top) || 0;
+
+                        if (currentStyle.position !== 'absolute') {
+                            model.addStyle({ position: 'absolute' });
+                        }
+
+                        model.addStyle({
+                            left: (currentLeft + deltaX) + 'px',
+                            top: (currentTop + deltaY) + 'px'
+                        });
+                    });
+                    return;
+                }
+
+                // Случай 2: Перетаскивание НЕ над бэндом И элемент находится внутри бэнда
+                if (!isTargetBand && isCurrentParentBand) {
+                    // Перемещаем в корень (wrapper)
+                    const wrapper = editor.getWrapper();
+                    if (wrapper && currentParent !== wrapper) {
                         const modelTopBefore = modelRectBefore.top;
                         const modelLeftBefore = modelRectBefore.left;
+                        const canvasRect = editor.Canvas.getBody().getBoundingClientRect();
 
-                        if ((targetEl.getAttribute('data-band') === 'true') || (targetEl.getAttribute('band') === 'true')
-                            || (targetEl.getAttribute('data-band-child') === 'true')) {
-                            // Вставляем модель внутрь нового родителя
-                            target.append(model);
+                        wrapper.append(model);
 
-                            //Компенсация отступа сверху при перетаскивании
-                            requestAnimationFrame(() => {
-                                const modelElAfter = model.view?.el;
-                                if (!modelElAfter) return;
+                        requestAnimationFrame(() => {
+                            const modelElAfter = model.view?.el;
+                            if (!modelElAfter) return;
 
-                                const modelRectAfter = modelElAfter.getBoundingClientRect();
-                                const modelTopAfter = modelRectAfter.top;
-                                const modelLeftAfter = modelRectAfter.left;
+                            // Вычисляем позицию относительно canvas
+                            let newLeft = modelLeftBefore - canvasRect.left;
+                            let newTop = modelTopBefore - canvasRect.top;
 
-                                // Вычисляем разницу между старым и новым положением
-                                const deltaY = modelTopBefore - (modelTopAfter);
-                                const deltaX = modelLeftBefore - (modelLeftAfter);
+                            if (newLeft < 0) newLeft = 0;
+                            if (newTop < 0) newTop = 0;
 
-                                // // Применяем компенсацию через CSS-трансформацию (менее затратно, чем top/left)
-                                // model.target.addStyle({
-                                //     transform: `translate(${deltaX}px, ${deltaY}px)`,
-                                // });
-
-                                // console.log("modelTopBefore: " + modelTopBefore)
-                                // console.log("modelTopAfter: " + modelTopAfter)
-                                // console.log("deltaY: " + deltaY)
-                                model.addStyle({
-                                    // position: 'relative',
-                                    // top: `${deltaY}px`
-                                    top: `20%`
-                                });
-
-                                // Через 1 кадр убираем компенсацию (после завершения анимации)
-                                requestAnimationFrame(() => {
-                                    model.addStyle({
-                                        transform: 'none',
-                                    });
-                                });
-
-                                // console.log(`Компенсировано смещение: X=${deltaX}px, Y=${deltaY}px`);
+                            model.addStyle({
+                                position: 'absolute',
+                                left: newLeft + 'px',
+                                top: newTop + 'px'
                             });
-                        }
+                        });
                     }
+                    return;
+                }
+
+                // Случай 3: Перетаскивание внутри того же бэнда - ничего не делаем
+                if (isTargetBand && target === currentParent) {
+                    // Элемент уже в этом бэнде, просто обновляем позицию
+                    const parentRect = currentParent.view.el.getBoundingClientRect();
+                    let newLeft = modelRectBefore.left - parentRect.left;
+                    let newTop = modelRectBefore.top - parentRect.top;
+
+                    if (newLeft < 0) newLeft = 0;
+                    if (newTop < 0) newTop = 0;
+
+                    model.addStyle({
+                        position: 'absolute',
+                        left: newLeft + 'px',
+                        top: newTop + 'px'
+                    });
+                    return;
                 }
             }
-
 
             function findTargetComponentAtPoint(components, x, y, ignoreEl) {
                 let target = null;
@@ -489,7 +664,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             // Событие начала перетаскивания компонента
             editor.on("component:drag:start", (model) => {
-                // console.log("Началось перетаскивание компонента:", model);
                 // Убираем индикаторы с возможных контейнеров
                 editor.getComponents().forEach((comp) => {
                     comp.removeClass("droppable-hover");
@@ -498,7 +672,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             // Обработчик события перемещения компонента
             editor.on("component:drag:stop", (model) => {
-                // console.log("Перетаскивание завершено:", model);
                 // Убираем индикатор с контейнера
                 editor.getComponents().forEach((comp) => {
                     comp.removeClass("droppable-hover");
@@ -518,6 +691,14 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 });
             });
 
+            // Добавляем настройки шрифтов для графиков
+            editor.on('component:add', (component) => {
+                if (component.get('type') === 'chartjs') {
+                    addFontSettings(component);
+                    initFontSettings(component);
+                }
+            });
+
 
             editor.Panels.getButton('options', 'sw-visibility').set('active', true);
 
@@ -526,12 +707,12 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 {
                     id: 'zoom-',
                     className: 'fa fa-magnifying-glass-minus',
-                    command: () => changeZoom(-10),
+                    command: () => changeZoom(-2),
                     attributes: {title: 'Уменьшить масштаб'},
                 }, {
                     id: 'zoom+',
                     className: 'fa fa-magnifying-glass-plus',
-                    command: () => changeZoom(10),
+                    command: () => changeZoom(2),
                     attributes: {title: 'Увеличить масштаб'},
                 },
             ]);
@@ -590,8 +771,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 restrictDragToCanvas(event.target);
             }));
 
-            // console.log(editor.Panels.getPanel('options'))
-
             editor.Panels.removeButton('options', 'preview');
             editor.Panels.removeButton('options', 'gjs-open-import-webpage');
 
@@ -639,147 +818,64 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             });
         };
 
-        const exportYAML = async () => {
-            saveCurrentPage(editorView).then((updatedPages) => {
-                let css = cleanCSS(updatedPages[0].styles).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-
-                const toOneLine = (value) => {
-                    if (typeof value === 'string') {
-                        return value.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-                    }
-                    if (value === null || value === undefined) return '';
-                    if (typeof value === 'object') return JSON.stringify(value);
-                    return String(value);
-                };
-
-                let resultWithoutScript = {
-                    dbUrl: settingDB.url,
-                    dbUsername: settingDB.username,
-                    dbPassword: settingDB.password,
-                    dbDriver: settingDB.driverClassName,
-                    sql,
-                    reportName: reportName,
-                    reportCategory: reportCategory,
-                    content: updatedPages[0].content,
-                    styles: css,
-                    sqlMode: isSqlMode,
-                    dataBands: JSON.stringify(dataBandsOpt),
-                    bookOrientation: isBookOrientation,
-                    layoutParamSettings: toOneLine(layoutParamSettings),
-                    layoutParam: toOneLine(layoutParam),
-                    parameters: parameters,
-                }
-
-                try {
-                    let yamlString = yaml.dump(resultWithoutScript, {indent: 2, lineWidth: -1, noRefs: true});
-
-                    const cleanScript = script.replace(/\\r\\n/g, '\n').replace(/\\r/g, '\n');
-                    const scriptLines = cleanScript.split('\n');
-                    const scriptBlock = 'script: |-\n' + scriptLines.map(line => '  ' + line).join('\n');
-                    const finalYaml = yamlString + scriptBlock + '\n';
-
-                    const blob = new Blob([finalYaml], {type: "application/yaml"});
-                    const link = document.createElement("a");
-                    link.href = URL.createObjectURL(blob);
-                    link.download = reportName + ".yaml";
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                } catch (error) {
-                    console.error("Ошибка при экспорте отчета:", error);
-                    setModalMsg("Ошибка при экспорте отчета.");
-                    showModalNotif();
-                }
-            });
+        const getPageDimensions = (isBookOrientation) => {
+            return isBookOrientation
+                ? { width: 794, height: 1123 }
+                : { width: 1123, height: 794 };
         };
 
+        const setupCanvas = (editor, width, height) => {
+            const canvasElement = editor.Canvas.getElement();
+            if (!canvasElement) return;
 
-        const importYAML = () => {
-            const fileInput = document.createElement("input");
-            fileInput.type = "file";
-            fileInput.accept = ".yaml,.yml";
-            fileInput.style.display = "none";
+            canvasElement.style.width = `${width + (CANVAS_PADDING_HORIZONTAL * 2)}px`;
+            canvasElement.style.height = `${height + (CANVAS_PADDING_VERTICAL * 2)}px`;
+            isBookOrientation? canvasElement.style.marginLeft = '15%' : canvasElement.style.marginLeft = '5%';
+            canvasElement.style.marginTop = '20px';
+            canvasElement.style.overflow = 'hidden';
 
-            // Обратная функция для toOneLine
-            const fromOneLine = (value) => {
-                if (typeof value === 'string') {
-                    if (value.trim().startsWith('{') || value.trim().startsWith('[')) {
-                        try {
-                            return JSON.parse(value);
-                        } catch {
-                            return value;
-                        }
-                    }
-                    return value;
+            const body = editor.Canvas.getBody();
+            body.style.width = `${width}px`;
+            body.style.height = `${height}px`;
+            body.style.backgroundColor = '#ffffff';
+            body.style.margin = '0 auto';
+            body.style.display = 'block';
+            body.style.overflow = 'hidden';
+
+            editor.Css.addRules(`
+                html {
+                    padding: ${CANVAS_PADDING_VERTICAL}px ${CANVAS_PADDING_HORIZONTAL}px;
+                    background-color: #ffffff;
+                    box-sizing: border-box;
                 }
-                return value;
-            };
 
-            fileInput.addEventListener("change", (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
+                body {
+                    position: relative;
+                }
 
-                const reader = new FileReader();
-
-                reader.onload = (e) => {
-                    try {
-                        const yamlContent = e.target.result;
-                        const importedData = yaml.load(yamlContent);
-
-                        setPages([{id: 1, content: "", styles: ""}]);
-                        setCurrentPage(1);
-
-                        setSettingDB({
-                            url: importedData.dbUrl,
-                            username: importedData.dbUsername,
-                            password: importedData.dbPassword,
-                            driverClassName: importedData.dbDriver
-                        });
-
-                        setSql(importedData.sql);
-                        setReportName(importedData.reportName);
-                        setReportCategory(importedData.reportCategory);
-
-                        editorView.setComponents(importedData.content);
-                        editorView.setStyle(importedData.styles);
-
-                        setParameters(importedData.parameters || []);
-                        setIsSqlMode(importedData.sqlMode);
-                        setScript(importedData.script || '');
-
-                        setDataBandsOpt(JSON.parse(importedData.dataBands));
-                        setIsBookOrientation(importedData.bookOrientation ?? true);
-
-                        // Применяем fromOneLine к полям, которые были через toOneLine
-                        setLayoutParamSettings(fromOneLine(importedData.layoutParamSettings));
-                        setLayoutParam(fromOneLine(importedData.layoutParam));
-
-                        setTimeout(() => defineBands(importedData.content), 200);
-
-                        setModalMsg("Отчет успешно импортирован!");
-                        showModalNotif();
-
-                    } catch (error) {
-                        console.error("Ошибка при импорте отчета:", error);
-                        setModalMsg("Ошибка импорта отчета! Проверьте данные на корректность.");
-                        showModalNotif();
-                    }
-                };
-                reader.readAsText(file);
-            });
-
-            document.body.appendChild(fileInput);
-            fileInput.click();
-            document.body.removeChild(fileInput);
+                [data-gjs-type="wrapper"] {
+                    min-height: auto !important;
+                    height: ${height}px !important;
+                    max-height: ${height}px !important;
+                    padding-top: 0 !important;
+                    overflow: hidden !important;
+                }
+            `);
         };
+
+        useEffect(() => {
+            if (!editorView) return;
+            const { width, height } = getPageDimensions(isBookOrientation);
+            setupCanvas(editorView, width, height);
+        }, [isBookOrientation]);
 
         const updateCanvasZoom = (newZoom) => {
             if (!editorView) return;
             const frame = editorView.Canvas.getElement();
             if (frame) {
-                const scaleValue = newZoom / 100; // Преобразуем проценты в scale
+                const scaleValue = newZoom / 100;
                 frame.style.transform = `scale(${scaleValue})`;
-                frame.style.transformOrigin = "0 0"; // Фиксируем точку начала
+                frame.style.transformOrigin = "0 0";  // ВАЖНО: левый верхний угол
             }
         };
 
@@ -789,11 +885,51 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             });
         };
 
-
         useEffect(() => {
             if (editorView) updateCanvasZoom(zoom);
         }, [zoom]);
 
+        // // Зум при зажатом Alt + колесо мыши
+        // useEffect(() => {
+        //     if (!editorView) return;
+        //
+        //     let isAltPressed = false;
+        //
+        //     const handleKeyDown = (e) => {
+        //         if (e.altKey && !isAltPressed) {
+        //             isAltPressed = true;
+        //             document.body.classList.add('alt-zoom-active');
+        //         }
+        //     };
+        //
+        //     const handleKeyUp = (e) => {
+        //         if (!e.altKey && isAltPressed) {
+        //             isAltPressed = false;
+        //             document.body.classList.remove('alt-zoom-active');
+        //         }
+        //     };
+        //
+        //     const handleWheel = (e) => {
+        //         if (!isAltPressed && !e.altKey) return;
+        //
+        //         e.preventDefault();
+        //         e.stopPropagation();
+        //
+        //         const delta = e.deltaY > 0 ? -2 : 2;
+        //         changeZoom(delta);
+        //     };
+        //
+        //     window.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+        //     window.addEventListener('keydown', handleKeyDown);
+        //     window.addEventListener('keyup', handleKeyUp);
+        //
+        //     return () => {
+        //         window.removeEventListener('wheel', handleWheel, { capture: true });
+        //         window.removeEventListener('keydown', handleKeyDown);
+        //         window.removeEventListener('keyup', handleKeyUp);
+        //         document.body.classList.remove('alt-zoom-active');
+        //     };
+        // }, [editorView]);
 
         function addBlocks(editor) {
 
@@ -876,6 +1012,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: true,
@@ -895,14 +1032,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                                  <p data-field="true"  style="position: absolute; top: 60px; left: 20px; margin: 0px">Укажите поле из запроса в двойных скобках: {{field_1}}</p>
                               </div>
                           `,
-                        // script: function () {
-                        //     this.querySelector('.data-band-field').addEventListener('click', function () {
-                        //         alert('Будущее окно выбора поля из БД');
-                        //     });
-                        //     this.querySelector('.data-band-table').addEventListener('click', function () {
-                        //         alert('Будущее окно выбора таблицы из БД');
-                        //     });
-                        // },
                     },
                 },
             });
@@ -915,6 +1044,9 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             } else {
                 components.add('<div data-gjs-type="data-band-block"></div>');
             }
+
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addChildDataBand(childName) {
@@ -925,6 +1057,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: true,
@@ -956,6 +1089,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             } else {
                 components.add('<div data-gjs-type="data-child-band-block"></div>');
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addPageHeaderBand() {
@@ -965,6 +1100,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: false,
@@ -998,6 +1134,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
                 setUsedBands(prevState => ({...prevState, headerPage: true}))
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addReportTitleBand() {
@@ -1007,6 +1145,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: false,
@@ -1035,6 +1174,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 components.add('<div data-gjs-type="reportTitle-band-block"></div>', {at: 0}); // Добавляем первым элементом
                 setUsedBands(prevState => ({...prevState, reportTitle: true}))
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addPageFooterBand() {
@@ -1044,6 +1185,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: false,
@@ -1076,6 +1218,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 components.add('<div data-gjs-type="pageFooter-band-block"></div>', {at: components.length});
                 setUsedBands(prevState => ({...prevState, footerPage: true}))
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
         function addReportSummaryBand() {
@@ -1085,6 +1229,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         tagName: 'div',
                         draggable: false,
                         droppable: true,
+                        resizable: false,
                         highlightable: true,
                         copyable: false,
                         removable: false,
@@ -1112,6 +1257,8 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 components.add('<div data-gjs-type="reportSummary-band-block"></div>', {at: components.length});
                 setUsedBands(prevState => ({...prevState, reportSummary: true}))
             }
+            lockAllBandParents()
+            lockAllBand()
         }
 
 
@@ -1141,13 +1288,36 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
         async function enterPreviewMode(params) {
             params = ReportService.addDefaultParameters(params, parameters);
-            let startTime = performance.now();
             setIsModalParameter(false);
+
             const data = await fetchReportData("", "", settingDB.url, settingDB.username,
                 settingDB.password, settingDB.driverClassName, sql, "", "", params, script, isSqlMode)
+
             if (!data) {
                 return
             }
+
+            // // ТЕСТОВЫЕ ДАННЫЕ С ТРЕМЯ ДАТАСЕТАМИ
+            // data.globalVar = {
+            //     dynamicLabels: ['Янв', 'Фев', 'Март', 'Апр', 'Май'],
+            //     dynamicData1: [100, 200, 150, 180, 220],
+            //     set0: [50, 80, 120, 90, 60],
+            //     dynamicData3: [30, 40, 60, 50, 45]
+            // };
+            //
+            // // Также добавляем данные в каждую строку таблицы
+            // if (data.tableData && data.tableData.length > 0) {
+            //     data.tableData = data.tableData.map(row => ({
+            //         ...row,
+            //         set0: ['Янв222', 'Фев', 'Март', 'Апр', 'Май'],
+            //         dynamicData1: [row.number_field, row.number_field + 100, row.number_field + 200, row.number_field + 150, row.number_field + 50],
+            //         dynamicData2: [row.number_field + 50, row.number_field + 15, row.number_field + 25, row.number_field + 20, row.number_field + 10],
+            //         dynamicData3: [row.number_field + 70, row.number_field + 45, row.number_field + 65, row.number_field + 80, row.number_field + 30],
+            //         set1: [160, 99, row.number_field + 12, row.number_field + 9, row.number_field + 4]
+            //     }));
+            // }
+            // // ДО СЮДА
+
             setDataParam(params)
             setData(data)
             setHtml(editorView.getHtml())
@@ -1158,12 +1328,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             setTimeout(() => {
                 setIsLoading(false)
-
-                let endTime = performance.now();
-                const seconds = (endTime - startTime) / 1000; // Преобразуем миллисекунды в секунды
-                // console.log("Рендер + данные: " + seconds.toFixed(3))
             }, 1300)
-
         }
 
 
@@ -1252,16 +1417,161 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             return [...uniqueGlobalRules, ...otherRules].join('\n');
         }
 
+        const exportYAML = async () => {
+            saveCurrentPage(editorView).then((updatedPages) => {
+                let css = cleanCSS(updatedPages[0].styles).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                let content = updatedPages[0].content;
+                // Добавляем data-gjs-type="chartjs" ко всем графикам в HTML строке
+                content = content.replace(/(<div[^>]*cjs-chart-type[^>]*)/g, '$1 data-gjs-type="chartjs"');
+
+                const toOneLine = (value) => {
+                    if (typeof value === 'string') {
+                        return value.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                    }
+                    if (value === null || value === undefined) return '';
+                    if (typeof value === 'object') return JSON.stringify(value);
+                    return String(value);
+                };
+
+                let resultWithoutScript = {
+                    dbUrl: settingDB.url,
+                    dbUsername: settingDB.username,
+                    dbPassword: settingDB.password,
+                    dbDriver: settingDB.driverClassName,
+                    sql,
+                    reportName: reportName,
+                    reportCategory: reportCategory,
+                    content: content,
+                    styles: css,
+                    sqlMode: isSqlMode,
+                    dataBands: JSON.stringify(dataBandsOpt),
+                    bookOrientation: isBookOrientation,
+                    layoutParamSettings: toOneLine(layoutParamSettings),
+                    layoutParam: toOneLine(layoutParam),
+                    parameters: parameters,
+                }
+
+                try {
+                    let yamlString = yaml.dump(resultWithoutScript, {indent: 2, lineWidth: -1, noRefs: true});
+
+                    const cleanScript = script.replace(/\\r\\n/g, '\n').replace(/\\r/g, '\n');
+                    const scriptLines = cleanScript.split('\n');
+                    const scriptBlock = 'script: |-\n' + scriptLines.map(line => '  ' + line).join('\n');
+                    const finalYaml = yamlString + scriptBlock + '\n';
+
+                    const blob = new Blob([finalYaml], {type: "application/yaml"});
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = reportName + ".yaml";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (error) {
+                    console.error("Ошибка при экспорте отчета:", error);
+                    setModalMsg("Ошибка при экспорте отчета.");
+                    showModalNotif();
+                }
+            });
+        };
+
+
+        const importYAML = () => {
+            const fileInput = document.createElement("input");
+            fileInput.type = "file";
+            fileInput.accept = ".yaml,.yml";
+            fileInput.style.display = "none";
+
+            // Обратная функция для toOneLine
+            const fromOneLine = (value) => {
+                if (typeof value === 'string') {
+                    if (value.trim().startsWith('{') || value.trim().startsWith('[')) {
+                        try {
+                            return JSON.parse(value);
+                        } catch {
+                            return value;
+                        }
+                    }
+                    return value;
+                }
+                return value;
+            };
+
+            fileInput.addEventListener("change", (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+
+                reader.onload = (e) => {
+                    try {
+                        const yamlContent = e.target.result;
+                        const importedData = yaml.load(yamlContent);
+
+                        processChartsOnLoad(editorView, importedData.content);
+
+                        editorView.setComponents(importedData.content);
+                        editorView.setStyle(importedData.styles);
+
+                        setPages([{id: 1, content: "", styles: ""}]);
+                        setCurrentPage(1);
+
+                        setSettingDB({
+                            url: importedData.dbUrl,
+                            username: importedData.dbUsername,
+                            password: importedData.dbPassword,
+                            driverClassName: importedData.dbDriver
+                        });
+
+                        setSql(importedData.sql);
+                        setReportName(importedData.reportName);
+                        setReportCategory(importedData.reportCategory);
+
+                        setParameters(importedData.parameters || []);
+                        setIsSqlMode(importedData.sqlMode);
+                        setScript(importedData.script || '');
+
+                        setDataBandsOpt(JSON.parse(importedData.dataBands));
+                        setIsBookOrientation(importedData.bookOrientation ?? true);
+
+                        // Применяем fromOneLine к полям, которые были через toOneLine
+                        setLayoutParamSettings(fromOneLine(importedData.layoutParamSettings));
+                        setLayoutParam(fromOneLine(importedData.layoutParam));
+
+                        setTimeout(() => defineBands(importedData.content), 200);
+
+                        setModalMsg("Отчет успешно импортирован!");
+                        showModalNotif();
+
+                    } catch (error) {
+                        console.error("Ошибка при импорте отчета:", error);
+                        setModalMsg("Ошибка импорта отчета! Проверьте данные на корректность.");
+                        showModalNotif();
+                    }
+                };
+                reader.readAsText(file);
+            });
+
+            document.body.appendChild(fileInput);
+            fileInput.click();
+            document.body.removeChild(fileInput);
+
+            lockAllBand();
+            lockAllBandParents();
+        };
+
         async function saveReport(reportName) {
             showModalSaveReport();
 
             saveCurrentPage(editorView).then(async (updatedPages) => {
                 let css = cleanCSS(updatedPages[0].styles)
+                let content = updatedPages[0].content;
+                // Добавляем data-gjs-type="chartjs" ко всем графикам в HTML строке
+                content = content.replace(/(<div[^>]*cjs-chart-type[^>]*)/g, '$1 data-gjs-type="chartjs"');
                 try {
                     await ReportService.createReportTemplate(reportName, reportCategory,
                         encryptData(settingDB.url), encryptData(settingDB.username), encryptData(settingDB.password), settingDB.driverClassName, encryptData(sql),
                         parameters,
-                        updatedPages[0].content, css,
+                        content, css,
                         encryptData(script), isSqlMode, dataBandsOpt, isBookOrientation, layoutParamSettings, layoutParam);
                     setModalMsg("Документ успешно отправлен!");
 
@@ -1276,10 +1586,17 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         async function downloadReport(reportName) {
             try {
                 const response = await ReportService.getReportTemplateByReportName(reportName);
-                editorView.setComponents(response.data.content);
+                let content = response.data.content;
+
+                // Обработка графиков - одной строкой!
+                processChartsOnLoad(editorView, content);
+
+                editorView.setComponents(content);
                 editorView.setStyle(response.data.styles);
+
+                // Устанавливаем состояния
                 setReportName(response.data.reportName);
-                setReportCategory(response.data.reportCategory)
+                setReportCategory(response.data.reportCategory);
                 setSettingDB({
                     url: decryptData(response.data.dbUrl),
                     username: decryptData(response.data.dbUsername),
@@ -1295,9 +1612,59 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 setIsBookOrientation(response.data.bookOrientation);
                 setLayoutParam(JSON.parse(response.data.layoutParams));
                 setLayoutParamSettings(JSON.parse(response.data.layoutSettingsParams));
+
+                // //Это для миграции старых отчетов чтобы бэнды нельзя было перемещать и изменять размер мышью
+                // setTimeout(() => {
+                //     // Находим все бэнды в загруженном отчете
+                //     const wrapper = editorView.DomComponents.getWrapper();
+                //     if (!wrapper) return;
+                //
+                //     // Находим все родительские div у бэндов (те, у которых есть description-band внутри)
+                //     const allDivs = wrapper.find('div');
+                //     allDivs.forEach(div => {
+                //         // Проверяем есть ли внутри description-band
+                //         const hasDescription = div.components().some(child =>
+                //             child.getAttributes()?.['description-band'] === 'true'
+                //         );
+                //
+                //         // Проверяем есть ли внутри band="true"
+                //         const hasBand = div.components().some(child =>
+                //             child.getAttributes()?.['band'] === 'true' ||
+                //             child.getAttributes()?.['data-band'] === 'true'
+                //         );
+                //
+                //         // Если это контейнер бэнда - добавляем атрибут band-parent
+                //         if ((hasDescription || hasBand) && !div.getAttributes()?.['band-parent']) {
+                //             div.addAttributes({ 'band-parent': 'true' });
+                //             div.set('draggable', false);
+                //             div.set('resizable', false);
+                //         }
+                //     });
+                //
+                //     // Применяем CSS блокировку
+                //     const canvasDoc = editorView.Canvas.getDocument();
+                //     if (canvasDoc) {
+                //         const style = canvasDoc.createElement('style');
+                //         style.textContent = `
+                //             [band-parent="true"] {
+                //                 pointer-events: none !important;
+                //                 user-select: none !important;
+                //             }
+                //             [band-parent="true"] [band="true"],
+                //             [band-parent="true"] [data-band="true"],
+                //              [band-parent="true"] [data-band-child="true"]{
+                //                 pointer-events: auto !important;
+                //             }
+                //         `;
+                //         canvasDoc.head.appendChild(style);
+                //     }
+                // }, 200);
+
+                lockAllBand()
+                lockAllBandParents()
             } catch (error) {
-                console.error(error)
-                setModalMsg("Ошибка загрузки отчета с сервера! Попробуйте еще раз.")
+                console.error(error);
+                setModalMsg("Ошибка загрузки отчета с сервера! Попробуйте еще раз.");
                 showModalNotif();
             } finally {
                 showModalDownloadReport();
@@ -1307,7 +1674,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
         useEffect(() => { //вызываем блокировку перемещения бэндов и других настроек при добавлении бэндов
             lockAllBandParents()
             lockAllBand()
-        }, [usedBands])
+        }, [usedBands, editorView])
 
         function lockAllBandParents() {
             const bandParents = editorView?.DomComponents?.getWrapper()?.find('[band-parent="true"]');
@@ -1425,25 +1792,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             }
         }
 
-        useEffect(() => {
-            const canvasElement = editorView?.Canvas?.getElement()
-            if (canvasElement) {
-                if (isBookOrientation) {
-                    canvasElement.style.width = '794px';
-                    canvasElement.style.height = '1123px';
-                    editorView.Canvas.getBody().style.width = '794px';
-                    editorView.Canvas.getBody().style.height = '1123px';
-                    canvasElement.style.marginLeft = '15%';
-                } else {
-                    canvasElement.style.width = '1123px';
-                    canvasElement.style.height = '794px';
-                    editorView.Canvas.getBody().style.width = '1123px';
-                    editorView.Canvas.getBody().style.height = '794px';
-                    canvasElement.style.marginLeft = '5%';
-                }
-            }
-        }, [isBookOrientation])
-
 
         return (
             <div>
@@ -1461,7 +1809,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
                     <div className=" gjs-two-color gjs-one-bg flex flex-row justify-between gjs-pn-commands py-1">
                         <div className="flex justify-between text-center items-center pl-2 w-1/2">
-                            <div>
+                            <div className="pl-4">
                                 <span className="text-lg font-medium">Конструктор отчетов</span>
                                 <span className="px-2 text-lg">
                                      <i className="fa-solid fa-pencil"></i>

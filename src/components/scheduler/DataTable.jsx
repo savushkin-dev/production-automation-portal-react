@@ -19,6 +19,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
             UX: item.priority || 0,
             PDTN: item.startProductionDateTime || null,
             isSelected: selectJobs[item.snpz].isSelect || false,
+            isLabeling: item.handPackaging || false,
 
             startPlan: item.startProductionDateTime,
             line: item.lineId
@@ -182,14 +183,15 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
             <div className="px-3 py-2 rounded flex flex-row justify-between align-middle text-black mb-2">
                 <div className="w-1/3" style={{fontSize: '16px'}}>
                     <button
-                        className="bg-blue-800 hover:bg-blue-700 text-white px-3 py-1 w-36 rounded font-medium text-[0.950rem]"
-                        onClick={toggleAllGroups}
+                        className="px-3 h-[30px] w-36 text-[0.950rem] font-medium rounded-md bg-blue-800 hover:bg-blue-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]"
+
+                    onClick={toggleAllGroups}
                     >
                         {expandedGroupsCount === groupedData.length ? 'Свернуть все' : 'Развернуть все'}
                     </button>
 
                     <button
-                        className="ml-4 bg-blue-800 hover:bg-blue-700 text-white px-3 py-1 w-36 rounded font-medium text-[0.950rem]"
+                        className="ml-4 px-3 h-[30px] w-36 text-[0.950rem] font-medium rounded-md bg-blue-800 hover:bg-blue-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]"
                         onClick={selectAll}
                         disabled={availableItemsCount === 0}
                     >
@@ -206,7 +208,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
                          Задание {dateData}
                     </span>
                 </div>
-                <div className="w-1/3 py-1 text-end" style={{fontSize: '14px'}}>
+                <div className="w-1/3 py-1 text-end text-gray-800" style={{fontSize: '14px'}}>
                     Групп: {groupedData.length} | Развернуто: {expandedGroupsCount} | Всего
                     записей: {totalRecords} | Выбрано в таблице: {selectedInThisComponent}
                 </div>

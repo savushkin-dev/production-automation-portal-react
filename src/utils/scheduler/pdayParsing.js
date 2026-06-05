@@ -16,6 +16,7 @@ export function groupDataByDay(data, baseDate) {
     }
 
     const targetDays = {
+        dayMinus3: moment(baseMoment).subtract(3, 'days').format('YYYY-MM-DD'),
         dayMinus2: moment(baseMoment).subtract(2, 'days').format('YYYY-MM-DD'),
         dayMinus1: moment(baseMoment).subtract(1, 'day').format('YYYY-MM-DD'),
         currentDay: moment(baseMoment).format('YYYY-MM-DD'),
@@ -29,6 +30,7 @@ export function groupDataByDay(data, baseDate) {
     };
 
     const result = {
+        dayMinus3: [],
         dayMinus2: [],
         dayMinus1: [],
         currentDay: [],
@@ -63,7 +65,9 @@ export function groupDataByDay(data, baseDate) {
         }
 
         // Группировка по дням
-        if (itemDate === targetDays.dayMinus2) {
+        if (itemDate === targetDays.dayMinus3) {
+            result.dayMinus3.push(dataWithSelection);
+        } else if (itemDate === targetDays.dayMinus2) {
             result.dayMinus2.push(dataWithSelection);
         } else if (itemDate === targetDays.dayMinus1) {
             result.dayMinus1.push(dataWithSelection);
@@ -90,6 +94,7 @@ export function groupDataByDay(data, baseDate) {
 }
 
 // Функции для форматирования
+export const getDateMinus3 = (date) => moment(date).subtract(3, 'days').format('DD.MM.YYYY');
 export const getDateMinus2 = (date) => moment(date).subtract(2, 'days').format('DD.MM.YYYY');
 export const getDateMinus1 = (date) => moment(date).subtract(1, 'day').format('DD.MM.YYYY');
 export const getDateCurrent = (date) => moment(date).format('DD.MM.YYYY');
@@ -103,7 +108,7 @@ export const getDatePlus7 = (date) => moment(date).add(7, 'days').format('DD.MM.
 
 function getEmptyResult() {
     return {
-        dayMinus2: [], dayMinus1: [], currentDay: [],
+        dayMinus3: [], dayMinus2: [], dayMinus1: [], currentDay: [],
         dayPlus1: [], dayPlus2: [], dayPlus3: [],
         dayPlus4: [], dayPlus5: [], dayPlus6: [], dayPlus7: [],
         selectJobs: {}

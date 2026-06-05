@@ -1,32 +1,44 @@
 import React from 'react'
 
-
-export function ModalNotifyError({title, message, onClose}) {
+export function ModalNotifyError({ title, message, onClose }) {
     return (
         <>
             <div
-                className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0" style={{zIndex: 99}}
+                className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-all duration-200"
+                style={{ zIndex: 199 }}
                 onClick={onClose}
             />
             <div
-                className="w-full max-w-[500px] lg:w-[500px] p-5 z-30  rounded bg-white absolute top-1/3 left-1/2 -translate-x-1/2 px-8"
-                style={{zIndex: 100}}
+                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
+                style={{ zIndex: 200 }}
             >
-                <div className="flex flex-row justify-start mb-2">
-                    <h1 className="text-xl font-medium text-start ">{title}</h1>
-                    <span className="text-red-600 pr-2 h-[20px] mt-1 ml-2 w-[20px]">
-                        <i className="fa-solid fa-triangle-exclamation"></i>
-                    </span>
+                {/* Header */}
+                <div className="flex items-center gap-3 px-6 py-4 border-b border-red-100 ">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100">
+                        <i className="fa-solid fa-triangle-exclamation text-red-600 text-lg"></i>
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-semibold text-red-800">{title}</h2>
+                        <p className="text-xs text-red-500 mt-0.5">Произошла ошибка при выполнении операции</p>
+                    </div>
                 </div>
 
-                <div className="flex flex-col">
-                    <span className="my-3 text-red-600 font-medium">{message}</span>
-                    <button onClick={onClose}
-                            className="w-14 px-2 h-7 self-end my-2 rounded text-sm font-medium shadow-sm border bg-blue-800 hover:bg-blue-700 text-white">
-                        ОК
+                {/* Content */}
+                <div className="px-6 py-5">
+                    <div className=" rounded-xl p-4 border-red-100">
+                        <p className="text-sm text-red-700 leading-relaxed">{message}</p>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex justify-end px-6 py-4 bg-slate-50 border-t border-slate-100">
+                    <button
+                        onClick={onClose}
+                        className="px-5 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]"
+                    >
+                        Закрыть
                     </button>
                 </div>
-
             </div>
         </>
     )

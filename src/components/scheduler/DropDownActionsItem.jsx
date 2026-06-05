@@ -1,9 +1,9 @@
 import React, {useEffect} from "react";
-import {isDelayItem, isFactItem} from "../../utils/scheduler/items";
+import {isCleaningItem, isDelayItem, isFactItem} from "../../utils/scheduler/items";
 
 
 export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs, openModalAssignSettings, selectedItems,
-                                    updateServiceWork, removeServiceWork, sortRange, updateDelayJob}) {
+                                    updateServiceWork, removeServiceWork, sortRange, updateDelay}) {
 
     const isDateWithinLastDays = (isoDateString, days) => {
         if (!isoDateString) return false;
@@ -41,7 +41,8 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                     <div className="px-2 py-1">
                         {!contextMenu.forCanvas &&
                             <>
-                                {!isDelayItem(contextMenu.item) &&
+
+                                {!isDelayItem(contextMenu.item) && !isCleaningItem(contextMenu.item) &&
                                     <>
                                         <button onClick={() => {
                                             pin()
@@ -97,11 +98,12 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                                         </button>
                                     </>
                                 }
+
                                 {/*Отображение для элемента отклонения*/}
-                                {isDelayItem(contextMenu.item) && selectedItems.length === 1 &&
+                                {(isDelayItem(contextMenu.item) || isCleaningItem(contextMenu.item)) && selectedItems.length === 1 &&
                                     <>
                                         <button onClick={() => {
-                                            updateDelayJob()
+                                            updateDelay()
                                         }} className={styleButton}>
                                             Изменить описание
                                         </button>

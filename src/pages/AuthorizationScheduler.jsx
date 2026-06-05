@@ -4,7 +4,7 @@ import {Context} from "../index";
 import {observer} from "mobx-react-lite";
 import {useLocation, useNavigate} from "react-router-dom";
 
-function Authorization() {
+function AuthorizationScheduler() {
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -25,7 +25,7 @@ function Authorization() {
     function login() {
         store.login(username, password).then(() => {
             if (store.isAuth) {
-                navigate(from, {replace: true});
+                navigate('/scheduler', {replace: true});
             }
         }).catch(() => {
             setIsError(true);
@@ -33,27 +33,12 @@ function Authorization() {
     }
 
 
-    useEffect(() => {
-        const handleGlobalKeyPress = (event) => {
-            if (event.key === 'Enter') {
-                login();
-            }
-        };
-
-        window.addEventListener('keydown', handleGlobalKeyPress);
-
-        return () => {
-            window.removeEventListener('keydown', handleGlobalKeyPress);
-        };
-    }, [username, password]);
-
-
     return (
         <div
             className="w-[375px] lg:w-[640px] h-[480px] px-5 lg:px-36 absolute top-28 left-1/2 -translate-x-1/2 shadow-2xl border-2 rounded-2xl">
             <div className="h-[150px] py-14 text-center">
                <span className="text-3xl font-bold">
-                   Автоматизация производства
+                   Планировщик задач
                </span>
             </div>
 
@@ -129,7 +114,7 @@ function Authorization() {
 
                     <button className="mt-4 p-1 rounded text-blue-800  hover:bg-blue-50"
                             onClick={() => {
-                                navigate(from, {replace: true})
+                                navigate('/scheduler', {replace: true})
                             }}>
                         Авторизоваться как гость
                     </button>
@@ -142,4 +127,4 @@ function Authorization() {
     )
 }
 
-export default observer(Authorization);
+export default observer(AuthorizationScheduler);
