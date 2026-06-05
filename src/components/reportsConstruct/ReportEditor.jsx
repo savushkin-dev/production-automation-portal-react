@@ -10,6 +10,7 @@ import grapesjspresetwebpage from 'grapesjs-preset-webpage/dist/index.js';
 import chartjsPlugin from 'grapesjs-chartjs-plugin';
 import ru from 'grapesjs/locale/ru';
 import ruCharts from "../../locale/ru-charts";
+// import ru from "../../locale/ru-charts";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import Dropdown from "../dropdown/Dropdown";
@@ -159,6 +160,59 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 canvas: {},
                 deviceManager: {
                     devices: [], // Очищаем список устройств
+                },
+                styleManager: {
+                    sectors: [
+                        {
+                            name: 'Размеры и позиция',
+                            open: false,
+                            properties: [
+                                'width',
+                                'height',
+                                'top',
+                                'right',
+                                'left',
+                                'bottom',
+                            ]
+                        },
+                        {
+                            name: 'Шрифт',
+                            open: false,
+                            properties: [
+                                'font-family',
+                                'font-size',
+                                'font-weight',
+                                'color',
+                                'line-height',
+                                'text-align'
+                            ]
+                        },
+                        {
+                            name: 'Отступы',
+                            open: false,
+                            properties: [
+                                'margin',
+                                'padding'
+                            ]
+                        },
+                        {
+                            name: 'Граница',
+                            open: false,
+                            properties: [
+                                'border-radius',
+                                'border',
+                            ]
+                        },
+                        {
+                            name: 'Фон',
+                            open: false,
+                            properties: [
+                                'background-color',
+                                'background',
+                                'opacity'
+                            ]
+                        },
+                    ]
                 },
             });
 
@@ -699,6 +753,34 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
             });
 
+            // Скрываем секцию шрифтов для графиков
+            editor.on('component:selected', (component) => {
+                const styleManager = editor.StyleManager;
+                const isChart = component && component.get('type') === 'chartjs';
+
+                const typographySector = styleManager.getSector('шрифт');
+
+                if (isChart) {
+                    if (typographySector) {
+                        styleManager.removeSector('шрифт');
+                    }
+                } else {
+                    if (!styleManager.getSector('шрифт')) {
+                        styleManager.addSector('шрифт', {
+                            name: 'Шрифт',
+                            open: false,
+                            properties: [
+                                'font-family',
+                                'font-size',
+                                'font-weight',
+                                'color',
+                                'line-height',
+                                'text-align'
+                            ]
+                        }, {at:1});
+                    }
+                }
+            });
 
             editor.Panels.getButton('options', 'sw-visibility').set('active', true);
 
