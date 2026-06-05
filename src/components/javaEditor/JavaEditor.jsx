@@ -7,6 +7,9 @@ import {styleInputWithoutRounded} from "../../data/styles";
 import Select from "react-select";
 import {CustomStyleWithoutRounded} from "../../data/styleForSelect";
 import { v4 as uuidv4 } from 'uuid';
+import {WhiteButton} from "../reportsConstruct/buttons/WhiteButton";
+import {BlueButton} from "../reportsConstruct/buttons/BlueButton";
+import {GrayButton} from "../reportsConstruct/buttons/GrayButton";
 
 export function JavaEditor({script, parameters, setScript, onClose, setParameters, layout, setLayout}) {
 
@@ -186,22 +189,48 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
         input.click();
     };
 
+    const exportJavaFile = () => {
+        if (!script || script.trim() === '') {
+            alert('Нет содержимого для экспорта');
+            return;
+        }
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+
+        const fileName = `report_script_${year}-${month}-${day}_${hours}-${minutes}-${seconds}.java`;
+
+        const blob = new Blob([script], { type: 'text/plain' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = fileName;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="bg-blue-6002 mb-8">
             <div className="flex flex-col">
                 <div className="flex flex-row py-3 px-8">
-                    <div className="flex justify-between w-3/5 text-2xl font-medium items-center text-center">
-                        <span>Редактор скрипта</span>
-                        <button onClick={importFile}
-                                className="px-2 h-7 rounded text-sm font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
-                            Импортировать файл
-                        </button>
+                    <div className="flex justify-between w-3/5 items-center text-center">
+                        <span className="text-xl font-bold text-gray-700">Редактор скрипта</span>
+                        <div className="flex justify-end gap-3">
+                            <WhiteButton onClick={importFile} text={"Импортировать отредактированный файл"} icon={"fa-solid fa-download"}/>
+                            <WhiteButton onClick={exportJavaFile} text={"Экспортировать файл для редактирования"} icon={"fa-solid fa-upload"}/>
+                        </div>
+
                     </div>
                     <div className="flex flex-row justify-end w-2/5">
-                        <button onClick={onClose}
-                                className="px-2 h-7 rounded text-sm font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
-                            Конструктор
-                        </button>
+                        <WhiteButton onClick={onClose} text={"Вернуться в конструктор"}/>
                     </div>
                 </div>
 
@@ -248,24 +277,16 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
                                             className="text-sm font-medium text-blue-700 w-auto">{parameters.length}</span>
                                     </div>
                                 </div>
-                                <div className="flex flex-row justify-end">
-                                    <button onClick={addParameter}
-                                            className="h-7 text-nowrap px-2 text-sm text-white rounded shadow-inner bg-blue-800 hover:bg-blue-700">
-                                        Добавить параметр
-                                    </button>
-                                    <button onClick={removeLastParameter}
-                                            className="ml-4 h-7 text-nowrap px-2 text-sm text-white rounded shadow-inner bg-blue-800 hover:bg-blue-700">
-                                        Удалить параметр
-                                    </button>
+                                <div className="flex flex-row justify-end gap-3">
+                                    <BlueButton onClick={addParameter} text={"Добавить параметр"} className={"text-sm"} heightPx={28}/>
+                                    <BlueButton onClick={removeLastParameter} text={"Удалить параметр"} className={"text-sm"} heightPx={26}/>
                                 </div>
                             </div>
 
-                            <button onClick={addDataChildParameter}
-                                    className="h-7 w-full text-nowrap px-2 text-sm text-white rounded shadow-inner bg-gray-600 mb-2 hover:bg-gray-500">
-                                Добавить выбор отображения дополнительного бэнда при формировании отчета
-                            </button>
+                            <GrayButton onClick={addDataChildParameter} text={"Добавить выбор отображения дополнительного бэнда при формировании отчета"}
+                                        className={"text-sm w-full text-nowrap"} heightPx={28}/>
 
-                            <div className="flex flex-row mb-1">
+                            <div className="flex flex-row mb-1 mt-4 mr-5">
                                 <span className="text-sm text-center font-medium w-[5%]"><i
                                     className="fa-solid fa-arrows-up-down-left-right"></i></span>
                                 <span className="text-sm text-center font-medium w-[25%]">Название</span>
@@ -277,7 +298,7 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
 
                             <div
                                 ref={containerRef}
-                                className="overflow-x-hidden overflow-y-scroll"
+                                className="overflow-x-hidden overflow-y-scroll py-1"
                                 style={{position: 'relative', maxHeight: 'calc(100vh - 300px)'}}
                             >
                                 {parameters.length > 0 ? (
@@ -303,7 +324,7 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
 
                                             return (
                                                 <div key={param.id}>
-                                                    <div className="flex flex-row py-0 drag-handle mr-3"
+                                                    <div className="flex flex-row py-0 drag-handle mr-5"
                                                          style={{cursor: 'grab'}}>
                                                         {/* Ручка для перетаскивания */}
                                                         <div className="w-[5%] flex items-center justify-center">

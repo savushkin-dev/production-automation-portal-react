@@ -81,6 +81,21 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                 const chartTitle = div.getAttribute('cjs-chart-title');
                                 const chartSubtitle = div.getAttribute('cjs-chart-subtitle');
                                 
+                                // ========== получаем настройки шрифтов графиков ==========
+                                const fontFamily = div.getAttribute('cjs-font-family') || 'Arial';
+                                const fontColor = div.getAttribute('cjs-font-color') || '#333333';
+                                const fontWeight = div.getAttribute('cjs-font-weight') || 'normal';
+                                const fontStyle = div.getAttribute('cjs-font-style') || 'normal';
+                                const legendFontSize = parseInt(div.getAttribute('cjs-legend-font-size')) || 12;
+                                const xAxisFontSize = parseInt(div.getAttribute('cjs-x-axis-font-size')) || 11;
+                                const yAxisFontSize = parseInt(div.getAttribute('cjs-y-axis-font-size')) || 11;
+                                
+                                const legendDisplay = (div.getAttribute('cjs-legend-display') === "true")
+                                
+                                const titleFontSize = parseInt(div.getAttribute('cjs-title-font-size')) || 16;
+                                const subtitleFontSize = parseInt(div.getAttribute('cjs-subtitle-font-size')) || 14;
+                                // =============================================
+                                
                                 if (!chartType) return;
                                 
                                 const isBubbleOrScatter = chartType === 'bubble' || chartType === 'scatter';
@@ -222,16 +237,70 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
                                         responsive: true,
                                         maintainAspectRatio: false,
                                         devicePixelRatio: 2,
+                                        
+                                        font: {
+                                            family: fontFamily,
+                                            weight: fontWeight,
+                                            style: fontStyle
+                                        },
                                         plugins: {
-                                            title: {
-                                                display: !!(chartTitle && chartTitle !== 'undefined' && chartTitle !== ''),
-                                                text: (chartTitle && chartTitle !== 'undefined') ? chartTitle : ''
+                                            legend: {
+                                                labels: {
+                                                    font: {
+                                                        size: legendFontSize,
+                                                        family: fontFamily,
+                                                        weight: fontWeight,
+                                                        style: fontStyle
+                                                    },
+                                                    color: fontColor
+                                                },
+                                                display: legendDisplay
                                             },
-                                            subtitle: {
-                                                display: !!(chartSubtitle && chartSubtitle !== 'undefined' && chartSubtitle !== ''),
-                                                text: (chartSubtitle && chartSubtitle !== 'undefined') ? chartSubtitle : ''
-                                            }
+                                            title: {
+                                            display: !!(chartTitle && chartTitle !== 'undefined' && chartTitle !== ''),
+                                            text: (chartTitle && chartTitle !== 'undefined') ? chartTitle : '',
+                                            font: {
+                                                size: titleFontSize || 16,
+                                                family: fontFamily || 'Arial',
+                                                style: fontStyle || 'normal'
+                                            },
+                                            color: fontColor || '#333333'
+                                        },
+                                        subtitle: {
+                                            display: !!(chartSubtitle && chartSubtitle !== 'undefined' && chartSubtitle !== ''),
+                                            text: (chartSubtitle && chartSubtitle !== 'undefined') ? chartSubtitle : '',
+                                            font: {
+                                                size: subtitleFontSize || 14,
+                                                family: fontFamily || 'Arial',
+                                                style: fontStyle || 'normal'
+                                            },
+                                            color: fontColor || '#333333'
                                         }
+                                        },
+                                        scales: !isBubbleOrScatter ? {
+                                            x: {
+                                                ticks: {
+                                                    font: {
+                                                        size: xAxisFontSize,
+                                                        family: fontFamily,
+                                                        weight: fontWeight,
+                                                        style: fontStyle
+                                                    },
+                                                    color: fontColor
+                                                }
+                                            },
+                                            y: {
+                                                ticks: {
+                                                    font: {
+                                                        size: yAxisFontSize,
+                                                        family: fontFamily,
+                                                        weight: fontWeight,
+                                                        style: fontStyle
+                                                    },
+                                                    color: fontColor
+                                                }
+                                            }
+                                        } : undefined
                                     }
                                 };
                                 
