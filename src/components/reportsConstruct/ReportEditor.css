@@ -36,6 +36,10 @@
     color: #616161 !important;
 }
 
+.gjs-field-checkbox input:checked+.gjs-chk-icon {
+    border-color: #2755e0 !important;
+}
+
 .gjs-cv-canvas {
     border: 1px solid #c4c4c4 !important;
 }

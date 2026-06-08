@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react'
 import ReportService from "../../services/ReportService";
 import {styleInput, styleLabelInput} from "../../data/styles";
 import {ModalNotify} from "../modal/ModalNotify";
+import {ModalNotifyError} from "../modal/ModalNotifyError";
 
 
 export function ReportSetting({reportName, onClose}) {
@@ -62,7 +63,7 @@ export function ReportSetting({reportName, onClose}) {
 
     return (
         <>
-            {isModalNotify && <ModalNotify title={"Результат операции"} message={modalMsg} onClose={closeModalNotify}/>}
+            {isModalNotify && <ModalNotifyError title={"Результат операции"} message={modalMsg} onClose={closeModalNotify}/>}
 
             {!isModalNotify &&
                 <>
