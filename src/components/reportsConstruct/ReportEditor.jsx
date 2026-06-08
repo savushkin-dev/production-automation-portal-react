@@ -8,9 +8,8 @@ import grapesjs from "grapesjs";
 import grapesjspresetwebpage from 'grapesjs-preset-webpage/dist/index.js';
 
 import chartjsPlugin from 'grapesjs-chartjs-plugin';
-import ru from 'grapesjs/locale/ru';
 import ruCharts from "../../locale/ru-charts";
-// import ru from "../../locale/ru-charts";
+import ru from "../../locale/ru-grapesjs";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import Dropdown from "../dropdown/Dropdown";
@@ -127,12 +126,14 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     messages: {
                         ru: {
                             ...ru, // ru конструктора
-                            ...ruCharts // переводы для графиков
+                            ...ruCharts, // ru для графиков
                         }
                     },
                 },
                 dragMode: 'absolute',
-                selectorManager: {componentFirst: true},
+                selectorManager: {
+                    custom: true,
+                },
                 storageManager: false,
                 plugins: [grapesjspresetwebpage, plugin, chartjsPlugin],
                 pluginsOpts: {
@@ -165,7 +166,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     sectors: [
                         {
                             name: 'Размеры и позиция',
-                            open: false,
+                            open: true,
                             properties: [
                                 'width',
                                 'height',
@@ -177,7 +178,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         },
                         {
                             name: 'Шрифт',
-                            open: false,
+                            open: true,
                             properties: [
                                 'font-family',
                                 'font-size',
