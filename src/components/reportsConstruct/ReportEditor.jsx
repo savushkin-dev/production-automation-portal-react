@@ -282,20 +282,18 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 
             `);
 
-            // Добавляем блоки для перетаскивания
-            const blocks = [
-                {
-                    id: "text-block",
-                    label: '<i class=\"fa-solid fa-font\"></i>Текстовое поле',
-                    content: '<div class="band-content" style="word-wrap: break-word; font-size: 14px; z-index:100">Введите текст...</div>',
-                    category: "Текст",
-                    draggable: true,
-                    droppable: false,
-                    //Нужно разрешить перемещать только в элементы которые являются бэндами!
-                },
-            ];
+            // const blocks = [
+            //     {
+            //         id: "text-block",
+            //         label: '<i class=\"fa-solid fa-font\"></i>Текстовое поле',
+            //         content: '<div style="word-wrap: break-word; font-size: 14px; z-index:100">Введите текст...</div>',
+            //         category: "Текст",
+            //         draggable: true,
+            //         droppable: false,
+            //     },
+            // ];
 
-            blocks.forEach((block) => editor.BlockManager.add(block.id, block));
+            // blocks.forEach((block) => editor.BlockManager.add(block.id, block));
 
 
             //удаляем базовые блоки
@@ -338,7 +336,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }, 10);
             });
 
-
             editor.on('component:add', component => {
                 const parent = component.parent();
 
@@ -350,8 +347,41 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     component.setStyle(style);
                 }
 
-                // Включаем изменение размеров (тянуть за стороны) для всех новых компонентов
-                component.set('resizable', true);
+                const lineType = component.getAttributes()['data-line-type'];
+
+                // Настройки ресайза по умолчанию
+                let resizeOptions = {
+                    tl: true, tc: true, tr: true,
+                    cl: true, cr: true,
+                    bl: true, bc: true, br: true,
+                    minDim: 10,
+                    step: 1,
+                    unit: 'px'
+                };
+
+                if (lineType === 'horizontal') {
+                    resizeOptions = {
+                        tl: false, tc: false, tr: false,
+                        cl: true, cr: true,
+                        bl: false, bc: false, br: false,
+                        minDim: 10,
+                        step: 1,
+                        unit: 'px'
+                    };
+                }
+
+                if (lineType === 'vertical') {
+                    resizeOptions = {
+                        tl: false, tc: true, tr: false,
+                        cl: false, cr: false,
+                        bl: false, bc: true, br: false,
+                        minDim: 10,
+                        step: 1,
+                        unit: 'px'
+                    };
+                }
+
+                component.set('resizable', resizeOptions);
             });
 
             //Изменение размера с помощью мыши с учетом отступов канваса если элемент не вложенный
@@ -1016,6 +1046,11 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
         function addBlocks(editor) {
 
+            editor.BlockManager.add("text-block", {
+                label: "<i class=\"fa-solid fa-font\"></i> Текстовое поле",
+                content: "<div style=\"word-wrap: break-word; font-size: 14px; z-index:100\">Введите текст...</div>",
+                category: "Текст",
+            });
             editor.BlockManager.add("h1", {
                 label: "<i class=\"fa-solid fa-heading\"></i>1 Заголовок h1",
                 content: "<div style='padding:0; font-size:2em; font-weight:bold; z-index:100 '>Заголовок h1</div>",
@@ -1050,15 +1085,17 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             editor.Blocks.add('line-block', {
                 label: '<i class="fa-solid fa-window-minimize"></i> Горизонтальная линия',
                 content: {
-                    type: 'line',
                     tagName: 'div',
-                    attributes: {class: 'line-block'},
+                    attributes: {
+                        'data-line-type': 'horizontal'
+                    },
                     style: {
                         'width': '100%',
                         'height': '2px',
                         'background-color': '#000',
                         'z-index': '100',
                         'margin': '0',
+                        'padding': '0',
                     }
                 },
                 category: "Линии",
@@ -1067,16 +1104,18 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             editor.Blocks.add('vertical-line-block', {
                 label: '<i class="fa-solid fa-window-minimize fa-rotate-90"></i> Вертикальная линия',
                 content: {
-                    type: 'line',
-                    tagName: 'div',
-                    attributes: {class: 'vertical-line-block'},
+                    tagName: 'line',
+                    attributes: {
+                        'data-line-type': 'vertical'
+                    },
                     style: {
                         'width': '2px',
-                        'height': '100px',
+                        'height': '50px',
                         'background-color': '#000',
                         'z-index': '99',
                         'margin': '0',
                         'display': 'inline-block',
+                        'padding': '0',
                     }
                 },
                 category: "Линии",
