@@ -32,6 +32,10 @@
     color: #616161 !important;
 }
 
+.gjs-color-warn {
+    color: #616161 !important;
+}
+
 .gjs-cv-canvas {
     border: 1px solid #c4c4c4 !important;
 }
