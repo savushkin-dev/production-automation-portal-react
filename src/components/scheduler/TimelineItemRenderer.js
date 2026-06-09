@@ -280,7 +280,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                     <span className="text-pink-500">
                                           {Number(item.info.durationFactCamera.toFixed(0)) >= 60
                                               ? `${Math.floor(Number(item.info.durationFactCamera.toFixed(0)) / 60)} ч. ${Number(item.info.durationFactCamera.toFixed(0)) % 60} мин.`
-                                              : `${item.info.duration} мин.`}
+                                              : `${item.info.durationFactCamera} мин.`}
                                     </span>
                                     <span className="text-gray-500 px-1">|</span>
                                     <span className="text-green-600">
