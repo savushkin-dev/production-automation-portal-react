@@ -25,9 +25,9 @@ import {createTimelineRenderersSheduler} from "../components/scheduler/TimelineI
 import {groupDataByDay} from "../utils/scheduler/pdayParsing";
 import {
     calculateTimeToNext8AM,
-    filterGroupItems, getLastItemIndexInGroup,
+    filterGroupItems, getLastItemIndexInGroup, isCleaningDelayItem,
     isCleaningItem,
-    isDelayItem,
+    isDelayItem, isFactCleaningItem,
     isFactItem,
     isPackagedItem
 } from "../utils/scheduler/items";
@@ -629,25 +629,70 @@ function SchedulerPage() {
         }
     }
 
-    //Добавляет в список выбранных элементов фактические или плановые элементы соответствующие друг другу
+    //Добавляет в список выбранных элементов фактические или плановые элементы соответствующие друг другу (включая мойки и отклонения)
     function linkPlanItemToFactItem(clickedItem) {
         const itemsArray = planByHardware;
-        let idFact = null;
-        const prefix = "fact_camera";
 
-        if (!isPackagedItem(clickedItem)) {
-            return
+        // Если элемент не имеет parentJobId или не является нужным типом
+        if (!clickedItem?.info?.parentJobId && !isFactItem(clickedItem) && !isCleaningItem(clickedItem) && !isFactCleaningItem(clickedItem) && !isCleaningDelayItem(clickedItem)) {
+            return;
         }
 
-        if (!isFactItem(clickedItem)) {
-            idFact = clickedItem.id + prefix;
-        } else {
-            idFact = clickedItem.id.slice(0, -prefix.length);
+        // Обработка обычных элементов (плановых и фактовых)
+        if ((isPackagedItem(clickedItem) && !isFactItem(clickedItem)) || isFactItem(clickedItem)) {
+            const prefix = "fact_camera";
+            let targetId = null;
+
+            if (!isFactItem(clickedItem)) {
+                targetId = clickedItem.id + prefix;
+            } else {
+                targetId = clickedItem.id.slice(0, -prefix.length);
+            }
+
+            const targetItem = itemsArray.find(item => item.id === targetId);
+            if (targetItem) {
+                setSelectedItems([clickedItem, targetItem]);
+                return;
+            }
         }
 
-        const clickedFactItem = itemsArray.find(item => item.id === idFact);
-        if (clickedFactItem) {
-            setSelectedItems([clickedItem, clickedFactItem]);
+        // Обработка моек (плановых и фактовых)
+        if (isCleaningItem(clickedItem) || isFactCleaningItem(clickedItem)) {
+            const parentJobId = clickedItem.info.parentJobId;
+            if (!parentJobId) return;
+
+            let targetCleaningItem = null;
+
+            if (isCleaningItem(clickedItem)) {
+                // Ищем фактовую мойку с таким же parentJobId
+                targetCleaningItem = itemsArray.find(item =>
+                    isFactCleaningItem(item) && item.info.parentJobId === parentJobId
+                );
+            } else if (isFactCleaningItem(clickedItem)) {
+                // Ищем плановую мойку с таким же parentJobId
+                targetCleaningItem = itemsArray.find(item =>
+                    isCleaningItem(item) && item.info.parentJobId === parentJobId
+                );
+            }
+
+            if (targetCleaningItem) {
+                setSelectedItems([clickedItem, targetCleaningItem]);
+            }
+        }
+
+        // Обработка отклонения мойки (только связка с фактом)
+        if (isCleaningDelayItem(clickedItem)) {
+            const parentJobId = clickedItem.info.parentJobId;
+            if (!parentJobId) return;
+
+            // Ищем фактическую мойку с таким же parentJobId
+            const factCleaning = itemsArray.find(item =>
+                isFactCleaningItem(item) && item.info.parentJobId === parentJobId
+            );
+
+            if (factCleaning) {
+                setSelectedItems([clickedItem, factCleaning]);
+            }
         }
     }
 
