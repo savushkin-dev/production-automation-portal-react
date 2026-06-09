@@ -159,7 +159,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                                     </div>
 
                                     <div className="flex flex-row px-4">
-                                        <span className={styleLable}>{"Конец по факту:"}</span>
+                                        <span className={styleLable}>{"Отклонение:"}</span>
                                         <span
                                             className={styleInfo}>{formatIsoToDatetimeRegex(item.info.cleaningDelayEndDateTime) || ""}</span>
                                     </div>
@@ -186,7 +186,7 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                                     </div>
 
                                     <div className="flex flex-row px-4">
-                                        <span className={styleLable}>{"Конец по факту:"}</span>
+                                        <span className={styleLable}>{"Отклонение:"}</span>
                                         <span
                                             className={styleInfo}>{formatIsoToDatetimeRegex(item.info.cleaningDelayEndDateTime) || ""}</span>
                                     </div>
