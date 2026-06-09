@@ -140,6 +140,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 },
                 dragMode: 'absolute',
                 selectorManager: {
+                    componentFirst: true,
                     custom: true,
                 },
                 storageManager: false,
