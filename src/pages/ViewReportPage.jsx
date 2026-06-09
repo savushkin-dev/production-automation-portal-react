@@ -2,12 +2,12 @@ import {observer} from "mobx-react-lite";
 import {Navigation} from "../components/Navigation";
 import {LeftNavigation} from "../components/leftNavigation/LeftNavigation";
 
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useState} from "react";
 import {ViewReport} from "../components/reportsConstruct/ViewReport";
 import ReportService from "../services/ReportService";
-import {ModalNotify} from "../components/modal/ModalNotify";
 import Loading from "../components/loading/Loading";
 import {useNavigate} from "react-router-dom";
+import {ModalNotifyError} from "../components/modal/ModalNotifyError";
 
 
 function ViewReportPage() {
@@ -46,13 +46,6 @@ function ViewReportPage() {
 
         viewReport(parameters, reportName);
     }, [])
-
-    function ensureArray(item) {
-        if (Array.isArray(item)) {
-            return item;
-        }
-        return item ? [item] : [];
-    }
 
     useEffect(() => {
         if (reportData && reportTemplate) {
@@ -121,7 +114,7 @@ function ViewReportPage() {
             </div>
 
             {isModalError &&
-                <ModalNotify title={"Ошибка"} message={error} onClose={() => setIsModalError(false)}/>}
+                <ModalNotifyError title={"Ошибка формирования отчета"} message={error} onClose={() => navigate("/")}/>}
         </>
     )
 }
