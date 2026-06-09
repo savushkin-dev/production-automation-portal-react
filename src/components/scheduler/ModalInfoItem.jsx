@@ -148,7 +148,8 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                                     <div className="flex flex-row px-4">
                                         <span
                                             className={styleLable}>{"Начало по плану:"}</span>
-                                        <span className={styleInfo}>{formatIsoToDatetimeRegex(item.info.start) || "-"}</span>
+                                        <span
+                                            className={styleInfo}>{formatIsoToDatetimeRegex(item.info.start) || "-"}</span>
                                     </div>
 
                                     <div className="flex flex-row px-4">
@@ -161,6 +162,11 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
                                         <span className={styleLable}>{"Конец по факту:"}</span>
                                         <span
                                             className={styleInfo}>{formatIsoToDatetimeRegex(item.info.cleaningDelayEndDateTime) || ""}</span>
+                                    </div>
+
+                                    <div className="flex flex-row px-4">
+                                        <span className={styleLable}>Описание:</span>
+                                        <span className={styleInfo}>{item.info.delayNote || "-"}</span>
                                     </div>
                                 </>
                             }

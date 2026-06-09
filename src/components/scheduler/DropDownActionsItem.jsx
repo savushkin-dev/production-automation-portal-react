@@ -100,7 +100,7 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                                 }
 
                                 {/*Отображение для элемента отклонения*/}
-                                {(isDelayItem(contextMenu.item) || isCleaningItem(contextMenu.item)) && selectedItems.length === 1 &&
+                                {(isDelayItem(contextMenu.item) || isCleaningItem(contextMenu.item))  &&
                                     <>
                                         <button onClick={() => {
                                             updateDelay()
