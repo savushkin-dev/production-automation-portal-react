@@ -2,7 +2,7 @@
 import {ItemType} from "../../services/ScheduleService";
 
 export function isFactItem(item) {
-    return item.id.endsWith("fact_camera")
+    return item.id.endsWith("fact_camera") || item.id.endsWith("fact_cleaning")
 }
 
 //Определяет что это обычная задача, а не задержка, мойка и тд
@@ -52,12 +52,17 @@ export function isDelayItem(item) {
 
 //Определяет является ли мойкой
 export function isCleaningItem(item) {
-    return item.id.includes('cleaning') && !isDelayItem(item);
+    return item.info.itemType === ItemType.CLEANING
+}
+
+//Определяет является ли фактической мойкой
+export function isFactCleaningItem(item) {
+    return item.info.itemType === ItemType.CLEANING_FACT
 }
 
 //Определяет является ли задержкой мойки
 export function isCleaningDelayItem(item) {
-    return item.id.includes('cleaning-delay');
+    return item.info.itemType === ItemType.CLEANING_DELAY
 }
 
 
