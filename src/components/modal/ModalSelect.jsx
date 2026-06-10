@@ -25,7 +25,8 @@ export function ModalSelect({title, message, onClose, onAgreement, options}) {
                 onClick={onClose}
             />
             <div
-                className="w-full max-w-[500px] lg:w-[500px] p-5 z-30 rounded bg-white absolute top-1/3 left-1/2 -translate-x-1/2 px-8" style={{zIndex: 100}}
+                className="w-full max-w-[500px] lg:w-[500px] p-5 z-30 rounded bg-white fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-8 animate-[scaleIn_0.3s_ease]"
+                style={{zIndex: 100}}
             >
                 <h1 className="text-2xl font-medium text-start mb-6">{title}</h1>
                 <div className="flex flex-col">
@@ -45,7 +46,9 @@ export function ModalSelect({title, message, onClose, onAgreement, options}) {
                                     className="min-w-[50px] px-2 mx-2 h-7 rounded text-xs font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
                                 Отмена
                             </button>
-                            <button onClick={() => {onAgreement(selectValue.value)}}
+                            <button onClick={() => {
+                                onAgreement(selectValue.value)
+                            }}
                                     className="min-w-[50px] text-xs h-7 font-medium px-2 py-1 rounded text-white bg-blue-800 hover:bg-blue-700">
                                 Выбрать
                             </button>
@@ -55,6 +58,27 @@ export function ModalSelect({title, message, onClose, onAgreement, options}) {
                 </div>
 
             </div>
+            <style>{`
+                @keyframes fadeIn {
+                    from {
+                        opacity: 0;
+                    }
+                    to {
+                        opacity: 1;
+                    }
+                }
+
+                @keyframes scaleIn {
+                    from {
+                        transform: translate(-50%, -50%) scale(0.95);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translate(-50%, -50%) scale(1);
+                        opacity: 1;
+                    }
+                }
+            `}</style>
         </>
     )
 }

@@ -5,12 +5,12 @@ export function ModalNotifyError({ title, message, onClose }) {
         <>
             <div
                 className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-all duration-200"
-                style={{ zIndex: 199 }}
+                style={{zIndex: 199}}
                 onClick={onClose}
             />
             <div
-                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] max-h-[80vh] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
-                style={{ zIndex: 200 }}
+                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] max-h-[80vh] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 animate-[scaleIn_0.3s_ease]"
+                style={{zIndex: 200}}
             >
                 <div className="flex items-center gap-3 px-6 py-4 border-b border-red-100 bg-white">
                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 flex-shrink-0">
@@ -39,6 +39,27 @@ export function ModalNotifyError({ title, message, onClose }) {
                     </button>
                 </div>
             </div>
+            <style>{`
+                @keyframes fadeIn {
+                    from {
+                        opacity: 0;
+                    }
+                    to {
+                        opacity: 1;
+                    }
+                }
+
+                @keyframes scaleIn {
+                    from {
+                        transform: translate(-50%, -50%) scale(0.95);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translate(-50%, -50%) scale(1);
+                        opacity: 1;
+                    }
+                }
+            `}</style>
         </>
     )
 }
