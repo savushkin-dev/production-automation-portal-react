@@ -293,8 +293,8 @@ export default class ScheduleService {
                 mass: filteredData[i].mass,
                 np: filteredData[i].np,
                 snpz: filteredData[i].snpz,
-                duration: Math.round(new Date(filteredData[i].endDateTime) - new Date(filteredData[i].startProductionDateTime))/ 60000,
-                durationFactCamera: Math.round(new Date(filteredData[i].cameraEnd) - new Date(filteredData[i].cameraStart))/ 60000,
+                duration: Math.round((new Date(filteredData[i].endDateTime) - new Date(filteredData[i].startProductionDateTime)) / 60000),
+                durationFactCamera: Math.round((new Date(filteredData[i].cameraEnd) - new Date(filteredData[i].cameraStart)) / 60000),
 
                 fullName: filteredData[i].product.name,
                 type: filteredData[i].product.type,

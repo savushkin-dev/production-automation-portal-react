@@ -633,13 +633,54 @@ function SchedulerPage() {
     function linkPlanItemToFactItem(clickedItem) {
         const itemsArray = planByHardware;
 
-        // Если элемент не имеет parentJobId или не является нужным типом
-        if (!clickedItem?.info?.parentJobId && !isFactItem(clickedItem) && !isCleaningItem(clickedItem) && !isFactCleaningItem(clickedItem) && !isCleaningDelayItem(clickedItem)) {
+        // 1. Обработка плановой мойки
+        if (isCleaningItem(clickedItem)) {
+            const parentJobId = clickedItem.info.parentJobId;
+            if (!parentJobId) return;
+
+            const factCleaning = itemsArray.find(item =>
+                isFactCleaningItem(item) && item.info.parentJobId === parentJobId
+            );
+
+            if (factCleaning) {
+                setSelectedItems([clickedItem, factCleaning]);
+            }
             return;
         }
 
-        // Обработка обычных элементов (плановых и фактовых)
-        if ((isPackagedItem(clickedItem) && !isFactItem(clickedItem)) || isFactItem(clickedItem)) {
+        // 2. Обработка фактической мойки
+        if (isFactCleaningItem(clickedItem)) {
+            const parentJobId = clickedItem.info.parentJobId;
+            if (!parentJobId) return;
+
+            const planCleaning = itemsArray.find(item =>
+                isCleaningItem(item) && item.info.parentJobId === parentJobId
+            );
+
+            if (planCleaning) {
+                setSelectedItems([clickedItem, planCleaning]);
+            }
+            return;
+        }
+
+        // 3. Обработка отклонения мойки
+        if (isCleaningDelayItem(clickedItem)) {
+            const parentJobId = clickedItem.info.parentJobId;
+            if (!parentJobId) return;
+
+            const factCleaning = itemsArray.find(item =>
+                isFactCleaningItem(item) && item.info.parentJobId === parentJobId
+            );
+
+            if (factCleaning) {
+                setSelectedItems([clickedItem, factCleaning]);
+            }
+            return;
+        }
+
+        // 4. Обработка production элементов (плановых и фактовых)
+        // Проверяем, что это не мойка и не отклонение
+        if (!isCleaningItem(clickedItem) && !isFactCleaningItem(clickedItem) && !isCleaningDelayItem(clickedItem)) {
             const prefix = "fact_camera";
             let targetId = null;
 
@@ -652,47 +693,8 @@ function SchedulerPage() {
             const targetItem = itemsArray.find(item => item.id === targetId);
             if (targetItem) {
                 setSelectedItems([clickedItem, targetItem]);
-                return;
             }
-        }
-
-        // Обработка моек (плановых и фактовых)
-        if (isCleaningItem(clickedItem) || isFactCleaningItem(clickedItem)) {
-            const parentJobId = clickedItem.info.parentJobId;
-            if (!parentJobId) return;
-
-            let targetCleaningItem = null;
-
-            if (isCleaningItem(clickedItem)) {
-                // Ищем фактовую мойку с таким же parentJobId
-                targetCleaningItem = itemsArray.find(item =>
-                    isFactCleaningItem(item) && item.info.parentJobId === parentJobId
-                );
-            } else if (isFactCleaningItem(clickedItem)) {
-                // Ищем плановую мойку с таким же parentJobId
-                targetCleaningItem = itemsArray.find(item =>
-                    isCleaningItem(item) && item.info.parentJobId === parentJobId
-                );
-            }
-
-            if (targetCleaningItem) {
-                setSelectedItems([clickedItem, targetCleaningItem]);
-            }
-        }
-
-        // Обработка отклонения мойки (только связка с фактом)
-        if (isCleaningDelayItem(clickedItem)) {
-            const parentJobId = clickedItem.info.parentJobId;
-            if (!parentJobId) return;
-
-            // Ищем фактическую мойку с таким же parentJobId
-            const factCleaning = itemsArray.find(item =>
-                isFactCleaningItem(item) && item.info.parentJobId === parentJobId
-            );
-
-            if (factCleaning) {
-                setSelectedItems([clickedItem, factCleaning]);
-            }
+            return;
         }
     }
 

@@ -10,6 +10,7 @@ import {
     isMaintenancePackingOrLeveling, isSimpleItem
 } from "../../utils/scheduler/items";
 import {DEFAULT_COLORS, DEFAULT_WIDTHS, getStoredColor, getStoredWidth, STORAGE_KEYS} from "./utils/colorsUtils";
+import {ItemType} from "../../services/ScheduleService";
 
 /**
  * Фабрика для создания рендерера элементов таймлайна планировщика
@@ -275,7 +276,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                 </span>
                             )}
 
-                            {item.info?.duration && !isFactCleaningItem && (
+                            {item.info?.itemType === ItemType.FACT && (
                                 <span className="px-1 rounded">
                                     <span className="text-pink-500">
                                           {Number(item.info.durationFactCamera.toFixed(0)) >= 60
