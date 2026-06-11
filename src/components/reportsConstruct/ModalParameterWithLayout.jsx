@@ -200,7 +200,9 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
                 onClick={onClose}
             />
 
-            <div className="p-5 z-30 rounded bg-white fixed top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 px-8 max-h-[80vh] overflow-y-auto" style={{ width: calculateGridWidth() }}>
+            <div
+                className="p-5 z-30 rounded bg-white fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-8 max-h-[80vh] overflow-y-auto animate-[scaleIn_0.3s_ease]"
+                style={{width: calculateGridWidth()}}>
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-medium text-start">Параметры отчета</h1>
                     <button
@@ -228,8 +230,8 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
                                 gridConfig={{
                                     cols: COLS,
                                     rowHeight: ROW_HEIGHT,
-                                    margin: [5,5],
-                                    containerPadding: [10,10],
+                                    margin: [5, 5],
+                                    containerPadding: [10, 10],
                                     maxRows: Infinity
                                 }}
                                 dragConfig={{enabled: false, bounded: false}}
@@ -264,6 +266,27 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
                     </div>
                 </div>
             </div>
+            <style>{`
+                            @keyframes fadeIn {
+                                from {
+                                    opacity: 0;
+                                }
+                                to {
+                                    opacity: 1;
+                                }
+                            }
+            
+                            @keyframes scaleIn {
+                                from {
+                                    transform: translate(-50%, -50%) scale(0.95);
+                                    opacity: 0;
+                                }
+                                to {
+                                    transform: translate(-50%, -50%) scale(1);
+                                    opacity: 1;
+                                }
+                            }
+                        `}</style>
         </>
     );
 }

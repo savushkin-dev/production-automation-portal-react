@@ -25,9 +25,9 @@ import {createTimelineRenderersSheduler} from "../components/scheduler/TimelineI
 import {groupDataByDay} from "../utils/scheduler/pdayParsing";
 import {
     calculateTimeToNext8AM,
-    filterGroupItems, getLastItemIndexInGroup,
+    filterGroupItems, getLastItemIndexInGroup, isCleaningDelayItem,
     isCleaningItem,
-    isDelayItem,
+    isDelayItem, isFactCleaningItem,
     isFactItem,
     isPackagedItem
 } from "../utils/scheduler/items";
@@ -41,6 +41,7 @@ import {ModalVersionSettings} from "../components/scheduler/ModalVersionSettings
 import {SchedulerDataTables} from "../components/scheduler/SchedulerDataTables";
 import {ModalColorsSettings} from "../components/scheduler/ModalColorsSettings";
 import {ModalReports} from "../components/scheduler/ModalReports";
+import Loading from "../components/loading/Loading";
 
 
 function SchedulerPage() {
@@ -71,7 +72,10 @@ function SchedulerPage() {
     });
     const [selectJobs, setSelectJobs] = useState([])
 
-    const [isLoading, setIsLoading] = useState(false);
+    const [loading, setLoading] = useState({
+        isLoading: false,
+        message: "Загрузка..."
+    });
     const [isLoadingSolve, setIsLoadingSolve] = useState(false);
     const [msg, setMsg] = useState("");
     const [isModalNotify, setIsModalNotify] = useState(false);
@@ -263,6 +267,7 @@ function SchedulerPage() {
 
     async function savePlan() {
         try {
+            setLoading({ isLoading: true, message: "Сохранение плана..." });
             await SchedulerService.savePlan();
             setMsg("План успешно сохранен.")
             setIsModalNotify(true);
@@ -270,6 +275,8 @@ function SchedulerPage() {
             console.error(e)
             setMsg("Ошибка сохранения отчета: " + e.response.data.message)
             setIsModalNotifyError(true);
+        } finally {
+            setLoading({ isLoading: false, message: "" });
         }
     }
 
@@ -629,25 +636,72 @@ function SchedulerPage() {
         }
     }
 
-    //Добавляет в список выбранных элементов фактические или плановые элементы соответствующие друг другу
+    //Добавляет в список выбранных элементов фактические или плановые элементы соответствующие друг другу (включая мойки и отклонения)
     function linkPlanItemToFactItem(clickedItem) {
         const itemsArray = planByHardware;
-        let idFact = null;
-        const prefix = "fact_camera";
 
-        if (!isPackagedItem(clickedItem)) {
-            return
+        // 1. Обработка плановой мойки
+        if (isCleaningItem(clickedItem)) {
+            const parentJobId = clickedItem.info.parentJobId;
+            if (!parentJobId) return;
+
+            const factCleaning = itemsArray.find(item =>
+                isFactCleaningItem(item) && item.info.parentJobId === parentJobId
+            );
+
+            if (factCleaning) {
+                setSelectedItems([clickedItem, factCleaning]);
+            }
+            return;
         }
 
-        if (!isFactItem(clickedItem)) {
-            idFact = clickedItem.id + prefix;
-        } else {
-            idFact = clickedItem.id.slice(0, -prefix.length);
+        // 2. Обработка фактической мойки
+        if (isFactCleaningItem(clickedItem)) {
+            const parentJobId = clickedItem.info.parentJobId;
+            if (!parentJobId) return;
+
+            const planCleaning = itemsArray.find(item =>
+                isCleaningItem(item) && item.info.parentJobId === parentJobId
+            );
+
+            if (planCleaning) {
+                setSelectedItems([clickedItem, planCleaning]);
+            }
+            return;
         }
 
-        const clickedFactItem = itemsArray.find(item => item.id === idFact);
-        if (clickedFactItem) {
-            setSelectedItems([clickedItem, clickedFactItem]);
+        // 3. Обработка отклонения мойки
+        if (isCleaningDelayItem(clickedItem)) {
+            const parentJobId = clickedItem.info.parentJobId;
+            if (!parentJobId) return;
+
+            const factCleaning = itemsArray.find(item =>
+                isFactCleaningItem(item) && item.info.parentJobId === parentJobId
+            );
+
+            if (factCleaning) {
+                setSelectedItems([clickedItem, factCleaning]);
+            }
+            return;
+        }
+
+        // 4. Обработка production элементов (плановых и фактовых)
+        // Проверяем, что это не мойка и не отклонение
+        if (!isCleaningItem(clickedItem) && !isFactCleaningItem(clickedItem) && !isCleaningDelayItem(clickedItem)) {
+            const prefix = "fact_camera";
+            let targetId = null;
+
+            if (!isFactItem(clickedItem)) {
+                targetId = clickedItem.id + prefix;
+            } else {
+                targetId = clickedItem.id.slice(0, -prefix.length);
+            }
+
+            const targetItem = itemsArray.find(item => item.id === targetId);
+            if (targetItem) {
+                setSelectedItems([clickedItem, targetItem]);
+            }
+            return;
         }
     }
 
@@ -992,15 +1046,39 @@ function SchedulerPage() {
                                                                    setModalError={setIsModalNotifyError}
                                                                    setErrorMsg={setMsg}/>}
 
-                {isLoading &&
-                    <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>
-                }
+                {loading.isLoading && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center" style={{zIndex: 9999}}>
+                        <div className="bg-white rounded-lg px-12 py-6 shadow-xl flex flex-col items-center gap-3 animate-[scaleIn_0.3s_ease]">
+                            <div className="circle my-4">
+                                <div className="dot"></div>
+                                <div className="dot"></div>
+                                <div className="dot"></div>
+                                <div className="dot"></div>
+                                <div className="dot"></div>
+                                <div className="dot"></div>
+                            </div>
+                            <span className="text-gray-800 font-medium">{loading.message}</span>
+                            <span className="text-gray-400 text-sm">Пожалуйста, подождите</span>
+                        </div>
+                    </div>
+                )}
+
+                <style>{`
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                    @keyframes scaleIn {
+                        from { transform: scale(0.9); opacity: 0; }
+                        to { transform: scale(1); opacity: 1; }
+                    }
+                `}</style>
 
                 <div className="flex items-center justify-between mb-4 mt-4 px-4">
                     <button onClick={() => {
                         navigate(from, {replace: true})
                     }} className="py-1 px-2 rounded text-blue-800 hover:bg-blue-50 whitespace-nowrap">
-                        Вернуться назад
+                    Вернуться назад
                     </button>
 
                     <h1 className="font-bold text-gray-800 text-center text-2xl absolute left-1/2 -translate-x-1/2">Планировщик

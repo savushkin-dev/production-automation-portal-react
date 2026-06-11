@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react'
 import ReportService from "../../services/ReportService";
 import {styleInput, styleLabelInput} from "../../data/styles";
 import {ModalNotify} from "../modal/ModalNotify";
+import {ModalNotifyError} from "../modal/ModalNotifyError";
 
 
 export function ReportSetting({reportName, onClose}) {
@@ -9,6 +10,7 @@ export function ReportSetting({reportName, onClose}) {
     const [report, setReport] = useState({});
 
     const [isModalNotify, setIsModalNotify] = useState(false);
+    const [isModalError, setIsModalError] = useState(false);
     const [modalMsg, setModalMsg] = useState("");
 
     const [isDelete, setIsDelete] = useState(false);
@@ -22,10 +24,10 @@ export function ReportSetting({reportName, onClose}) {
     async function fetchReportTemplate() {
         try {
             const response = await ReportService.getReportTemplateByReportName(reportName);
-            setReport(response.data)
+            setReport(response.data);
         } catch (e) {
             setModalMsg("Не удалось загрузить данные отчета.");
-            setIsModalNotify(true);
+            setIsModalError(true);
         }
     }
 
@@ -33,10 +35,10 @@ export function ReportSetting({reportName, onClose}) {
         try {
             await ReportService.updateReportTemplate(report);
             setModalMsg("Шаблон отчета успешно обновлен.");
+            setIsModalNotify(true);
         } catch (e) {
             setModalMsg("Не удалось обновить шаблон отчета, попробуйте еще раз.");
-        } finally {
-            setIsModalNotify(true);
+            setIsModalError(true);
         }
     }
 
@@ -45,10 +47,10 @@ export function ReportSetting({reportName, onClose}) {
             await ReportService.deleteReportTemplate(report.id);
             setModalMsg("Шаблон отчета успешно удален.");
             setIsDelete(true);
+            setIsModalNotify(true);
         } catch (e) {
             setModalMsg("Не удалось удалить шаблон отчета, попробуйте еще раз.");
-        } finally {
-            setIsModalNotify(true);
+            setIsModalError(true);
         }
     }
 
@@ -60,18 +62,23 @@ export function ReportSetting({reportName, onClose}) {
         }
     }
 
+    function closeModalError(){
+        setIsModalError(false);
+    }
+
     return (
         <>
             {isModalNotify && <ModalNotify title={"Результат операции"} message={modalMsg} onClose={closeModalNotify}/>}
+            {isModalError && <ModalNotifyError title={"Результат операции"} message={modalMsg} onClose={closeModalError}/>}
 
-            {!isModalNotify &&
+            {!isModalNotify && !isModalError &&
                 <>
                     <div
                         className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0"
                         onClick={onClose}
                     />
                     <div
-                        className="w-full max-w-[500px] lg:w-[500px] p-5 z-30  rounded bg-white absolute top-1/3 left-1/2 -translate-x-1/2 px-8"
+                        className="w-full max-w-[500px] lg:w-[500px] p-5 z-30  rounded bg-white fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-8 animate-[scaleIn_0.3s_ease]"
                     >
                         <h1 className="text-xl font-medium text-start mb-4">Редактирование отчета</h1>
 
@@ -124,6 +131,27 @@ export function ReportSetting({reportName, onClose}) {
 
 
                     </div>
+                    <style>{`
+                        @keyframes fadeIn {
+                            from {
+                                opacity: 0;
+                            }
+                            to {
+                                opacity: 1;
+                            }
+                        }
+        
+                        @keyframes scaleIn {
+                            from {
+                                transform: translate(-50%, -50%) scale(0.95);
+                                opacity: 0;
+                            }
+                            to {
+                                transform: translate(-50%, -50%) scale(1);
+                                opacity: 1;
+                            }
+                        }
+                    `}</style>
 
                 </>
             }

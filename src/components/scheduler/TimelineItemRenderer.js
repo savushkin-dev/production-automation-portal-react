@@ -4,12 +4,13 @@ import moment from "moment/moment";
 import {
     isCleaningDelayItem,
     isCleaningItem,
-    isDelayItem,
+    isDelayItem, isFactCleaningItem,
     isFactItem,
     isMaintenanceItem,
     isMaintenancePackingOrLeveling, isSimpleItem
 } from "../../utils/scheduler/items";
 import {DEFAULT_COLORS, DEFAULT_WIDTHS, getStoredColor, getStoredWidth, STORAGE_KEYS} from "./utils/colorsUtils";
+import {ItemType} from "../../services/ScheduleService";
 
 /**
  * Фабрика для создания рендерера элементов таймлайна планировщика
@@ -52,7 +53,6 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
         const isFact = item.info?.startFact !== null && !isCleaningItem(item) && !isDelayItem(item);
         const isLinesMatch = item.info?.lineIdFact === item.info?.lineInfo?.id;
 
-        const factElBg = "#fafafa";
         const factBg = "#f9efff";
         const selectBg = "#cbff93";
 
@@ -65,7 +65,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
             style: {
                 background: isSelected
                     ? (isSingleSelected ? selectBg : selectBg)
-                    : (isFactEl ? factElBg : (isFact ? factBg : item.itemProps?.style?.background || '#fff')),
+                    : (isFactEl ? item.itemProps?.style?.background : (isFact ? factBg : item.itemProps?.style?.background || '#fff')),
 
                 borderStyle: 'solid',
                 borderColor: '#aeaeae',
@@ -276,11 +276,30 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                 </span>
                             )}
 
-                            {item.info?.duration && (
+                            {item.info?.itemType === ItemType.FACT && (
                                 <span className="px-1 rounded">
                                     <span className="text-pink-500">
                                           {Number(item.info.durationFactCamera.toFixed(0)) >= 60
                                               ? `${Math.floor(Number(item.info.durationFactCamera.toFixed(0)) / 60)} ч. ${Number(item.info.durationFactCamera.toFixed(0)) % 60} мин.`
+                                              : `${item.info.durationFactCamera} мин.`}
+                                    </span>
+                                    <span className="text-gray-500 px-1">|</span>
+                                    <span className="text-green-600">
+                                       {moment(item.start_time).format('HH:mm')}
+                                    </span>
+                                    {' - '}
+                                    <span className="text-red-500">
+                                        {moment(item.end_time).format('HH:mm')}
+                                    </span>
+                                    <span className="pl-1">Время</span>
+                                </span>
+                            )}
+
+                            {isFactCleaningItem && (
+                                <span className="px-1 rounded">
+                                    <span className="text-pink-500">
+                                          {Number(item.info.duration.toFixed(0)) >= 60
+                                              ? `${Math.floor(Number(item.info.duration.toFixed(0)) / 60)} ч. ${Number(item.info.duration.toFixed(0)) % 60} мин.`
                                               : `${item.info.duration} мин.`}
                                     </span>
                                     <span className="text-gray-500 px-1">|</span>
@@ -294,6 +313,8 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                                     <span className="pl-1">Время</span>
                                 </span>
                             )}
+
+
                         </div>
                     </>
                 )}

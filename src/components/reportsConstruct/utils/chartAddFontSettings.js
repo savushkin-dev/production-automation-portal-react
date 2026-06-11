@@ -3,7 +3,7 @@
 /**
  * Категория для настроек шрифтов в панели свойств
  */
-const fontCategory = { id: 'fontChart', label: 'Шрифты', open: true, order: 1 };
+const fontCategory = { id: 'fontChart', label: 'Шрифт', open: true, order: 1 };
 
 /**
  * Список доступных семейств шрифтов

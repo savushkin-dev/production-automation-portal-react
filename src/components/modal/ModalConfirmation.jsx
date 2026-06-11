@@ -9,7 +9,8 @@ export function ModalConfirmation({title, message, onClose, onAgree, onDisagree}
                 onClick={onClose}
             />
             <div
-                className="w-full max-w-[500px] lg:w-[500px] p-5 z-30  rounded bg-white absolute top-1/3 left-1/2 -translate-x-1/2 px-8" style={{zIndex: 100}}
+                className="w-full max-w-[500px] lg:w-[500px] p-5 z-30  rounded bg-white fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-8 animate-[scaleIn_0.3s_ease]"
+                style={{zIndex: 100}}
             >
                 <h1 className="text-xl font-medium text-start mb-2">{title}</h1>
                 <div className="flex flex-col">
@@ -29,6 +30,27 @@ export function ModalConfirmation({title, message, onClose, onAgree, onDisagree}
                 </div>
 
             </div>
+            <style>{`
+                @keyframes fadeIn {
+                    from {
+                        opacity: 0;
+                    }
+                    to {
+                        opacity: 1;
+                    }
+                }
+
+                @keyframes scaleIn {
+                    from {
+                        transform: translate(-50%, -50%) scale(0.95);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translate(-50%, -50%) scale(1);
+                        opacity: 1;
+                    }
+                }
+            `}</style>
         </>
     )
 }
