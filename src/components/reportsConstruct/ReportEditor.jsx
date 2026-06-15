@@ -512,6 +512,44 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
             });
 
+            // Удаляем старую кнопку
+            editor.Panels.removeButton('options', 'canvas-clear');
+            // Добавляем свою кнопку с переопределенной командой
+            editor.Panels.addButton('options', {
+                id: 'canvas-clear',
+                className: 'fa fa-trash-can',
+                command: 'core:canvas-clear',
+                attributes: { title: 'Очистить шаблон' }
+            });
+
+            // Переопределяем команду очистки канваса
+            editor.Commands.add('core:canvas-clear', {
+                run: (editor, sender, options) => {
+                    // Сбрасываем активное состояние кнопки
+                    if (sender && sender.set) {
+                        sender.set('active', false);
+                    }
+                    const wrapper = editor.getWrapper();
+                    const components = wrapper.components();
+                    const toRemove = [];
+
+                    components.each(comp => {
+                        toRemove.push(comp);
+                    });
+
+                    if (toRemove.length === 0) {
+                        return false;
+                    }
+
+                    toRemove.forEach(comp => {
+                        comp.remove();
+                    });
+
+                    return false;
+                },
+                stop: () => {}
+            });
+
             editor.on('component:mount', function onMount(component) {
                 setTimeout(() => {
                     const attrs = component.getAttributes();
