@@ -474,6 +474,45 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
             });
 
+            // копирования элементов
+            editor.Commands.add('core:copy', {
+                run: (editor, sender, options) => {
+                    const selected = editor.getSelected();
+                    if (!selected) return false;
+
+                    const attrs = selected.getAttributes();
+                    const isBand = attrs['band'] === 'true' || attrs['data-band'] === 'true';
+
+                    if (isBand) {
+                        return false;
+                    }
+
+                    editor.clipboard = selected.clone();
+                    editor.clipboardParent = selected.parent();
+                    return true;
+                }
+            });
+
+            // вставка после копирования
+            editor.Commands.add('core:paste', {
+                run: (editor, sender, options) => {
+                    if (!editor.clipboard) return false;
+
+                    const cloned = editor.clipboard.clone();
+                    let targetParent = editor.clipboardParent;
+
+                    if (!targetParent || !targetParent.getId()) {
+                        const selected = editor.getSelected();
+                        if (selected && selected.parent()) {
+                            targetParent = selected.parent();
+                        }
+                    }
+                    
+                    targetParent? targetParent.append(cloned) : editor.addComponents(cloned);
+
+                    return true;
+                }
+            });
 
             //событие при перетаскивании с панели компонентов
             editor.on('block:drag:stop', (block) => {
