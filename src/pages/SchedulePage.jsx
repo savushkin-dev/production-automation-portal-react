@@ -434,7 +434,7 @@ function SchedulerPage() {
         if (isSolve) {
             intervalId = setInterval(() => {
                 fetchPlan();
-            }, 2000);
+            }, 5000);
         }
 
         return () => {
