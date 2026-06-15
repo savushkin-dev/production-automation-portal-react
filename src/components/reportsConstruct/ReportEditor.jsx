@@ -474,6 +474,45 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                 }
             });
 
+            // копирования элементов
+            editor.Commands.add('core:copy', {
+                run: (editor, sender, options) => {
+                    const selected = editor.getSelected();
+                    if (!selected) return false;
+
+                    const attrs = selected.getAttributes();
+                    const isBand = attrs['band'] === 'true' || attrs['data-band'] === 'true';
+
+                    if (isBand) {
+                        return false;
+                    }
+
+                    editor.clipboard = selected.clone();
+                    editor.clipboardParent = selected.parent();
+                    return true;
+                }
+            });
+
+            // вставка после копирования
+            editor.Commands.add('core:paste', {
+                run: (editor, sender, options) => {
+                    if (!editor.clipboard) return false;
+
+                    const cloned = editor.clipboard.clone();
+                    let targetParent = editor.clipboardParent;
+
+                    if (!targetParent || !targetParent.getId()) {
+                        const selected = editor.getSelected();
+                        if (selected && selected.parent()) {
+                            targetParent = selected.parent();
+                        }
+                    }
+                    
+                    targetParent? targetParent.append(cloned) : editor.addComponents(cloned);
+
+                    return true;
+                }
+            });
 
             //событие при перетаскивании с панели компонентов
             editor.on('block:drag:stop', (block) => {
@@ -510,6 +549,44 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         checkElementAndMove();
                     }, 500);
                 }
+            });
+
+            // Удаляем старую кнопку
+            editor.Panels.removeButton('options', 'canvas-clear');
+            // Добавляем свою кнопку с переопределенной командой
+            editor.Panels.addButton('options', {
+                id: 'canvas-clear',
+                className: 'fa fa-trash-can',
+                command: 'core:canvas-clear',
+                attributes: { title: 'Очистить шаблон' }
+            });
+
+            // Переопределяем команду очистки канваса
+            editor.Commands.add('core:canvas-clear', {
+                run: (editor, sender, options) => {
+                    // Сбрасываем активное состояние кнопки
+                    if (sender && sender.set) {
+                        sender.set('active', false);
+                    }
+                    const wrapper = editor.getWrapper();
+                    const components = wrapper.components();
+                    const toRemove = [];
+
+                    components.each(comp => {
+                        toRemove.push(comp);
+                    });
+
+                    if (toRemove.length === 0) {
+                        return false;
+                    }
+
+                    toRemove.forEach(comp => {
+                        comp.remove();
+                    });
+
+                    return false;
+                },
+                stop: () => {}
             });
 
             editor.on('component:mount', function onMount(component) {
@@ -582,6 +659,12 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     // Вставляем модель внутрь нового бэнда
                     target.append(model);
 
+                    // Принудительно переустанавливаем выделение (чтобы координаты графиков не сбрасывались)
+                    setTimeout(() => {
+                        editor.select(null);
+                        editor.select(model);
+                    }, 200);
+
                     // Компенсация отступа при перетаскивании
                     requestAnimationFrame(() => {
                         const modelElAfter = model.view?.el;
@@ -617,6 +700,12 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         const canvasRect = editor.Canvas.getBody().getBoundingClientRect();
 
                         wrapper.append(model);
+
+                        // Принудительно переустанавливаем выделение (чтобы координаты графиков не сбрасывались)
+                        setTimeout(() => {
+                            editor.select(null);
+                            editor.select(model);
+                        }, 200);
 
                         requestAnimationFrame(() => {
                             const modelElAfter = model.view?.el;
