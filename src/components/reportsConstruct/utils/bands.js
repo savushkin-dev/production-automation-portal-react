@@ -44,13 +44,19 @@ export const addDataBand = (editorView, tableName, usedBands, setUsedBands, widt
     });
 
     const components = editorView.getComponents();
-    if (usedBands.reportSummary && usedBands.footerPage) {
-        components.add('<div data-gjs-type="data-band-block"></div>', { at: components.length - 2 });
-    } else if (usedBands.reportSummary) {
-        components.add('<div data-gjs-type="data-band-block"></div>', { at: components.length - 1 });
-    } else {
-        components.add('<div data-gjs-type="data-band-block"></div>');
+    let insertAt = 0;
+
+    // Пропускаем заголовок отчета, если он есть
+    if (usedBands.reportTitle) {
+        insertAt = 1;
     }
+
+    // Пропускаем заголовок страницы, если он есть
+    if (usedBands.headerPage) {
+        insertAt = usedBands.reportTitle ? 2 : 1;
+    }
+
+    components.add('<div data-gjs-type="data-band-block"></div>', { at: insertAt });
 
     lockAllBandParents();
     lockAllBand();
