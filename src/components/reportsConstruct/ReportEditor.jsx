@@ -582,6 +582,12 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     // Вставляем модель внутрь нового бэнда
                     target.append(model);
 
+                    // Принудительно переустанавливаем выделение (чтобы координаты графиков не сбрасывались)
+                    setTimeout(() => {
+                        editor.select(null);
+                        editor.select(model);
+                    }, 200);
+
                     // Компенсация отступа при перетаскивании
                     requestAnimationFrame(() => {
                         const modelElAfter = model.view?.el;
@@ -617,6 +623,12 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                         const canvasRect = editor.Canvas.getBody().getBoundingClientRect();
 
                         wrapper.append(model);
+
+                        // Принудительно переустанавливаем выделение (чтобы координаты графиков не сбрасывались)
+                        setTimeout(() => {
+                            editor.select(null);
+                            editor.select(model);
+                        }, 200);
 
                         requestAnimationFrame(() => {
                             const modelElAfter = model.view?.el;
