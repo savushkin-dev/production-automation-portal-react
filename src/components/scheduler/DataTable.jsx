@@ -19,8 +19,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
             UX: item.priority || 0,
             PDTN: item.startProductionDateTime || null,
             isSelected: selectJobs[item.snpz].isSelect || false,
-            isLabeling: item.handPackaging || false,
-
+            isLabeling: selectJobs[item.snpz].isLabeling || false,
             startPlan: item.startProductionDateTime,
             line: item.lineId
         }));
@@ -311,6 +310,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
                                         const isSelected = item.isSelected;
                                         const isLabeling = item.isLabeling;
                                         const isCheckboxEnabled = isAvailable;
+                                        const isCheckboxLabelingEnabled = isAvailable && isSelected;
 
                                         return (
                                             <tr
@@ -348,7 +348,7 @@ export function DataTable({data, dateData, selectJobs, setSelectJobs, lines}) {
                                                     style={{textAlign: 'center', padding: '12px', color: '#666'}}>
                                                     <input
                                                         className={styleCheckbox}
-                                                        disabled={!isCheckboxEnabled}
+                                                        disabled={!isCheckboxLabelingEnabled}
                                                         type={"checkbox"}
                                                         checked={isLabeling}
                                                         onChange={(e) => selectLabel(e, item)}
