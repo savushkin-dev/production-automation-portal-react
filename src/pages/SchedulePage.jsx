@@ -76,7 +76,8 @@ function SchedulerPage() {
         isLoading: false,
         message: "Загрузка..."
     });
-    const [isLoadingSolve, setIsLoadingSolve] = useState(false);
+    const [isLoadingStartSolve, setIsLoadingStartSolve] = useState(false);
+    const [isLoadingStopSolve, setIsLoadingStopSolve] = useState(false);
     const [msg, setMsg] = useState("");
     const [isModalNotify, setIsModalNotify] = useState(false);
     const [isModalNotifyError, setIsModalNotifyError] = useState(false);
@@ -92,6 +93,7 @@ function SchedulerPage() {
 
 
     const [isSolve, setIsSolve] = useState(false);
+    const [isStopButtonDisabled, setIsStopButtonDisabled] = useState(false);
     const [score, setScore] = useState({hard: 0, medium: 0, soft: 0});
     const [solverStatus, setSolverStatus] = useState("");
 
@@ -312,7 +314,7 @@ function SchedulerPage() {
 
     async function fetchSolve() {
         try {
-            setIsLoadingSolve(true)
+            setIsLoadingStartSolve(true)
             await SchedulerService.solve();
             setIsSolve(true);
         } catch (e) {
@@ -320,20 +322,20 @@ function SchedulerPage() {
             setMsg("Ошибка начала планирования: " + e.response.data.message)
             setIsModalNotifyError(true);
         } finally {
-            setIsLoadingSolve(false)
+            setIsLoadingStartSolve(false)
         }
     }
 
     async function fetchStopSolving() {
         try {
-            setIsLoadingSolve(true)
+            setIsLoadingStopSolve(true)
             await SchedulerService.stopSolving();
         } catch (e) {
             console.error(e)
             setMsg("Ошибка остановки планирования: " + e.response.data.message)
             setIsModalNotifyError(true);
         } finally {
-            setIsLoadingSolve(false)
+            setIsLoadingStopSolve(false)
         }
     }
 
@@ -414,6 +416,11 @@ function SchedulerPage() {
 
     async function solve() {
         (isValidLinesDate(startTimeLines)) ? await fetchSolve() : setLinesDateError();
+
+        setIsStopButtonDisabled(true);
+        setTimeout(() => {
+            setIsStopButtonDisabled(false);
+        }, 120000); // 2 минуты
     }
 
     function setLinesDateError() {
@@ -427,7 +434,7 @@ function SchedulerPage() {
         if (isSolve) {
             intervalId = setInterval(() => {
                 fetchPlan();
-            }, 2000);
+            }, 5000);
         }
 
         return () => {
@@ -1242,20 +1249,28 @@ function SchedulerPage() {
                     <div className="flex flex-row w-3/5 justify-between" style={{zIndex: 20}}>
 
                         <div className="inline-flex items-center gap-3">
-                            {!isSolve &&
-                                <button onClick={solve} disabled={isLoadingSolve}
-                                        className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md bg-green-600 hover:bg-green-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-1">
+                            {!isSolve && !isLoadingStopSolve &&
+                                <button onClick={solve} disabled={isLoadingStartSolve || isLoadingStopSolve}
+                                        className="px-3 h-[30px] w-34 text-[0.950rem] font-medium rounded-md bg-green-600 hover:bg-green-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-2">
                                     <i className="fa-solid fa-play text-xs pt-0.5"></i>
                                     <span>Планировать</span>
                                 </button>
                             }
-                            {isSolve &&
-                                <button onClick={stopSolving} disabled={isLoadingSolve}
-                                        className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md bg-red-600 hover:bg-red-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-1">
+                            {isSolve && !isLoadingStartSolve &&
+                                <button onClick={stopSolving} disabled={isLoadingStartSolve || isLoadingStopSolve || isStopButtonDisabled}
+                                        className="px-3 h-[30px] w-34 text-[0.950rem] font-medium rounded-md bg-red-600 hover:bg-red-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <i className="fa-solid fa-stop text-xs pt-0.5"></i>
                                     <span>Остановить</span>
                                 </button>
                             }
+
+                            {isLoadingStopSolve && (
+                                <button disabled
+                                        className="px-3 h-[30px] w-34 text-[0.950rem] font-medium rounded-md bg-red-600 opacity-50 text-white transition-all duration-200 flex items-center gap-2 cursor-not-allowed">
+                                    <i className="fa-solid fa-spinner fa-spin"></i>
+                                    <span>Остановка...</span>
+                                </button>
+                            )}
 
                             <button onClick={() => {
                                 ClickReloadPlan()
