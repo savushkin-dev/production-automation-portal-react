@@ -8,6 +8,7 @@ import {useNavigate} from "react-router-dom";
 import RoleGuard from "../components/RoleGuard";
 import {ReportSetting} from "../components/report/ReportSetting";
 import {ModalParameterWithLayout} from "../components/reportsConstruct/ModalParameterWithLayout";
+import {ModalNotifyError} from "../components/modal/ModalNotifyError";
 
 
 function ReportsPage() {
@@ -135,7 +136,7 @@ function ReportsPage() {
 
 
                 {isModalError &&
-                    <ModalNotify title={"Ошибка"} message={error} onClose={() => setIsModalError(false)}/>
+                    <ModalNotifyError title={"Ошибка"} message={error} onClose={() => setIsModalError(false)}/>
                 }
 
 

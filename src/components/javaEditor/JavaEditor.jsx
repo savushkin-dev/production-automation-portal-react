@@ -279,7 +279,7 @@ export function JavaEditor({script, parameters, setScript, onClose, setParameter
                                 </div>
                                 <div className="flex flex-row justify-end gap-3">
                                     <BlueButton onClick={addParameter} text={"Добавить параметр"} className={"text-sm"} heightPx={28}/>
-                                    <BlueButton onClick={removeLastParameter} text={"Удалить параметр"} className={"text-sm"} heightPx={26}/>
+                                    <BlueButton onClick={removeLastParameter} text={"Удалить параметр"} className={"text-sm"} heightPx={28}/>
                                 </div>
                             </div>
 

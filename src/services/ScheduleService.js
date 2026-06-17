@@ -24,6 +24,7 @@ const exampleTask = {
 export const ItemType = {
     SIMPLE: 'simple',
     CLEANING: 'cleaning',
+    CLEANING_FACT: 'fact_cleaning',
     DELAY: 'delay',
     FACT: 'fact',
     MAINTENANCE: 'maintenance',
@@ -207,6 +208,55 @@ export default class ScheduleService {
         return delayList;
     }
 
+    static async parseFactCleaningByHardware(json) {
+        const filteredData = json.jobs.filter(item => {
+            return item.drawCleaningStart !== null && item.drawCleaningEnd !== null;
+        });
+        let cleaning = [];
+        for (let i = 0; i < filteredData.length; i++) {
+            if(!filteredData[i].line){
+                console.warn("Job with id " + filteredData[i].id + " has a null line field")
+                continue;
+            }
+
+            let cleaningStartDateTime = new Date(filteredData[i].drawCleaningStart);
+            let cleaningEndDateTime = new Date(filteredData[i].drawCleaningEnd);
+
+            let dur = Math.floor((cleaningEndDateTime - cleaningStartDateTime) / 60000);
+
+            cleaning[i] = Object.assign({}, exampleTask);
+            cleaning[i].id = i + "fact_cleaning";
+            cleaning[i].start_time = cleaningStartDateTime.getTime()
+            cleaning[i].end_time = cleaningEndDateTime.getTime();
+            cleaning[i].title = "Мойка, переналадка";
+            cleaning[i].group = filteredData[i].line?.id || "NAN";
+            cleaning[i].itemProps = {
+                style: {
+                    background: '#f0f9ff',
+                    border: '1px solid #dcdcdc',
+                    color: "#0369a1",
+                },
+            };
+            cleaning[i].info = { //Доп информация
+                itemType: ItemType.CLEANING_FACT, //Для идентификации элемента на плане
+                name: "Мойка",
+                start: cleaningStartDateTime,
+                end: cleaningEndDateTime,
+                line: filteredData[i].line?.name || "NAN",
+                duration: dur,
+                pinned: false,
+                lineInfo: json.jobs[i].line,
+                delayNote: filteredData[i].cleaningDelayNote,
+                parentJobId: filteredData[i].id,
+                cleaningDelay: filteredData[i].cleaningDelay || 0,
+                cleaningDurationPlan: filteredData[i].cleaningDurationPlan || 0,
+                cleaningDurationFact: filteredData[i].cleaningDurationFact || 0,
+                cleaningDelayEndDateTime: filteredData[i].startProductionDateTime || 0,
+            }
+        }
+        return cleaning;
+    }
+
     static async parseFactItemsByHardware(json) {
         const filteredData = json.jobs.filter(item => {
             return ((item.cameraEnd !== null) && (item.cameraStart !== null));
@@ -228,7 +278,7 @@ export default class ScheduleService {
 
             factList[i].itemProps = {
                 style: {
-                    background: this.getBgColorItem(filteredData[i]).bg,
+                    background: "#fafafa",
                     border: '1px solid #dcdcdc',
                     color: this.getBgColorItem(filteredData[i]).color,
                 }
@@ -243,8 +293,8 @@ export default class ScheduleService {
                 mass: filteredData[i].mass,
                 np: filteredData[i].np,
                 snpz: filteredData[i].snpz,
-                duration: Math.round(new Date(filteredData[i].endDateTime) - new Date(filteredData[i].startProductionDateTime))/ 60000,
-                durationFactCamera: Math.round(new Date(filteredData[i].cameraEnd) - new Date(filteredData[i].cameraStart))/ 60000,
+                duration: Math.round((new Date(filteredData[i].endDateTime) - new Date(filteredData[i].startProductionDateTime)) / 60000),
+                durationFactCamera: Math.round((new Date(filteredData[i].cameraEnd) - new Date(filteredData[i].cameraStart)) / 60000),
 
                 fullName: filteredData[i].product.name,
                 type: filteredData[i].product.type,
@@ -363,6 +413,7 @@ export default class ScheduleService {
         }
 
         let factList = await this.parseFactItemsByHardware(json)
+        let factCleaningList = await this.parseFactCleaningByHardware(json)
         let cleaning = await this.parseCleaningByHardware(json)
         let cleaningDelay = await this.parseCleaningDelayByHardware(json)
         let delay = await this.parseDelayByHardware(json)
@@ -374,6 +425,7 @@ export default class ScheduleService {
         result = [...result, ...delay]
         result = ScheduleService.defineGroupPositionDelayItems(result, json)
         result = [...result, ...factList]
+        result = [...result, ...factCleaningList]
 
         return result;
     }

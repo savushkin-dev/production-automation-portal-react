@@ -56,11 +56,11 @@ export function groupDataByDay(data, baseDate) {
 
         // Определяем занятость
         if (item.snpz) {
-            const isSelect = item.startProductionDateTime !== "" &&
-                item.startProductionDateTime !== null;
+            const isSelect = item.startProductionDateTime !== "" && item.startProductionDateTime !== null;
+            const isLabeling = item.handPackaging === true
             result.selectJobs[item.snpz] = {
                 isSelect: isSelect,
-                isLabeling: false
+                isLabeling: isLabeling
             };
         }
 

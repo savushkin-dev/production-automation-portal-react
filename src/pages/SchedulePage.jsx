@@ -25,9 +25,9 @@ import {createTimelineRenderersSheduler} from "../components/scheduler/TimelineI
 import {groupDataByDay} from "../utils/scheduler/pdayParsing";
 import {
     calculateTimeToNext8AM,
-    filterGroupItems, getLastItemIndexInGroup,
+    filterGroupItems, getLastItemIndexInGroup, isCleaningDelayItem,
     isCleaningItem,
-    isDelayItem,
+    isDelayItem, isFactCleaningItem,
     isFactItem,
     isPackagedItem
 } from "../utils/scheduler/items";
@@ -41,6 +41,7 @@ import {ModalVersionSettings} from "../components/scheduler/ModalVersionSettings
 import {SchedulerDataTables} from "../components/scheduler/SchedulerDataTables";
 import {ModalColorsSettings} from "../components/scheduler/ModalColorsSettings";
 import {ModalReports} from "../components/scheduler/ModalReports";
+import Loading from "../components/loading/Loading";
 
 
 function SchedulerPage() {
@@ -71,8 +72,12 @@ function SchedulerPage() {
     });
     const [selectJobs, setSelectJobs] = useState([])
 
-    const [isLoading, setIsLoading] = useState(false);
-    const [isLoadingSolve, setIsLoadingSolve] = useState(false);
+    const [loading, setLoading] = useState({
+        isLoading: false,
+        message: "Загрузка..."
+    });
+    const [isLoadingStartSolve, setIsLoadingStartSolve] = useState(false);
+    const [isLoadingStopSolve, setIsLoadingStopSolve] = useState(false);
     const [msg, setMsg] = useState("");
     const [isModalNotify, setIsModalNotify] = useState(false);
     const [isModalNotifyError, setIsModalNotifyError] = useState(false);
@@ -88,6 +93,7 @@ function SchedulerPage() {
 
 
     const [isSolve, setIsSolve] = useState(false);
+    const [isStopButtonDisabled, setIsStopButtonDisabled] = useState(false);
     const [score, setScore] = useState({hard: 0, medium: 0, soft: 0});
     const [solverStatus, setSolverStatus] = useState("");
 
@@ -263,6 +269,7 @@ function SchedulerPage() {
 
     async function savePlan() {
         try {
+            setLoading({ isLoading: true, message: "Сохранение плана..." });
             await SchedulerService.savePlan();
             setMsg("План успешно сохранен.")
             setIsModalNotify(true);
@@ -270,6 +277,8 @@ function SchedulerPage() {
             console.error(e)
             setMsg("Ошибка сохранения отчета: " + e.response.data.message)
             setIsModalNotifyError(true);
+        } finally {
+            setLoading({ isLoading: false, message: "" });
         }
     }
 
@@ -305,7 +314,7 @@ function SchedulerPage() {
 
     async function fetchSolve() {
         try {
-            setIsLoadingSolve(true)
+            setIsLoadingStartSolve(true)
             await SchedulerService.solve();
             setIsSolve(true);
         } catch (e) {
@@ -313,20 +322,20 @@ function SchedulerPage() {
             setMsg("Ошибка начала планирования: " + e.response.data.message)
             setIsModalNotifyError(true);
         } finally {
-            setIsLoadingSolve(false)
+            setIsLoadingStartSolve(false)
         }
     }
 
     async function fetchStopSolving() {
         try {
-            setIsLoadingSolve(true)
+            setIsLoadingStopSolve(true)
             await SchedulerService.stopSolving();
         } catch (e) {
             console.error(e)
             setMsg("Ошибка остановки планирования: " + e.response.data.message)
             setIsModalNotifyError(true);
         } finally {
-            setIsLoadingSolve(false)
+            setIsLoadingStopSolve(false)
         }
     }
 
@@ -407,6 +416,11 @@ function SchedulerPage() {
 
     async function solve() {
         (isValidLinesDate(startTimeLines)) ? await fetchSolve() : setLinesDateError();
+
+        setIsStopButtonDisabled(true);
+        setTimeout(() => {
+            setIsStopButtonDisabled(false);
+        }, 120000); // 2 минуты
     }
 
     function setLinesDateError() {
@@ -420,7 +434,7 @@ function SchedulerPage() {
         if (isSolve) {
             intervalId = setInterval(() => {
                 fetchPlan();
-            }, 2000);
+            }, 5000);
         }
 
         return () => {
@@ -629,25 +643,72 @@ function SchedulerPage() {
         }
     }
 
-    //Добавляет в список выбранных элементов фактические или плановые элементы соответствующие друг другу
+    //Добавляет в список выбранных элементов фактические или плановые элементы соответствующие друг другу (включая мойки и отклонения)
     function linkPlanItemToFactItem(clickedItem) {
         const itemsArray = planByHardware;
-        let idFact = null;
-        const prefix = "fact_camera";
 
-        if (!isPackagedItem(clickedItem)) {
-            return
+        // 1. Обработка плановой мойки
+        if (isCleaningItem(clickedItem)) {
+            const parentJobId = clickedItem.info.parentJobId;
+            if (!parentJobId) return;
+
+            const factCleaning = itemsArray.find(item =>
+                isFactCleaningItem(item) && item.info.parentJobId === parentJobId
+            );
+
+            if (factCleaning) {
+                setSelectedItems([clickedItem, factCleaning]);
+            }
+            return;
         }
 
-        if (!isFactItem(clickedItem)) {
-            idFact = clickedItem.id + prefix;
-        } else {
-            idFact = clickedItem.id.slice(0, -prefix.length);
+        // 2. Обработка фактической мойки
+        if (isFactCleaningItem(clickedItem)) {
+            const parentJobId = clickedItem.info.parentJobId;
+            if (!parentJobId) return;
+
+            const planCleaning = itemsArray.find(item =>
+                isCleaningItem(item) && item.info.parentJobId === parentJobId
+            );
+
+            if (planCleaning) {
+                setSelectedItems([clickedItem, planCleaning]);
+            }
+            return;
         }
 
-        const clickedFactItem = itemsArray.find(item => item.id === idFact);
-        if (clickedFactItem) {
-            setSelectedItems([clickedItem, clickedFactItem]);
+        // 3. Обработка отклонения мойки
+        if (isCleaningDelayItem(clickedItem)) {
+            const parentJobId = clickedItem.info.parentJobId;
+            if (!parentJobId) return;
+
+            const factCleaning = itemsArray.find(item =>
+                isFactCleaningItem(item) && item.info.parentJobId === parentJobId
+            );
+
+            if (factCleaning) {
+                setSelectedItems([clickedItem, factCleaning]);
+            }
+            return;
+        }
+
+        // 4. Обработка production элементов (плановых и фактовых)
+        // Проверяем, что это не мойка и не отклонение
+        if (!isCleaningItem(clickedItem) && !isFactCleaningItem(clickedItem) && !isCleaningDelayItem(clickedItem)) {
+            const prefix = "fact_camera";
+            let targetId = null;
+
+            if (!isFactItem(clickedItem)) {
+                targetId = clickedItem.id + prefix;
+            } else {
+                targetId = clickedItem.id.slice(0, -prefix.length);
+            }
+
+            const targetItem = itemsArray.find(item => item.id === targetId);
+            if (targetItem) {
+                setSelectedItems([clickedItem, targetItem]);
+            }
+            return;
         }
     }
 
@@ -992,15 +1053,39 @@ function SchedulerPage() {
                                                                    setModalError={setIsModalNotifyError}
                                                                    setErrorMsg={setMsg}/>}
 
-                {isLoading &&
-                    <div className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0 text-center ">Загрузка</div>
-                }
+                {loading.isLoading && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center" style={{zIndex: 9999}}>
+                        <div className="bg-white rounded-lg px-12 py-6 shadow-xl flex flex-col items-center gap-3 animate-[scaleIn_0.3s_ease]">
+                            <div className="circle my-4">
+                                <div className="dot"></div>
+                                <div className="dot"></div>
+                                <div className="dot"></div>
+                                <div className="dot"></div>
+                                <div className="dot"></div>
+                                <div className="dot"></div>
+                            </div>
+                            <span className="text-gray-800 font-medium">{loading.message}</span>
+                            <span className="text-gray-400 text-sm">Пожалуйста, подождите</span>
+                        </div>
+                    </div>
+                )}
+
+                <style>{`
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                    @keyframes scaleIn {
+                        from { transform: scale(0.9); opacity: 0; }
+                        to { transform: scale(1); opacity: 1; }
+                    }
+                `}</style>
 
                 <div className="flex items-center justify-between mb-4 mt-4 px-4">
                     <button onClick={() => {
                         navigate(from, {replace: true})
                     }} className="py-1 px-2 rounded text-blue-800 hover:bg-blue-50 whitespace-nowrap">
-                        Вернуться назад
+                    Вернуться назад
                     </button>
 
                     <h1 className="font-bold text-gray-800 text-center text-2xl absolute left-1/2 -translate-x-1/2">Планировщик
@@ -1164,20 +1249,28 @@ function SchedulerPage() {
                     <div className="flex flex-row w-3/5 justify-between" style={{zIndex: 20}}>
 
                         <div className="inline-flex items-center gap-3">
-                            {!isSolve &&
-                                <button onClick={solve} disabled={isLoadingSolve}
-                                        className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md bg-green-600 hover:bg-green-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-1">
+                            {!isSolve && !isLoadingStopSolve &&
+                                <button onClick={solve} disabled={isLoadingStartSolve || isLoadingStopSolve}
+                                        className="px-3 h-[30px] w-34 text-[0.950rem] font-medium rounded-md bg-green-600 hover:bg-green-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-2">
                                     <i className="fa-solid fa-play text-xs pt-0.5"></i>
                                     <span>Планировать</span>
                                 </button>
                             }
-                            {isSolve &&
-                                <button onClick={stopSolving} disabled={isLoadingSolve}
-                                        className="px-3 h-[30px] text-[0.950rem] font-medium rounded-md bg-red-600 hover:bg-red-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-1">
+                            {isSolve && !isLoadingStartSolve &&
+                                <button onClick={stopSolving} disabled={isLoadingStartSolve || isLoadingStopSolve || isStopButtonDisabled}
+                                        className="px-3 h-[30px] w-34 text-[0.950rem] font-medium rounded-md bg-red-600 hover:bg-red-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <i className="fa-solid fa-stop text-xs pt-0.5"></i>
                                     <span>Остановить</span>
                                 </button>
                             }
+
+                            {isLoadingStopSolve && (
+                                <button disabled
+                                        className="px-3 h-[30px] w-34 text-[0.950rem] font-medium rounded-md bg-red-600 opacity-50 text-white transition-all duration-200 flex items-center gap-2 cursor-not-allowed">
+                                    <i className="fa-solid fa-spinner fa-spin"></i>
+                                    <span>Остановка...</span>
+                                </button>
+                            )}
 
                             <button onClick={() => {
                                 ClickReloadPlan()
