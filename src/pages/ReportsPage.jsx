@@ -32,7 +32,8 @@ function ReportsPage() {
         try {
             setIsLoading(true);
             const response = await ReportService.getReportsNameGroupCategory();
-            setReportsName(response.data);
+            const sortedData = sortReportsData(response.data);
+            setReportsName(sortedData);
         } catch (e) {
             setIsModalError(true);
             setError(e.response?.data.message || e.message);
@@ -79,6 +80,22 @@ function ReportsPage() {
     async function closeReportSettings(){
         setIsModalSettings(false);
         await fetchReportsName();
+    }
+
+    // Функция для сортировки данных
+    function sortReportsData(data) {
+        if (!data || !Array.isArray(data)) return [];
+
+        return data
+            .filter(item => item?.category)
+            .map(category => ({
+                ...category,
+                category: category.category.trim(),
+                reports: [...(category.reports || [])]
+                    .filter(report => report)
+                    .sort((a, b) => a.localeCompare(b, 'ru', { numeric: true }))
+            }))
+            .sort((a, b) => a.category.localeCompare(b.category, 'ru', { numeric: true }));
     }
 
     return (<>
