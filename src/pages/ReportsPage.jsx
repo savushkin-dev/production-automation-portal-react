@@ -62,6 +62,7 @@ function ReportsPage() {
     async function handleReportClick(reportName, reportCategory) {
         await fetchParametersMeta(reportName, reportCategory);
         setSelectName(reportName);
+        setSelectCategory(reportCategory);
         setIsModalParameter(true);
     }
 
@@ -75,7 +76,7 @@ function ReportsPage() {
     async function onSubmitParameters(parameters) {
         setIsModalParameter(false);
         const encodedParams = encodeURIComponent(JSON.stringify(parameters));
-        const url = `/report?name=${selectName}&params=${encodedParams}`;
+        const url = `/report?name=${selectName}&category=${selectCategory}&params=${encodedParams}`;
         navigate(url);
     }
 

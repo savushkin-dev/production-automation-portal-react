@@ -29,6 +29,7 @@ function ViewReportPage() {
 
         const urlParams = new URLSearchParams(window.location.search);
         const reportName = urlParams.get('name');
+        const reportCategory = urlParams.get('category');
         const paramsJson = urlParams.get('params');
         let parameters = {};
 
@@ -44,7 +45,7 @@ function ViewReportPage() {
             }
         }
 
-        viewReport(parameters, reportName);
+        viewReport(parameters, reportName, reportCategory);
     }, [])
 
     useEffect(() => {
@@ -57,16 +58,16 @@ function ViewReportPage() {
     }, [reportTemplate, reportData]);
 
 
-    async function viewReport(parameters, reportName) {
-        let template = await fetchReportTemplate(reportName);
+    async function viewReport(parameters, reportName, reportCategory) {
+        let template = await fetchReportTemplate(reportName, reportCategory);
         parameters = ReportService.addDefaultParameters(parameters, JSON.parse(template.parameters));
         setParameters(parameters);
-        await fetchReportData(reportName, parameters);
+        await fetchReportData(reportName, reportCategory, parameters);
     }
 
-    async function fetchReportTemplate(reportName) {
+    async function fetchReportTemplate(reportName, reportCategory) {
         try {
-            const response = await ReportService.getReportTemplateByReportName(reportName);
+            const response = await ReportService.getReportTemplateByReportName(reportName, reportCategory);
             setReportTemplate(response.data);
             return response.data;
         } catch (e) {
@@ -77,9 +78,9 @@ function ViewReportPage() {
         }
     }
 
-    async function fetchReportData(reportName, parameters) {
+    async function fetchReportData(reportName, reportCategory, parameters) {
         try {
-            const response = await ReportService.getDataByReportName(reportName, parameters);
+            const response = await ReportService.getDataByReportName(reportName, reportCategory, parameters);
             setReportData(response.data);
         } catch (e) {
             setReportData(null);
