@@ -1428,9 +1428,9 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             })
         }
 
-        async function downloadReport(reportName) {
+        async function downloadReport(reportName, reportCategory) {
             try {
-                const response = await ReportService.getReportTemplateByReportName(reportName);
+                const response = await ReportService.getReportTemplateByReportName(reportName, reportCategory);
                 let content = response.data.content;
 
                 // Обработка графиков - одной строкой!
@@ -1567,8 +1567,9 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
         async function downloadReportsName() {
             try {
-                const response = await ReportService.getReportsName();
-                setOptReportsName(ReportService.convertReportsNameToSelectOpt(response.data));
+                const groupedData = await ReportService.getReportsNameGroupCategory();
+                const options = ReportService.convertGroupedReportsToOptions(groupedData.data);
+                setOptReportsName(options);
                 showModalDownloadReport();
             } catch (error) {
                 setModalMsg("Ошибка загрузки доступных отчетов! Попробуйте позже.")

@@ -3,12 +3,12 @@ import {LeftNavigation} from "../components/leftNavigation/LeftNavigation";
 import React, {useEffect, useState} from "react";
 import ReportService from "../services/ReportService";
 import Loading from "../components/loading/Loading";
-import {ModalNotify} from "../components/modal/ModalNotify";
 import {useNavigate} from "react-router-dom";
 import RoleGuard from "../components/RoleGuard";
 import {ReportSetting} from "../components/report/ReportSetting";
 import {ModalParameterWithLayout} from "../components/reportsConstruct/ModalParameterWithLayout";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
+import {ModalConfirmation} from "../components/modal/ModalConfirmation";
 
 
 function ReportsPage() {
@@ -24,6 +24,7 @@ function ReportsPage() {
 
     const [reportsName, setReportsName] = useState([]);
     const [selectName, setSelectName] = useState("unknown")
+    const [selectCategory, setSelectCategory] = useState("unknown")
     const [parametersMeta, setParametersMeta] = useState([]);
     const [paramLayout, setParamLayout] = useState([]);
 
@@ -36,15 +37,15 @@ function ReportsPage() {
             setReportsName(sortedData);
         } catch (e) {
             setIsModalError(true);
-            setError(e.response?.data.message || e.message);
+            setError(e.response.data.message);
         } finally {
             setIsLoading(false);
         }
     }
 
-    async function fetchParametersMeta(reportName) {
+    async function fetchParametersMeta(reportName, reportCategory) {
         try {
-            const response = await ReportService.getParametersMetaByReportName(reportName);
+            const response = await ReportService.getParametersMetaByReportName(reportName, reportCategory);
             setParametersMeta(JSON.parse(response.data.parameters));
             setParamLayout(JSON.parse(response.data.layoutParams));
         } catch (e) {
@@ -58,14 +59,15 @@ function ReportsPage() {
     }, []);
 
 
-    async function handleReportClick(reportName) {
-        await fetchParametersMeta(reportName);
+    async function handleReportClick(reportName, reportCategory) {
+        await fetchParametersMeta(reportName, reportCategory);
         setSelectName(reportName);
         setIsModalParameter(true);
     }
 
-    async function handleReportEditClick(reportName){
+    async function handleReportEditClick(reportName, reportCategory){
         setSelectName(reportName);
+        setSelectCategory(reportCategory)
         setIsModalSettings(true);
     }
 
@@ -124,20 +126,20 @@ function ReportsPage() {
                                     </span>
 
                                     <div className="mt-2 ">
-                                        {option.reports.map((report, reportIndex) => (
+                                        {option.reports.map((reportName, reportIndex) => (
                                             <div key={reportIndex} className="flex flex-row rounded hover:bg-blue-50">
 
                                                 <button
                                                     key={reportIndex}
-                                                    onClick={() => handleReportClick(report)}
+                                                    onClick={() => handleReportClick(reportName, option.category)}
                                                     className="block w-full my-1 px-2 text-left  text-blue-800 "
                                                 >
-                                                    {report}
+                                                    {reportName}
                                                 </button>
 
                                                 {/* Для Админов */}
                                                 <RoleGuard requiredRoles={['ROLE_ADMIN', 'ROLE_EDITOR']}>
-                                                    <button onClick={() => handleReportEditClick(report)}>
+                                                    <button onClick={() => handleReportEditClick(reportName, option.category)}>
                                                         <i className="fa-solid fa-file-pen hover:text-blue-800"></i>
                                                     </button>
                                                 </RoleGuard>
@@ -163,7 +165,8 @@ function ReportsPage() {
                 }
 
                 {isModalSettings &&
-                    <ReportSetting reportName={selectName} onClose={closeReportSettings}/>}
+                    <ReportSetting reportName={selectName} reportCategory={selectCategory} onClose={closeReportSettings}/>}
+
 
 
 

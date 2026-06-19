@@ -1,84 +1,65 @@
-import React, {useState} from 'react'
-import {styleInput, styleLabelInput} from "../../data/styles";
+import React, {useState} from 'react';
 import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
 
-export function ModalSelect({title, message, onClose, onAgreement, options}) {
+export function ModalSelect({title, onClose, onAgreement, options}) {
+    const [selectValue, setSelectValue] = useState(null);
 
-    const [selectValue, setSelectValue] = useState(options[0]);
-
-
-    const handleChangeSelect = (event) => {
-        if (event != null) {
-            setSelectValue(event);
-        } else {
-            setSelectValue(options[1]);
-        }
+    const customStyles = {
+        ...CustomStyle,
+        option: (provided, state) => ({
+            ...provided,
+            backgroundColor: state.isSelected ? '#3b82f6' :
+                state.data.isCategory ? '#f3f4f6' : 'white',
+            color: state.isSelected ? 'white' : '#374151',
+            fontWeight: state.data.isCategory ? 'bold' : 'normal',
+            cursor: state.data.isCategory ? 'default' : 'pointer',
+        }),
     };
 
-
+    const handleAgreement = () => {
+        if (selectValue) {
+            const parsed = JSON.parse(selectValue.value);
+            onAgreement(parsed.name, parsed.category);
+        }
+    };
 
     return (
         <>
             <div
-                className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0" style={{zIndex: 99}}
+                className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0"
+                style={{zIndex: 99}}
                 onClick={onClose}
             />
             <div
-                className="w-full max-w-[500px] lg:w-[500px] p-5 z-30 rounded bg-white fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-8 animate-[scaleIn_0.3s_ease]"
+                className="w-full max-w-[500px] p-5 z-30 rounded bg-white fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-8"
                 style={{zIndex: 100}}
             >
                 <h1 className="text-2xl font-medium text-start mb-6">{title}</h1>
                 <div className="flex flex-col">
-                    <div className="flex flex-col">
-                        <span className={styleLabelInput}>Выберите шаблон отчета</span>
-                        <Select className="text-sm font-medium "
-                                placeholder={"Все статусы"}
-                                value={selectValue}
-                                onChange={handleChangeSelect}
-                                styles={CustomStyle}
-                                options={options}
-                                isClearable={false} isSearchable={false}/>
-                    </div>
+                    <span className="text-sm font-medium mb-2">Выберите шаблон отчета</span>
+                    <Select
+                        placeholder="Выберите отчет"
+                        value={selectValue}
+                        onChange={setSelectValue}
+                        styles={customStyles}
+                        options={options}
+                        isSearchable={true}
+                    />
                     <div className="flex flex-row justify-end mt-4">
-                        <div className="flex flex-row justify-end items-center bg-white my-2">
-                            <button onClick={onClose}
-                                    className="min-w-[50px] px-2 mx-2 h-7 rounded text-xs font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
-                                Отмена
-                            </button>
-                            <button onClick={() => {
-                                onAgreement(selectValue.value)
-                            }}
-                                    className="min-w-[50px] text-xs h-7 font-medium px-2 py-1 rounded text-white bg-blue-800 hover:bg-blue-700">
-                                Выбрать
-                            </button>
-                        </div>
+                        <button onClick={onClose}
+                                className="px-4 mx-2 h-8 rounded text-sm font-medium border border-slate-400 hover:bg-gray-200">
+                            Отмена
+                        </button>
+                        <button onClick={handleAgreement}
+                                disabled={!selectValue}
+                                className={`px-4 text-sm h-8 font-medium rounded text-white 
+                                    ${selectValue ? 'bg-blue-800 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}>
+                            Выбрать
+                        </button>
                     </div>
-
                 </div>
-
             </div>
-            <style>{`
-                @keyframes fadeIn {
-                    from {
-                        opacity: 0;
-                    }
-                    to {
-                        opacity: 1;
-                    }
-                }
-
-                @keyframes scaleIn {
-                    from {
-                        transform: translate(-50%, -50%) scale(0.95);
-                        opacity: 0;
-                    }
-                    to {
-                        transform: translate(-50%, -50%) scale(1);
-                        opacity: 1;
-                    }
-                }
-            `}</style>
         </>
-    )
+    );
 }

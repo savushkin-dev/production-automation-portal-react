@@ -3,14 +3,16 @@ import ReportService from "../../services/ReportService";
 import {styleInput, styleLabelInput} from "../../data/styles";
 import {ModalNotify} from "../modal/ModalNotify";
 import {ModalNotifyError} from "../modal/ModalNotifyError";
+import {ModalConfirmation} from "../modal/ModalConfirmation";
 
 
-export function ReportSetting({reportName, onClose}) {
+export function ReportSetting({reportName, reportCategory, onClose}) {
 
     const [report, setReport] = useState({});
 
     const [isModalNotify, setIsModalNotify] = useState(false);
     const [isModalError, setIsModalError] = useState(false);
+    const [isModalConfirmation, setIsModalConfirmation] = useState(false);
     const [modalMsg, setModalMsg] = useState("");
 
     const [isDelete, setIsDelete] = useState(false);
@@ -23,10 +25,10 @@ export function ReportSetting({reportName, onClose}) {
 
     async function fetchReportTemplate() {
         try {
-            const response = await ReportService.getReportTemplateByReportName(reportName);
+            const response = await ReportService.getReportTemplateByReportName(reportName, reportCategory);
             setReport(response.data);
         } catch (e) {
-            setModalMsg("Не удалось загрузить данные отчета.");
+            setModalMsg("Не удалось загрузить данные отчета. " + e.response.data.message);
             setIsModalError(true);
         }
     }
@@ -37,19 +39,20 @@ export function ReportSetting({reportName, onClose}) {
             setModalMsg("Шаблон отчета успешно обновлен.");
             setIsModalNotify(true);
         } catch (e) {
-            setModalMsg("Не удалось обновить шаблон отчета, попробуйте еще раз.");
+            setModalMsg("Не удалось обновить шаблон отчета. " + e.response.data.message);
             setIsModalError(true);
         }
     }
 
     async function deleteReportTemplate() {
         try {
+            setIsModalConfirmation(false);
             await ReportService.deleteReportTemplate(report.id);
             setModalMsg("Шаблон отчета успешно удален.");
             setIsDelete(true);
             setIsModalNotify(true);
         } catch (e) {
-            setModalMsg("Не удалось удалить шаблон отчета, попробуйте еще раз.");
+            setModalMsg("Не удалось удалить шаблон отчета. " + e.response.data.message);
             setIsModalError(true);
         }
     }
@@ -66,12 +69,22 @@ export function ReportSetting({reportName, onClose}) {
         setIsModalError(false);
     }
 
+    function handleClickRemoveReport(){
+        setModalMsg("Вы уверены что хотите удалить отчет: " + reportName + "?");
+        setIsModalConfirmation(true);
+    }
+
     return (
         <>
             {isModalNotify && <ModalNotify title={"Результат операции"} message={modalMsg} onClose={closeModalNotify}/>}
             {isModalError && <ModalNotifyError title={"Результат операции"} message={modalMsg} onClose={closeModalError}/>}
 
-            {!isModalNotify && !isModalError &&
+            {isModalConfirmation &&
+                <ModalConfirmation title={"Результат операции"} message={modalMsg} onClose={()=> setIsModalConfirmation(false)}
+                                   onDisagree={()=> setIsModalConfirmation(false)} onAgree={deleteReportTemplate}/>
+            }
+
+            {!isModalNotify && !isModalError && !isModalConfirmation &&
                 <>
                     <div
                         className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0"
@@ -113,7 +126,7 @@ export function ReportSetting({reportName, onClose}) {
                         <div className="flex flex-row justify-between mt-2">
 
                             <button className="text-red-600 rounded hover:bg-red-50 px-2"
-                                    onClick={deleteReportTemplate}>Удалить отчет <i
+                                    onClick={handleClickRemoveReport}>Удалить отчет <i
                                 className="fa-solid fa-trash-can"></i></button>
 
                             <div className="flex flex-row justify-end">

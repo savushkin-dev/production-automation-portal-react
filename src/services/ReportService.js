@@ -5,12 +5,12 @@ export default class ReportService {
 
 
 
-    static async getReportTemplateByReportName(reportName) {
-        return $api.get(`${API_URL}/api/report/` + reportName)
+    static async getReportTemplateByReportName(reportName, category) {
+        return $api.get(`${API_URL}/api/report/` + category + `/` + reportName)
     }
 
-    static async getParametersMetaByReportName(reportName) {
-        return $api.get(`${API_URL}/api/report/` + reportName + `/parameters`)
+    static async getParametersMetaByReportName(reportName, category) {
+        return $api.get(`${API_URL}/api/report/` + category + `/` + reportName + `/parameters`)
     }
 
     static async createReportTemplate(reportName, reportCategory, dbUrl, dbUsername, dbPassword, dbDriver, sql, parametersMeta,
@@ -28,8 +28,8 @@ export default class ReportService {
         return $api.get(`${API_URL}/api/report/categories`)
     }
 
-    static async getDataByReportName(reportName, parameters) {
-        return $api.post(`${API_URL}/api/report/data/` + reportName, {parameters})
+    static async getDataByReportName(reportName, category, parameters) {
+        return $api.post(`${API_URL}/api/report/data/` + category + `/` + reportName, {parameters})
     }
 
     static async updateReportTemplate(report) {
@@ -77,16 +77,24 @@ export default class ReportService {
     }
 
 
-    static convertReportsNameToSelectOpt(data){
-        let options = [];
-        for (let i = 0; i < data.length; i++) {
-            let x = {
-                value: data[i],
-                label: data[i]
-            }
-            options[i] = x;
-        }
-        return options;
+    // Конвертация grouped data в формат для вложенного Select с сортировкой (без учета регистра)
+    static convertGroupedReportsToOptions(data) {
+        const sortedData = [...data].sort((a, b) =>
+            a.category.toLowerCase().localeCompare(b.category.toLowerCase())
+        );
+        
+        return sortedData.map(categoryGroup => ({
+            label: categoryGroup.category,
+            options: categoryGroup.reports
+                .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+                .map(reportName => ({
+                    value: JSON.stringify({
+                        category: categoryGroup.category,
+                        name: reportName
+                    }),
+                    label: reportName
+                }))
+        }));
     }
 
     //Добавляем параметры которые не были заданы
