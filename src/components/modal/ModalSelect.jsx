@@ -5,18 +5,6 @@ import {CustomStyle} from "../../data/styleForSelect";
 export function ModalSelect({title, onClose, onAgreement, options}) {
     const [selectValue, setSelectValue] = useState(null);
 
-    const customStyles = {
-        ...CustomStyle,
-        option: (provided, state) => ({
-            ...provided,
-            backgroundColor: state.isSelected ? '#3b82f6' :
-                state.data.isCategory ? '#f3f4f6' : 'white',
-            color: state.isSelected ? 'white' : '#374151',
-            fontWeight: state.data.isCategory ? 'bold' : 'normal',
-            cursor: state.data.isCategory ? 'default' : 'pointer',
-        }),
-    };
-
     const handleAgreement = () => {
         if (selectValue) {
             const parsed = JSON.parse(selectValue.value);
@@ -39,12 +27,13 @@ export function ModalSelect({title, onClose, onAgreement, options}) {
                 <div className="flex flex-col">
                     <span className="text-sm font-medium mb-2">Выберите шаблон отчета</span>
                     <Select
-                        placeholder="Выберите отчет"
+                        placeholder="Введите текст для поиска..."
                         value={selectValue}
                         onChange={setSelectValue}
-                        styles={customStyles}
+                        styles={CustomStyle}
                         options={options}
                         isSearchable={true}
+                        noOptionsMessage={() => "Отчеты не найдены"}
                     />
                     <div className="flex flex-row justify-end mt-4">
                         <button onClick={onClose}

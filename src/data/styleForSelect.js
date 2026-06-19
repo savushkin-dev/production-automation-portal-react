@@ -1,50 +1,64 @@
-import {styleInputWithoutRounded} from "./styles";
-
 const targetHeight = 32;
 
 export const CustomStyle = {
     option: (base, state) => ({
         ...base,
         backgroundColor: state.isSelected ? "rgb(156 163 175)" : state.isFocused ? "rgb(29 78 216)" : "",
-        color: state.isSelected ? "rgb(255 255 255)" : state.isFocused ? "rgb(255 255 255)" : "",
+        color: state.isSelected ? "rgb(255 255 255)" : state.isFocused ? "rgb(255,255,255)" : "",
         height: "auto",
         // whiteSpace: "nowrap",
         zIndex: '100',
-        fontSize: '12px', lineHeight: '12px'
-
+        fontSize: '14px',
+        lineHeight: '12px',
+    }),
+    groupHeading: (base) => ({
+        ...base,
+        fontSize: '14px',
+        fontWeight: 'bold',
+        color: 'rgb(104,104,104)',
+        backgroundColor: 'rgb(243,243,243)',
+        padding: '2px 12px',
+        textTransform: 'none',
+        margin: '4px 0px',
+        cursor: 'default',
+    }),
+    group: (base) => ({
+        ...base,
+        padding: 0,
+        margin: 0,
+    }),
+    menuList: (base) => ({
+        ...base,
+        paddingTop: 0,
+        paddingBottom: 0,
     }),
     control: (base, state) => ({
         ...base,
+        fontSize: '14px',
         minHeight: 'initial',
-        height: "auto",
+        height: "32px",
         borderRadius: "4px",
         borderWidth: "1px",
         borderColor: "rgb(148 163 184)",
-        // boxShadow: state.isFocused ?  "0px 0px 0px 1px rgb(29 78 216)" : "none",
         boxShadow: "none",
         outline: state.isFocused ? "auto":"0",
         outlineColor: "rgb(29 78 216)",
 
-
         ':hover': {
-            // borderWidth: "2px",
             borderColor: "rgb(29 78 216)",
         },
-
-
     }),
 
     placeholder: (base) => ({
         ...base,
-        color: "#9ca3af",  // синий цвет
-        // fontSize: '12px',
+        color: "#9ca3af",
     }),
 
     noOptionsMessage: (base, state) => ({
         ...base,
-        height: "24px",
-        lineHeight: '7px',
-        fontSize: '12px',
+        height: "30px",
+        lineHeight: '12px',
+        fontSize: '14px',
     }),
     loadingMessage: (base, state) => ({
         ...base,
@@ -67,7 +81,6 @@ export const CustomStyle = {
         ...base,
         padding: `${(targetHeight - 20 - 1 - 1) / 2}px`,
     }),
-
 
 }
 

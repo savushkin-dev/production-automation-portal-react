@@ -82,7 +82,7 @@ export default class ReportService {
         const sortedData = [...data].sort((a, b) =>
             a.category.toLowerCase().localeCompare(b.category.toLowerCase())
         );
-        
+
         return sortedData.map(categoryGroup => ({
             label: categoryGroup.category,
             options: categoryGroup.reports
