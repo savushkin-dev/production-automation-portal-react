@@ -1,6 +1,6 @@
 import {Navigation} from "../components/Navigation";
 import {LeftNavigation} from "../components/leftNavigation/LeftNavigation";
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState, useContext} from "react";
 import ReportService from "../services/ReportService";
 import Loading from "../components/loading/Loading";
 import {useNavigate} from "react-router-dom";
@@ -8,12 +8,14 @@ import RoleGuard from "../components/RoleGuard";
 import {ReportSetting} from "../components/report/ReportSetting";
 import {ModalParameterWithLayout} from "../components/reportsConstruct/ModalParameterWithLayout";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
-import {ModalConfirmation} from "../components/modal/ModalConfirmation";
+import {Context} from '../index';
+import {observer} from 'mobx-react-lite';
 
 
 function ReportsPage() {
 
     const navigate = useNavigate();
+    const {store} = useContext(Context);
 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -85,11 +87,17 @@ function ReportsPage() {
         await fetchReportsName();
     }
 
+    // Проверка, может ли пользователь видеть категорию "В разработке"
+    const canSeeDevelopment = () => {
+        return store.isAuth && store.hasAnyRole(['ROLE_ADMIN', 'ROLE_EDITOR']);
+    };
+
     // Функция для сортировки данных
     function sortReportsData(data) {
         if (!data || !Array.isArray(data)) return [];
 
-        return data
+        // Фильтруем категории
+        let filteredData = data
             .filter(item => item?.category)
             .map(category => ({
                 ...category,
@@ -97,8 +105,30 @@ function ReportsPage() {
                 reports: [...(category.reports || [])]
                     .filter(report => report)
                     .sort((a, b) => a.localeCompare(b, 'ru', { numeric: true }))
-            }))
-            .sort((a, b) => a.category.localeCompare(b.category, 'ru', { numeric: true }));
+            }));
+
+        // Если пользователь не администратор и не редактор, скрываем категорию "В разработке"
+        if (!canSeeDevelopment()) {
+            filteredData = filteredData.filter(item => item.category !== 'В разработке');
+        }
+
+        // Разделяем категории: "В разработке" и остальные
+        const developmentCategory = filteredData.find(item => item.category === 'В разработке');
+        const otherCategories = filteredData.filter(item => item.category !== 'В разработке');
+
+        // Сортируем остальные категории по алфавиту
+        const sortedOtherCategories = otherCategories.sort((a, b) =>
+            a.category.localeCompare(b.category, 'ru', { numeric: true })
+        );
+
+        // Формируем результат: сначала "В разработке" (если есть), потом остальные
+        const result = [];
+        if (developmentCategory) {
+            result.push(developmentCategory);
+        }
+        result.push(...sortedOtherCategories);
+
+        return result;
     }
 
     return (<>
@@ -122,8 +152,13 @@ function ReportsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                             {reportsName.map((option, index) => (
                                 <div key={index} className="border rounded-lg p-3">
-                                    <span className="block w-full px-2 bg-blue-800 text-white rounded shadow-inner">
-                                            {option.category}
+
+                                    <span className={`block w-full px-2 rounded shadow-inner ${
+                                        option.category === 'В разработке'
+                                            ? 'bg-gray-700 text-white'
+                                            : 'bg-blue-800 text-white'
+                                    }`}>
+                                        {option.category}
                                     </span>
 
                                     <div className="mt-2 ">
@@ -133,23 +168,24 @@ function ReportsPage() {
                                                 <button
                                                     key={reportIndex}
                                                     onClick={() => handleReportClick(reportName, option.category)}
-                                                    className="block w-full my-1 px-2 text-left  text-blue-800 "
+                                                    className="block w-full my-1 px-2 text-left text-blue-800"
                                                 >
                                                     {reportName}
                                                 </button>
 
-                                                {/* Для Админов */}
+                                                {/* Для Админов и Редакторов */}
                                                 <RoleGuard requiredRoles={['ROLE_ADMIN', 'ROLE_EDITOR']}>
-                                                    <button onClick={() => handleReportEditClick(reportName, option.category)}>
+                                                    <button
+                                                        onClick={() => handleReportEditClick(reportName, option.category)}>
                                                         <i className="fa-solid fa-file-pen hover:text-blue-800"></i>
                                                     </button>
                                                 </RoleGuard>
 
-
                                             </div>
                                         ))}
                                     </div>
-                                </div>))}
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </>}
@@ -166,16 +202,13 @@ function ReportsPage() {
                 }
 
                 {isModalSettings &&
-                    <ReportSetting reportName={selectName} reportCategory={selectCategory} onClose={closeReportSettings}/>}
-
-
-
+                    <ReportSetting reportName={selectName} reportCategory={selectCategory} onClose={closeReportSettings}/>
+                }
 
             </div>
-
         </div>
     </>)
 }
 
 
-export default ReportsPage;
+export default observer(ReportsPage);
