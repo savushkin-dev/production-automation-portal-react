@@ -4,9 +4,11 @@ import {styleInput, styleLabelInput} from "../../data/styles";
 import {ModalNotify} from "../modal/ModalNotify";
 import {ModalNotifyError} from "../modal/ModalNotifyError";
 import {ModalConfirmation} from "../modal/ModalConfirmation";
+import {CustomStyle} from "../../data/styleForSelect";
+import CreatableSelect from "react-select/creatable";
 
 
-export function ReportSetting({reportName, reportCategory, onClose}) {
+export function ReportSetting({reportName, reportCategory, onClose, onUpdateReports}) {
 
     const [report, setReport] = useState({});
 
@@ -17,9 +19,13 @@ export function ReportSetting({reportName, reportCategory, onClose}) {
 
     const [isDelete, setIsDelete] = useState(false);
 
+    const [optCategoryNames, setOptCategoryNames] = useState([]);
+    const [selectCategory, setSelectCategory] = useState(null);
+
 
     useEffect(() => {
-        fetchReportTemplate()
+        fetchReportTemplate();
+        fetchCategoryNames();
     }, [])
 
 
@@ -27,6 +33,13 @@ export function ReportSetting({reportName, reportCategory, onClose}) {
         try {
             const response = await ReportService.getReportTemplateByReportName(reportName, reportCategory);
             setReport(response.data);
+
+            if (response.data.reportCategory) {
+                setSelectCategory({
+                    value: response.data.reportCategory,
+                    label: response.data.reportCategory
+                });
+            }
         } catch (e) {
             setModalMsg("Не удалось загрузить данные отчета. " + e.response.data.message);
             setIsModalError(true);
@@ -38,6 +51,7 @@ export function ReportSetting({reportName, reportCategory, onClose}) {
             await ReportService.updateReportTemplate(report);
             setModalMsg("Шаблон отчета успешно обновлен.");
             setIsModalNotify(true);
+            onUpdateReports();
         } catch (e) {
             setModalMsg("Не удалось обновить шаблон отчета. " + e.response.data.message);
             setIsModalError(true);
@@ -53,6 +67,17 @@ export function ReportSetting({reportName, reportCategory, onClose}) {
             setIsModalNotify(true);
         } catch (e) {
             setModalMsg("Не удалось удалить шаблон отчета. " + e.response.data.message);
+            setIsModalError(true);
+        }
+    }
+
+    async function fetchCategoryNames() {
+        try {
+            const response = await ReportService.getCategories();
+            const options = ReportService.convertCategoriesToOptions(response.data);
+            setOptCategoryNames(options);
+        } catch (error) {
+            setModalMsg("Ошибка загрузки доступных отчетов! Попробуйте позже.")
             setIsModalError(true);
         }
     }
@@ -73,6 +98,7 @@ export function ReportSetting({reportName, reportCategory, onClose}) {
         setModalMsg("Вы уверены что хотите удалить отчет: " + reportName + "?");
         setIsModalConfirmation(true);
     }
+
 
     return (
         <>
@@ -110,13 +136,27 @@ export function ReportSetting({reportName, reportCategory, onClose}) {
                         </div>
                         <div className="flex flex-row items-center pb-4">
                             <span className={styleLabelInput + "w-1/4 mr-2"}>Категория</span>
-                            <input
-                                className={styleInput + "w-3/4"}
-                                value={report.reportCategory || ""}
-                                onChange={(e) => {
+                            <CreatableSelect
+                                className="w-3/4"
+                                placeholder="Введите текст для поиска..."
+                                value={selectCategory}
+                                onChange={(newValue) => {
+                                    setSelectCategory(newValue);
                                     setReport(prevReport => ({
                                         ...prevReport,
-                                        reportCategory: e.target.value
+                                        reportCategory: newValue ? newValue.value : ''
+                                    }));
+                                }}
+                                styles={CustomStyle}
+                                options={optCategoryNames}
+                                isSearchable={true}
+                                noOptionsMessage={() => "Отчеты не найдены"}
+                                formatCreateLabel={(inputValue) => `${inputValue}`}
+                                onCreateOption={(inputValue) => {
+                                    setSelectCategory({ value: inputValue, label: inputValue });
+                                    setReport(prevReport => ({
+                                        ...prevReport,
+                                        reportCategory: inputValue
                                     }));
                                 }}
                             />

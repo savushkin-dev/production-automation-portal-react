@@ -25,6 +25,10 @@ export default class ReportService {
     }
 
     static async getReportsNameGroupCategory() {
+        return $api.get(`${API_URL}/api/report/grouped-by-category`)
+    }
+
+    static async getCategories() {
         return $api.get(`${API_URL}/api/report/categories`)
     }
 
@@ -63,11 +67,6 @@ export default class ReportService {
         });
     }
 
-    static async getDataForReport2(reportName, reportCategory, dbUrl, dbUsername, dbPassword, dbDriver, sql, parameters, content, styles) {
-        return $api.post(`${API_URL}/api/report/data`, {reportName, reportCategory, dbUrl, dbUsername,
-            dbPassword, dbDriver, sql, parameters, content, styles})
-    }
-
     static async getReportGlobalVars() {
         return $api.get(`${API_URL}/api/report/globalVars`)
     }
@@ -77,7 +76,10 @@ export default class ReportService {
     }
 
 
-    // Конвертация grouped data в формат для вложенного Select с сортировкой (без учета регистра)
+    /**
+     * Конвертирует сгруппированные отчеты в формат для вложенного Select.
+     * Сортирует категории и отчеты по алфавиту без учета регистра.
+     */
     static convertGroupedReportsToOptions(data) {
         const sortedData = [...data].sort((a, b) =>
             a.category.toLowerCase().localeCompare(b.category.toLowerCase())
@@ -97,7 +99,27 @@ export default class ReportService {
         }));
     }
 
-    //Добавляем параметры которые не были заданы
+    /**
+     * Преобразует категории в опции для Select.
+     * Категория "В разработке" всегда первая и гарантированно присутствует.
+     * Остальные категории сортируются по алфавиту без учета регистра.
+     */
+    static convertCategoriesToOptions = (categories) => {
+        const devCategory = "В разработке";
+        const allCategories = new Set([...categories, devCategory]);
+        const sorted = [...allCategories]
+            .filter(cat => cat !== devCategory)
+            .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+
+        return [
+            { value: devCategory, label: devCategory },
+            ...sorted.map(cat => ({ value: cat, label: cat }))
+        ];
+    };
+
+    /**
+     * Добавляет значения по умолчанию для отсутствующих или пустых параметров
+     */
     static addDefaultParameters(params, paramDescriptions) {
         const result = {...params};
         paramDescriptions.forEach(description => {

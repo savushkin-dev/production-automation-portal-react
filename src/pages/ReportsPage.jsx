@@ -202,7 +202,7 @@ function ReportsPage() {
                 }
 
                 {isModalSettings &&
-                    <ReportSetting reportName={selectName} reportCategory={selectCategory} onClose={closeReportSettings}/>
+                    <ReportSetting reportName={selectName} reportCategory={selectCategory} onClose={closeReportSettings} onUpdateReports={fetchReportsName}/>
                 }
 
             </div>
