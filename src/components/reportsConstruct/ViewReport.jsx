@@ -453,13 +453,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         const doc = parser.parseFromString(htmlTemplate, 'text/html');
         const dataArray = data.tableData;
 
-        if (!data.tableData || data.tableData.length === 0) {
-            setPages([{content: doc.body.innerHTML, css: ""}]);
-            setModalMsg("Скрипт вернул пустые данные. Подстановка значений в отчет невозможна.");
-            setIsModalNotif(true);
-            return;
-        }
-
         // Удаляем описательные бэнды
         const descriptionBands = doc.querySelectorAll('[description-band="true"]');
         descriptionBands.forEach(description => description.remove());
