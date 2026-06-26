@@ -385,16 +385,11 @@ export function DesignerParameter({parameters, layout, setLayout, onClose}) {
     if (isEmptyParameters) {
         return (
             <div className="flex flex-col items-center pb-44 justify-center h-[1000px] text-gray-500">
-                <div className="text-4xl mb-4">📋</div>
-                <h3 className="text-xl font-medium mb-2">Нет элементов для отображения</h3>
-                <p className="text-center max-w-md">
+                <h3 className="text-lg font-medium mb-2">Нет элементов для отображения</h3>
+                <p className="text-center max-w-md text-sm mb-3">
                     Отчет не загружен или не содержит параметров.
                 </p>
-
-                <button onClick={onClose}
-                        className="min-w-[50px] mt-3 text-sm h-9 font-medium px-3 py-1 rounded text-white bg-blue-800 hover:bg-blue-700">
-                    Вернуться к созданию отчета
-                </button>
+                <BlueButton onClick={onClose} text={"Вернуться к созданию отчета"}/>
             </div>
         )
     }

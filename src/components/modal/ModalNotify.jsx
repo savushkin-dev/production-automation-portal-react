@@ -1,5 +1,4 @@
 import React from 'react'
-import {WhiteButton} from "../reportsConstruct/buttons/WhiteButton";
 import {BlueButton} from "../reportsConstruct/buttons/BlueButton";
 
 
@@ -17,9 +16,10 @@ export function ModalNotify({title, message, onClose}) {
                 <h1 className="text-xl font-medium text-start mb-2">{title}</h1>
                 <div className="flex flex-col">
                     <span className="my-3 ">{message}</span>
-                    <BlueButton onClick={onClose} text={"ОК"}/>
+                    <div className="flex flex-row justify-end items-center bg-white my-2 gap-2">
+                        <BlueButton onClick={onClose} text={"ОК"}/>
+                    </div>
                 </div>
-
             </div>
             <style>{`
                 @keyframes fadeIn {
