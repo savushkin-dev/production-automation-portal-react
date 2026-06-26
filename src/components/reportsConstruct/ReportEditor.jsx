@@ -1421,7 +1421,7 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     setModalMsg("Документ успешно отправлен!");
 
                 } catch (error) {
-                    setModalMsg("Ошибка сохранения отчета на сервер! Попробуйте еще раз.")
+                    setModalMsg("Ошибка сохранения отчета на сервер! " + error.response.data.message)
                 } finally {
                     showModalNotif();
                 }

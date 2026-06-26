@@ -81,6 +81,10 @@ export const CustomStyle = {
         ...base,
         padding: `${(targetHeight - 20 - 1 - 1) / 2}px`,
     }),
+    menuPortal: (base) => ({
+        ...base,
+        zIndex: 9999,
+    }),
 
 }
 

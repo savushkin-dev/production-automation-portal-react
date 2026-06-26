@@ -1,6 +1,8 @@
 import React, {useState} from 'react';
 import Select from "react-select";
 import {CustomStyle} from "../../data/styleForSelect";
+import {WhiteButton} from "../reportsConstruct/buttons/WhiteButton";
+import {BlueButton} from "../reportsConstruct/buttons/BlueButton";
 
 export function ModalSelect({title, onClose, onAgreement, options}) {
     const [selectValue, setSelectValue] = useState(null);
@@ -35,17 +37,9 @@ export function ModalSelect({title, onClose, onAgreement, options}) {
                         isSearchable={true}
                         noOptionsMessage={() => "Отчеты не найдены"}
                     />
-                    <div className="flex flex-row justify-end mt-4">
-                        <button onClick={onClose}
-                                className="px-4 mx-2 h-8 rounded text-sm font-medium border border-slate-400 hover:bg-gray-200">
-                            Отмена
-                        </button>
-                        <button onClick={handleAgreement}
-                                disabled={!selectValue}
-                                className={`px-4 text-sm h-8 font-medium rounded text-white 
-                                    ${selectValue ? 'bg-blue-800 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}>
-                            Выбрать
-                        </button>
+                    <div className="flex flex-row justify-end mt-5 gap-2">
+                        <WhiteButton onClick={onClose} text={"Отмена"}/>
+                        <BlueButton onClick={handleAgreement} text={"Выбрать"} disabled={!selectValue}/>
                     </div>
                 </div>
             </div>

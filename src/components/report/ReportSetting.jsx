@@ -6,6 +6,8 @@ import {ModalNotifyError} from "../modal/ModalNotifyError";
 import {ModalConfirmation} from "../modal/ModalConfirmation";
 import {CustomStyle} from "../../data/styleForSelect";
 import CreatableSelect from "react-select/creatable";
+import {WhiteButton} from "../reportsConstruct/buttons/WhiteButton";
+import {BlueButton} from "../reportsConstruct/buttons/BlueButton";
 
 
 export function ReportSetting({reportName, reportCategory, onClose, onUpdateReports}) {
@@ -169,16 +171,9 @@ export function ReportSetting({reportName, reportCategory, onClose, onUpdateRepo
                                     onClick={handleClickRemoveReport}>Удалить отчет <i
                                 className="fa-solid fa-trash-can"></i></button>
 
-                            <div className="flex flex-row justify-end">
-                                <button
-                                    onClick={onClose}
-                                    className="min-w-[50px] px-2 mr-2 h-7 rounded text-xs font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
-                                    Закрыть
-                                </button>
-                                <button onClick={applyChanges}
-                                        className=" px-2 h-7  rounded text-xs font-medium shadow-sm border  bg-blue-800 hover:bg-blue-700 text-white">
-                                    Применить
-                                </button>
+                            <div className="flex flex-row justify-end gap-2">
+                                <WhiteButton onClick={onClose} text={"Закрыть"}/>
+                                <BlueButton onClick={applyChanges} text={"Применить"}/>
                             </div>
                         </div>
 

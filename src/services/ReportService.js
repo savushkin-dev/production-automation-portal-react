@@ -4,7 +4,6 @@ import $api, {API_URL} from "../http";
 export default class ReportService {
 
 
-
     static async getReportTemplateByReportName(reportName, category) {
         return $api.get(`${API_URL}/api/report/` + category + `/` + reportName)
     }
@@ -15,9 +14,24 @@ export default class ReportService {
 
     static async createReportTemplate(reportName, reportCategory, dbUrl, dbUsername, dbPassword, dbDriver, sql, parametersMeta,
                                       content, styles, script, sqlMode, dataBands, bookOrientation, layoutSettingsParams, layoutParams) {
-        return $api.post(`${API_URL}/api/report/create`, {reportName, reportCategory, dbUrl, dbUsername,
-            dbPassword, dbDriver, sql, parameters: JSON.stringify(parametersMeta), content, styles, script, sqlMode,
-            dataBands: JSON.stringify(dataBands), bookOrientation, layoutSettingsParams: JSON.stringify(layoutSettingsParams), layoutParams: JSON.stringify(layoutParams)})
+        return $api.post(`${API_URL}/api/report/create`, {
+            reportName,
+            reportCategory,
+            dbUrl,
+            dbUsername,
+            dbPassword,
+            dbDriver,
+            sql,
+            parameters: JSON.stringify(parametersMeta),
+            content,
+            styles,
+            script,
+            sqlMode,
+            dataBands: JSON.stringify(dataBands),
+            bookOrientation,
+            layoutSettingsParams: JSON.stringify(layoutSettingsParams),
+            layoutParams: JSON.stringify(layoutParams)
+        })
     }
 
     static async getReportsName() {
@@ -49,7 +63,7 @@ export default class ReportService {
     }
 
     static async getDataForReport(reportName, reportCategory, dbUrl, dbUsername, dbPassword, dbDriver, sql, content, styles, parameters, script, sqlMode) {
-        return $api.post(`${API_URL}/api/report/data`,  {
+        return $api.post(`${API_URL}/api/report/data`, {
             reportTemplateDTO: {
                 reportName,
                 reportCategory,
@@ -78,12 +92,17 @@ export default class ReportService {
 
     /**
      * Конвертирует сгруппированные отчеты в формат для вложенного Select.
+     * Категория "В разработке" всегда первая.
      * Сортирует категории и отчеты по алфавиту без учета регистра.
      */
     static convertGroupedReportsToOptions(data) {
-        const sortedData = [...data].sort((a, b) =>
-            a.category.toLowerCase().localeCompare(b.category.toLowerCase())
-        );
+        const devCategory = "В разработке";
+
+        const sortedData = [
+            ...data.filter(item => item.category === devCategory),
+            ...data.filter(item => item.category !== devCategory)
+                .sort((a, b) => a.category.toLowerCase().localeCompare(b.category.toLowerCase()))
+        ];
 
         return sortedData.map(categoryGroup => ({
             label: categoryGroup.category,
@@ -112,8 +131,8 @@ export default class ReportService {
             .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
         return [
-            { value: devCategory, label: devCategory },
-            ...sorted.map(cat => ({ value: cat, label: cat }))
+            {value: devCategory, label: devCategory},
+            ...sorted.map(cat => ({value: cat, label: cat}))
         ];
     };
 

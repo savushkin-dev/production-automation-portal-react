@@ -15,7 +15,7 @@ export function WhiteButton({
             onClick={disabled ? undefined : onClick}
             disabled={disabled}
             title={title}
-            className={`px-3 text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-700
+            className={`min-w-14 px-3 text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-700
                 ${disabled ? 'opacity-50 cursor-not-allowed hover:bg-transparent hover:text-gray-700 hover:border-gray-200' : ''}
                 ${className}`}
             style={{ height: `${heightPx}px` }}
