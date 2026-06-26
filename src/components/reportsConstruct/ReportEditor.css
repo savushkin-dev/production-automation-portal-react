@@ -162,6 +162,21 @@ body.alt-zoom-active {
     opacity: 1 !important;
 }
 
+/* ========================================
+   Подсветка выбранного элемента в дереве слоев
+   ======================================== */
+
+/* Левая граница - основной индикатор выбора */
+.custom-layer-selected {
+    border-left: 5px solid #1976d2 !important;  /* Синяя полоса слева */
+}
+
+/* Оформление текста выбранного элемента */
+.custom-layer-selected .gjs-layer-title {
+    color: #0d47a1 !important;      /* Темно-синий */
+    font-weight: 600 !important;    /* Полужирный */
+}
+
 
 
 

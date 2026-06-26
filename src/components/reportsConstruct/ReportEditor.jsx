@@ -41,6 +41,7 @@ import {
     addReportSummaryBand,
     addReportTitleBand
 } from "./utils/bands";
+import syncSelectionWithLayerTree from "./utils/highlightLayer";
 
 
 const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
@@ -970,6 +971,10 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
             editor.Panels.removeButton('options', 'preview');
             editor.Panels.removeButton('options', 'gjs-open-import-webpage');
+
+            // Синхронизация выделения с деревом слоев (синяя подсветка)
+            syncSelectionWithLayerTree(editor);
+
 
             setEditorView(editor);
 
