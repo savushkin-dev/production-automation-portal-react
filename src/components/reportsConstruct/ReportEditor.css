@@ -177,7 +177,17 @@ body.alt-zoom-active {
     font-weight: 600 !important;    /* Полужирный */
 }
 
+.gjs-pn-views-container {
+    height: calc(85vh) !important;
+    overflow: scroll !important;
+}
 
 
+/* ============================================================
+   ПАНЕЛЬ СЛОЕВ И СТИЛЕЙ (правая боковая панель)
+   ============================================================ */
 
-
+.gjs-pn-views-container {
+    height: calc(85vh) !important;  /* 85% от высоты экрана */
+    overflow: scroll !important;    /* Прокрутка при переполнении */
+}

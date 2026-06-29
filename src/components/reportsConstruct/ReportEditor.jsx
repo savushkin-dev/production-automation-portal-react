@@ -42,6 +42,7 @@ import {
     addReportTitleBand
 } from "./utils/bands";
 import syncSelectionWithLayerTree from "./utils/highlightLayer";
+import setupCustomLayerNames from "./utils/layerCustomNames";
 
 
 const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
@@ -975,6 +976,14 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             // Синхронизация выделения с деревом слоев (синяя подсветка)
             syncSelectionWithLayerTree(editor);
 
+            // Настройка кастомных названий слоев
+            setupCustomLayerNames(editor, {
+                maxLength: 16,  // Максимальная длина текста
+                placeholder: 'Элемент'
+            });
+
+            // Синхронизация выделения
+            syncSelectionWithLayerTree(editor);
 
             setEditorView(editor);
 
