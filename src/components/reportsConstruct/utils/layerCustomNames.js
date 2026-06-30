@@ -385,19 +385,19 @@ export const setupCustomLayerNames = (editor, options = {}) => {
     // ================================================================
     // Обновляем названия при изменении компонентов
     editor.on('component:update', () => {
-        setTimeout(updateAllLayerNames, 200);
+        setTimeout(updateAllLayerNames, 10);
     });
 
     editor.on('component:add', () => {
-        setTimeout(updateAllLayerNames, 300);
+        setTimeout(updateAllLayerNames, 10);
     });
 
     editor.on('component:remove', () => {
-        setTimeout(updateAllLayerNames, 300);
+        setTimeout(updateAllLayerNames, 10);
     });
 
     editor.on('component:selected', () => {
-        setTimeout(updateAllLayerNames, 100);
+        setTimeout(updateAllLayerNames, 10);
     });
 
     // ================================================================
