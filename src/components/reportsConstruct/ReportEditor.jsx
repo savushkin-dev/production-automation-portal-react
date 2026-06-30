@@ -973,9 +973,6 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             editor.Panels.removeButton('options', 'preview');
             editor.Panels.removeButton('options', 'gjs-open-import-webpage');
 
-            // Синхронизация выделения с деревом слоев (синяя подсветка)
-            syncSelectionWithLayerTree(editor);
-
             // Настройка кастомных названий слоев
             setupCustomLayerNames(editor, {
                 maxLength: 16,  // Максимальная длина текста
