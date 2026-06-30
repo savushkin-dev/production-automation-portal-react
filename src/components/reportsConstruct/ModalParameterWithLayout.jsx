@@ -8,6 +8,8 @@ import {
     renderField,
     ROW_HEIGHT
 } from "../../utils/report/designerParameter";
+import {WhiteButton} from "./buttons/WhiteButton";
+import {BlueButton} from "./buttons/BlueButton";
 
 const myCompactor = getCompactor(null, false, true);
 
@@ -253,16 +255,9 @@ export function ModalParameterWithLayout({parameters, reportName, layout, onSubm
                     <div className="text-sm text-gray-600">
                         Параметров: {parameters.length}
                     </div>
-                    <div className="flex flex-row justify-end items-center bg-white my-2">
-                        <button
-                            onClick={onClose}
-                            className="min-w-[50px] px-2 mx-2 h-7 rounded text-xs font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
-                            Закрыть
-                        </button>
-                        <button onClick={handleSubmit}
-                                className="min-w-[50px] text-xs h-7 font-medium px-2 py-1 rounded text-white bg-blue-800 hover:bg-blue-700">
-                            Сформировать отчет
-                        </button>
+                    <div className="flex flex-row justify-end items-center bg-white my-2 gap-2">
+                        <WhiteButton onClick={onClose} text={"Закрыть"}/>
+                        <BlueButton onClick={handleSubmit} text={"Сформировать отчет"}/>
                     </div>
                 </div>
             </div>

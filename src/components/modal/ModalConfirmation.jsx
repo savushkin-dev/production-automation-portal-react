@@ -1,4 +1,6 @@
 import React from 'react'
+import {WhiteButton} from "../reportsConstruct/buttons/WhiteButton";
+import {BlueButton} from "../reportsConstruct/buttons/BlueButton";
 
 
 export function ModalConfirmation({title, message, onClose, onAgree, onDisagree}) {
@@ -16,15 +18,9 @@ export function ModalConfirmation({title, message, onClose, onAgree, onDisagree}
                 <div className="flex flex-col">
                     <span className="my-3">{message}</span>
 
-                    <div className="flex flex-row justify-end">
-                        <button onClick={onAgree}
-                                className="w-14 px-2 mr-2 h-7 self-end  my-2 rounded text-sm font-medium shadow-sm border  bg-blue-800 hover:bg-blue-700 text-white">
-                            Да
-                        </button>
-                        <button onClick={onDisagree}
-                                className="w-14 px-2 h-7 self-end  my-2 rounded text-sm font-medium shadow-sm border   hover:bg-gray-100">
-                            Нет
-                        </button>
+                    <div className="flex flex-row justify-end gap-2">
+                        <BlueButton onClick={onAgree} text={"Да"}/>
+                        <WhiteButton onClick={onDisagree} text={"Нет"}/>
                     </div>
 
                 </div>

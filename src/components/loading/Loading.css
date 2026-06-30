@@ -10,7 +10,7 @@
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background-color: #1e5ad5; /* Цвет кружочков */
+    background-color: oklch(42.4% 0.199 265.638); /* Цвет кружочков */
 }
 
 .dot:nth-child(1) { top: 0; left: 50%; transform: translate(-50%, -50%); }

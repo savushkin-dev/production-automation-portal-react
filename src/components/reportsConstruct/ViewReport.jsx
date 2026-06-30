@@ -423,7 +423,7 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
     }
 
     // замена полей в графике
-    function replaceFieldsInHtml(html, rowData) {
+    function replaceFieldsInHtml(html, rowData, excludeFields = ['page']) {
         if (!rowData) return html;
 
         let result = html;
@@ -431,14 +431,37 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         // Обрабатываем плейсхолдеры графиков
         result = replaceChartDataInHtml(result, rowData);
 
-        // Обрабатываем плейсхолдеры поелй отчета
-        Object.keys(rowData).forEach(field => {
-            let value = rowData[field];
-            if (value === null || value === undefined) return;
+        // Находим все плейсхолдеры в HTML
+        const placeholderRegex = /\{\{(\w+)\}\}/g;
+        let match;
+        const placeholders = [];
 
-            const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
-            const regex = new RegExp(`\\{\\{${field}\\}\\}`, 'g');
-            result = result.replace(regex, displayValue);
+        while ((match = placeholderRegex.exec(html)) !== null) {
+            placeholders.push(match[1]);
+        }
+
+        // Уникальные поля
+        const uniqueFields = [...new Set(placeholders)];
+
+        uniqueFields.forEach(field => {
+            // Пропускаем исключенные поля
+            if (excludeFields.includes(field)) {
+                return;
+            }
+
+            // Проверяем наличие поля в данных
+            const hasField = field in rowData;
+            const value = hasField ? rowData[field] : null;
+
+            // Если поле отсутствует или значение null/undefined
+            if (!hasField || value === null || value === undefined) {
+                const regex = new RegExp(`\\{\\{${field}\\}\\}`, 'g');
+                result = result.replace(regex, "null");
+            } else {
+                const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                const regex = new RegExp(`\\{\\{${field}\\}\\}`, 'g');
+                result = result.replace(regex, displayValue);
+            }
         });
 
         return result;
@@ -452,13 +475,6 @@ export function ViewReport({data, dataParam, html, css, onClose, isBookOrientati
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlTemplate, 'text/html');
         const dataArray = data.tableData;
-
-        if (!data.tableData || data.tableData.length === 0) {
-            setPages([{content: doc.body.innerHTML, css: ""}]);
-            setModalMsg("Скрипт вернул пустые данные. Подстановка значений в отчет невозможна.");
-            setIsModalNotif(true);
-            return;
-        }
 
         // Удаляем описательные бэнды
         const descriptionBands = doc.querySelectorAll('[description-band="true"]');

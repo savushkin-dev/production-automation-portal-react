@@ -41,6 +41,8 @@ import {
     addReportSummaryBand,
     addReportTitleBand
 } from "./utils/bands";
+import syncSelectionWithLayerTree from "./utils/highlightLayer";
+import setupCustomLayerNames from "./utils/layerCustomNames";
 
 
 const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
@@ -971,6 +973,15 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
             editor.Panels.removeButton('options', 'preview');
             editor.Panels.removeButton('options', 'gjs-open-import-webpage');
 
+            // Настройка кастомных названий слоев
+            setupCustomLayerNames(editor, {
+                maxLength: 16,  // Максимальная длина текста
+                placeholder: 'Элемент'
+            });
+
+            // Синхронизация выделения
+            syncSelectionWithLayerTree(editor);
+
             setEditorView(editor);
 
             document.querySelector('.gjs-pn-devices-c').querySelector('.gjs-pn-buttons').innerHTML = "" // удаляем дефолтный div с девайсами
@@ -1421,16 +1432,16 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
                     setModalMsg("Документ успешно отправлен!");
 
                 } catch (error) {
-                    setModalMsg("Ошибка сохранения отчета на сервер! Попробуйте еще раз.")
+                    setModalMsg("Ошибка сохранения отчета на сервер! " + error.response.data.message)
                 } finally {
                     showModalNotif();
                 }
             })
         }
 
-        async function downloadReport(reportName) {
+        async function downloadReport(reportName, reportCategory) {
             try {
-                const response = await ReportService.getReportTemplateByReportName(reportName);
+                const response = await ReportService.getReportTemplateByReportName(reportName, reportCategory);
                 let content = response.data.content;
 
                 // Обработка графиков - одной строкой!
@@ -1567,8 +1578,9 @@ const ReportEditor = forwardRef(({htmlProps, cssProps, onCloseReport}, ref) => {
 
         async function downloadReportsName() {
             try {
-                const response = await ReportService.getReportsName();
-                setOptReportsName(ReportService.convertReportsNameToSelectOpt(response.data));
+                const groupedData = await ReportService.getReportsNameGroupCategory();
+                const options = ReportService.convertGroupedReportsToOptions(groupedData.data);
+                setOptReportsName(options);
                 showModalDownloadReport();
             } catch (error) {
                 setModalMsg("Ошибка загрузки доступных отчетов! Попробуйте позже.")

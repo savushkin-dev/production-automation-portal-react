@@ -3,6 +3,8 @@ import Select from "react-select";
 import {CustomStyleWithoutRounded} from "../../data/styleForSelect";
 import React from "react";
 import { v4 as uuidv4 } from 'uuid';
+import {WhiteButton} from "./buttons/WhiteButton";
+import {GrayButton} from "./buttons/GrayButton";
 
 export function ModalSQL({value, parameters, isValid, onChange, onClose, setParameters}) {
 
@@ -123,10 +125,8 @@ export function ModalSQL({value, parameters, isValid, onChange, onClose, setPara
                 <div className="flex flex-row justify-beetwen mt-2 mb-3">
                     <h1 className="text-2xl font-medium text-start w-1/3">Параметры запроса</h1>
 
-                    <div className="w-2/3 pt-1">
-                        <button onClick={addOrRemoveDataChildParameter}
-                                className="h-7 w-full text-nowrap px-2 text-sm text-white rounded shadow-inner bg-gray-600 hover:bg-gray-500">Добавить/удалить выбор отображения дочернего бэнда при формировании отчета
-                        </button>
+                    <div className="w-2/3 mt-1">
+                        <GrayButton onClick={addOrRemoveDataChildParameter} className={"pt-1"} text={"Добавить/удалить выбор отображения дочернего бэнда при формировании отчета"}/>
                     </div>
 
                 </div>
@@ -243,11 +243,7 @@ export function ModalSQL({value, parameters, isValid, onChange, onClose, setPara
                                 <span className="text-sm font-medium text-red-600">Некорректный SQL!</span>
                             }
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="min-w-[50px] px-2 mx-2 h-7 rounded text-xs font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
-                            Закрыть
-                        </button>
+                        <WhiteButton onClick={onClose} text={"Закрыть"}/>
                     </div>
                 </div>
             </div>
