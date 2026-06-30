@@ -4,20 +4,34 @@ import $api, {API_URL} from "../http";
 export default class ReportService {
 
 
-
-    static async getReportTemplateByReportName(reportName) {
-        return $api.get(`${API_URL}/api/report/` + reportName)
+    static async getReportTemplateByReportName(reportName, category) {
+        return $api.get(`${API_URL}/api/report/` + category + `/` + reportName)
     }
 
-    static async getParametersMetaByReportName(reportName) {
-        return $api.get(`${API_URL}/api/report/` + reportName + `/parameters`)
+    static async getParametersMetaByReportName(reportName, category) {
+        return $api.get(`${API_URL}/api/report/` + category + `/` + reportName + `/parameters`)
     }
 
     static async createReportTemplate(reportName, reportCategory, dbUrl, dbUsername, dbPassword, dbDriver, sql, parametersMeta,
                                       content, styles, script, sqlMode, dataBands, bookOrientation, layoutSettingsParams, layoutParams) {
-        return $api.post(`${API_URL}/api/report/create`, {reportName, reportCategory, dbUrl, dbUsername,
-            dbPassword, dbDriver, sql, parameters: JSON.stringify(parametersMeta), content, styles, script, sqlMode,
-            dataBands: JSON.stringify(dataBands), bookOrientation, layoutSettingsParams: JSON.stringify(layoutSettingsParams), layoutParams: JSON.stringify(layoutParams)})
+        return $api.post(`${API_URL}/api/report/create`, {
+            reportName,
+            reportCategory,
+            dbUrl,
+            dbUsername,
+            dbPassword,
+            dbDriver,
+            sql,
+            parameters: JSON.stringify(parametersMeta),
+            content,
+            styles,
+            script,
+            sqlMode,
+            dataBands: JSON.stringify(dataBands),
+            bookOrientation,
+            layoutSettingsParams: JSON.stringify(layoutSettingsParams),
+            layoutParams: JSON.stringify(layoutParams)
+        })
     }
 
     static async getReportsName() {
@@ -25,11 +39,15 @@ export default class ReportService {
     }
 
     static async getReportsNameGroupCategory() {
+        return $api.get(`${API_URL}/api/report/grouped-by-category`)
+    }
+
+    static async getCategories() {
         return $api.get(`${API_URL}/api/report/categories`)
     }
 
-    static async getDataByReportName(reportName, parameters) {
-        return $api.post(`${API_URL}/api/report/data/` + reportName, {parameters})
+    static async getDataByReportName(reportName, category, parameters) {
+        return $api.post(`${API_URL}/api/report/data/` + category + `/` + reportName, {parameters})
     }
 
     static async updateReportTemplate(report) {
@@ -45,7 +63,7 @@ export default class ReportService {
     }
 
     static async getDataForReport(reportName, reportCategory, dbUrl, dbUsername, dbPassword, dbDriver, sql, content, styles, parameters, script, sqlMode) {
-        return $api.post(`${API_URL}/api/report/data`,  {
+        return $api.post(`${API_URL}/api/report/data`, {
             reportTemplateDTO: {
                 reportName,
                 reportCategory,
@@ -63,11 +81,6 @@ export default class ReportService {
         });
     }
 
-    static async getDataForReport2(reportName, reportCategory, dbUrl, dbUsername, dbPassword, dbDriver, sql, parameters, content, styles) {
-        return $api.post(`${API_URL}/api/report/data`, {reportName, reportCategory, dbUrl, dbUsername,
-            dbPassword, dbDriver, sql, parameters, content, styles})
-    }
-
     static async getReportGlobalVars() {
         return $api.get(`${API_URL}/api/report/globalVars`)
     }
@@ -77,19 +90,55 @@ export default class ReportService {
     }
 
 
-    static convertReportsNameToSelectOpt(data){
-        let options = [];
-        for (let i = 0; i < data.length; i++) {
-            let x = {
-                value: data[i],
-                label: data[i]
-            }
-            options[i] = x;
-        }
-        return options;
+    /**
+     * Конвертирует сгруппированные отчеты в формат для вложенного Select.
+     * Категория "В разработке" всегда первая.
+     * Сортирует категории и отчеты по алфавиту без учета регистра.
+     */
+    static convertGroupedReportsToOptions(data) {
+        const devCategory = "В разработке";
+
+        const sortedData = [
+            ...data.filter(item => item.category === devCategory),
+            ...data.filter(item => item.category !== devCategory)
+                .sort((a, b) => a.category.toLowerCase().localeCompare(b.category.toLowerCase()))
+        ];
+
+        return sortedData.map(categoryGroup => ({
+            label: categoryGroup.category,
+            options: categoryGroup.reports
+                .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+                .map(reportName => ({
+                    value: JSON.stringify({
+                        category: categoryGroup.category,
+                        name: reportName
+                    }),
+                    label: reportName
+                }))
+        }));
     }
 
-    //Добавляем параметры которые не были заданы
+    /**
+     * Преобразует категории в опции для Select.
+     * Категория "В разработке" всегда первая и гарантированно присутствует.
+     * Остальные категории сортируются по алфавиту без учета регистра.
+     */
+    static convertCategoriesToOptions = (categories) => {
+        const devCategory = "В разработке";
+        const allCategories = new Set([...categories, devCategory]);
+        const sorted = [...allCategories]
+            .filter(cat => cat !== devCategory)
+            .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+
+        return [
+            {value: devCategory, label: devCategory},
+            ...sorted.map(cat => ({value: cat, label: cat}))
+        ];
+    };
+
+    /**
+     * Добавляет значения по умолчанию для отсутствующих или пустых параметров
+     */
     static addDefaultParameters(params, paramDescriptions) {
         const result = {...params};
         paramDescriptions.forEach(description => {

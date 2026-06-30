@@ -15,7 +15,7 @@ export function GrayButton({
             onClick={disabled ? undefined : onClick}
             disabled={disabled}
             title={title}
-            className={`px-3 text-[0.900rem] font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]
+            className={`min-w-14 px-3 text-[0.900rem] font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]
                 ${disabled ? 'opacity-50 cursor-not-allowed hover:bg-gray-700 hover:shadow-sm active:scale-100' : ''}
                 ${className}`}
             style={{ height: `${heightPx}px` }}

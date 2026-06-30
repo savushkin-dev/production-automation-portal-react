@@ -3,10 +3,11 @@ import { ModalNotify } from "../modal/ModalNotify";
 import ReportService from "../../services/ReportService";
 import {decryptData, encryptData} from "../../utils/Сrypto";
 import {BlueButton} from "./buttons/BlueButton";
-import {GrayButton} from "./buttons/GrayButton";
 import {WhiteButton} from "./buttons/WhiteButton";
 
 export function GlobalVars({ onClose }) {
+
+    const [isLoading, setIsLoading] = useState(true);
     const [variables, setVariables] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalNotify, setIsModalNotify] = useState(false);
@@ -22,9 +23,10 @@ export function GlobalVars({ onClose }) {
     useEffect(() => {
         getGlobalVars()
     }, []);
-    
+
     async function getGlobalVars() {
         try {
+            setIsLoading(true);
             const response = await ReportService.getReportGlobalVars();
             let vars = response.data;
             vars = vars.map(v => ({
@@ -36,37 +38,8 @@ export function GlobalVars({ onClose }) {
             setError("Ошибка получения глобальных переменных: " + e.response?.data?.message)
             setIsModalError(true);
             setIsModalNotify(true)
-        }
-    }
-
-    async function saveGlobalVars() {
-        try {
-            let varsToSave = variables.map(v => ({
-                key: v.key,
-                value: encryptData(v.value),
-                description: v.description
-            }));
-            await ReportService.saveReportGlobalVars(varsToSave);
-        } catch (e) {
-            setError("Ошибка сохранения глобальных переменных: " + e.response?.data?.message)
-            setIsModalError(true);
-        }
-    }
-
-
-    async function getGlobalVars() {
-        try {
-            const response = await ReportService.getReportGlobalVars();
-            let vars = response.data;
-            vars = vars.map(v => ({
-                ...v,
-                value: decryptData(v.value)
-            }));
-            setVariables(vars);
-        } catch (e) {
-            setError("Ошибка получения глобальных переменных: " + e.response?.data?.message)
-            setIsModalError(true);
-            setIsModalNotify(true)
+        } finally {
+            setIsLoading(false);
         }
     }
 
@@ -444,36 +417,53 @@ export function GlobalVars({ onClose }) {
                             {editingKey && renderEditRow()}
                         </div>
 
-                        <div
-                            className="overflow-y-scroll"
-                            style={{
-                                maxHeight: editingKey
-                                    ? 'calc(100vh - 28rem)'
-                                    : 'calc(100vh - 25rem)'
-                            }}
-                        >
-                            {filteredVars
-                                .filter(v => v.key !== editingKey)
+                        {isLoading &&
+                            <>
+                                <div className="flex flex-col items-center justify-start pt-32 min-h-screen ">
+                                    <div className="circle">
+                                        <div className="dot"></div>
+                                        <div className="dot"></div>
+                                        <div className="dot"></div>
+                                        <div className="dot"></div>
+                                        <div className="dot"></div>
+                                        <div className="dot"></div>
+                                    </div>
+                                    <p className="text-lg font-medium  mt-4">Загрузка переменных...</p>
+                                </div>
+                            </>
+
+                        }
+
+                        {!isLoading &&
+                            <div
+                                className="overflow-y-scroll"
+                                style={{
+                                    maxHeight: editingKey
+                                        ? 'calc(100vh - 28rem)'
+                                        : 'calc(100vh - 25rem)'
+                                }}
+                            >
+                                {filteredVars
+                                    .filter(v => v.key !== editingKey)
                                 .map(variable => renderViewRow(variable))}
 
-                            {filteredVars.length === 0 && !editingKey && (
-                                <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                                    <div className="text-4xl mb-4">📋</div>
+                            {filteredVars.length === 0 && !editingKey && !isLoading && (
+                                <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+
                                     <h3 className="text-lg font-medium mb-2">Переменные не найдены</h3>
-                                    <p className="text-center max-w-md text-sm">
+                                    <p className="text-center max-w-md text-sm mb-3">
                                         {searchTerm ? 'Попробуйте изменить параметры поиска' : 'Добавьте первую глобальную переменную'}
                                     </p>
                                     {!searchTerm && (
-                                        <button
-                                            onClick={addVariable}
-                                            className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                                        >
-                                            Добавить переменную
-                                        </button>
+                                        <BlueButton onClick={addVariable} text={"Добавить переменную"}/>
                                     )}
+
                                 </div>
                             )}
+
+
                         </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -481,7 +471,7 @@ export function GlobalVars({ onClose }) {
             {isModalNotify && (
                 <ModalNotify title="Глобальные переменные" message={modalMsg} onClose={() => setIsModalNotify(false)}/>
             )}
-            {/*Не работает уведомление*/}
+
             {isModalError &&
                 <ModalNotify title={"Ошибка"} message={error} onClose={() => setIsModalError(false)}/>
             }

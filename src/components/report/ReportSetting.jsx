@@ -3,30 +3,47 @@ import ReportService from "../../services/ReportService";
 import {styleInput, styleLabelInput} from "../../data/styles";
 import {ModalNotify} from "../modal/ModalNotify";
 import {ModalNotifyError} from "../modal/ModalNotifyError";
+import {ModalConfirmation} from "../modal/ModalConfirmation";
+import {CustomStyle} from "../../data/styleForSelect";
+import CreatableSelect from "react-select/creatable";
+import {WhiteButton} from "../reportsConstruct/buttons/WhiteButton";
+import {BlueButton} from "../reportsConstruct/buttons/BlueButton";
 
 
-export function ReportSetting({reportName, onClose}) {
+export function ReportSetting({reportName, reportCategory, onClose, onUpdateReports}) {
 
     const [report, setReport] = useState({});
 
     const [isModalNotify, setIsModalNotify] = useState(false);
     const [isModalError, setIsModalError] = useState(false);
+    const [isModalConfirmation, setIsModalConfirmation] = useState(false);
     const [modalMsg, setModalMsg] = useState("");
 
     const [isDelete, setIsDelete] = useState(false);
 
+    const [optCategoryNames, setOptCategoryNames] = useState([]);
+    const [selectCategory, setSelectCategory] = useState(null);
+
 
     useEffect(() => {
-        fetchReportTemplate()
+        fetchReportTemplate();
+        fetchCategoryNames();
     }, [])
 
 
     async function fetchReportTemplate() {
         try {
-            const response = await ReportService.getReportTemplateByReportName(reportName);
+            const response = await ReportService.getReportTemplateByReportName(reportName, reportCategory);
             setReport(response.data);
+
+            if (response.data.reportCategory) {
+                setSelectCategory({
+                    value: response.data.reportCategory,
+                    label: response.data.reportCategory
+                });
+            }
         } catch (e) {
-            setModalMsg("Не удалось загрузить данные отчета.");
+            setModalMsg("Не удалось загрузить данные отчета. " + e.response.data.message);
             setIsModalError(true);
         }
     }
@@ -36,20 +53,33 @@ export function ReportSetting({reportName, onClose}) {
             await ReportService.updateReportTemplate(report);
             setModalMsg("Шаблон отчета успешно обновлен.");
             setIsModalNotify(true);
+            onUpdateReports();
         } catch (e) {
-            setModalMsg("Не удалось обновить шаблон отчета, попробуйте еще раз.");
+            setModalMsg("Не удалось обновить шаблон отчета. " + e.response.data.message);
             setIsModalError(true);
         }
     }
 
     async function deleteReportTemplate() {
         try {
+            setIsModalConfirmation(false);
             await ReportService.deleteReportTemplate(report.id);
             setModalMsg("Шаблон отчета успешно удален.");
             setIsDelete(true);
             setIsModalNotify(true);
         } catch (e) {
-            setModalMsg("Не удалось удалить шаблон отчета, попробуйте еще раз.");
+            setModalMsg("Не удалось удалить шаблон отчета. " + e.response.data.message);
+            setIsModalError(true);
+        }
+    }
+
+    async function fetchCategoryNames() {
+        try {
+            const response = await ReportService.getCategories();
+            const options = ReportService.convertCategoriesToOptions(response.data);
+            setOptCategoryNames(options);
+        } catch (error) {
+            setModalMsg("Ошибка загрузки доступных отчетов! Попробуйте позже.")
             setIsModalError(true);
         }
     }
@@ -66,12 +96,23 @@ export function ReportSetting({reportName, onClose}) {
         setIsModalError(false);
     }
 
+    function handleClickRemoveReport(){
+        setModalMsg("Вы уверены что хотите удалить отчет: " + reportName + "?");
+        setIsModalConfirmation(true);
+    }
+
+
     return (
         <>
             {isModalNotify && <ModalNotify title={"Результат операции"} message={modalMsg} onClose={closeModalNotify}/>}
             {isModalError && <ModalNotifyError title={"Результат операции"} message={modalMsg} onClose={closeModalError}/>}
 
-            {!isModalNotify && !isModalError &&
+            {isModalConfirmation &&
+                <ModalConfirmation title={"Результат операции"} message={modalMsg} onClose={()=> setIsModalConfirmation(false)}
+                                   onDisagree={()=> setIsModalConfirmation(false)} onAgree={deleteReportTemplate}/>
+            }
+
+            {!isModalNotify && !isModalError && !isModalConfirmation &&
                 <>
                     <div
                         className="fixed bg-black/50 top-0 z-30 right-0 left-0 bottom-0"
@@ -97,13 +138,27 @@ export function ReportSetting({reportName, onClose}) {
                         </div>
                         <div className="flex flex-row items-center pb-4">
                             <span className={styleLabelInput + "w-1/4 mr-2"}>Категория</span>
-                            <input
-                                className={styleInput + "w-3/4"}
-                                value={report.reportCategory || ""}
-                                onChange={(e) => {
+                            <CreatableSelect
+                                className="w-3/4"
+                                placeholder="Введите текст для поиска..."
+                                value={selectCategory}
+                                onChange={(newValue) => {
+                                    setSelectCategory(newValue);
                                     setReport(prevReport => ({
                                         ...prevReport,
-                                        reportCategory: e.target.value
+                                        reportCategory: newValue ? newValue.value : ''
+                                    }));
+                                }}
+                                styles={CustomStyle}
+                                options={optCategoryNames}
+                                isSearchable={true}
+                                noOptionsMessage={() => "Отчеты не найдены"}
+                                formatCreateLabel={(inputValue) => `${inputValue}`}
+                                onCreateOption={(inputValue) => {
+                                    setSelectCategory({ value: inputValue, label: inputValue });
+                                    setReport(prevReport => ({
+                                        ...prevReport,
+                                        reportCategory: inputValue
                                     }));
                                 }}
                             />
@@ -113,19 +168,12 @@ export function ReportSetting({reportName, onClose}) {
                         <div className="flex flex-row justify-between mt-2">
 
                             <button className="text-red-600 rounded hover:bg-red-50 px-2"
-                                    onClick={deleteReportTemplate}>Удалить отчет <i
+                                    onClick={handleClickRemoveReport}>Удалить отчет <i
                                 className="fa-solid fa-trash-can"></i></button>
 
-                            <div className="flex flex-row justify-end">
-                                <button
-                                    onClick={onClose}
-                                    className="min-w-[50px] px-2 mr-2 h-7 rounded text-xs font-medium shadow-sm border border-slate-400 hover:bg-gray-200">
-                                    Закрыть
-                                </button>
-                                <button onClick={applyChanges}
-                                        className=" px-2 h-7  rounded text-xs font-medium shadow-sm border  bg-blue-800 hover:bg-blue-700 text-white">
-                                    Применить
-                                </button>
+                            <div className="flex flex-row justify-end gap-2">
+                                <WhiteButton onClick={onClose} text={"Закрыть"}/>
+                                <BlueButton onClick={applyChanges} text={"Применить"}/>
                             </div>
                         </div>
 
