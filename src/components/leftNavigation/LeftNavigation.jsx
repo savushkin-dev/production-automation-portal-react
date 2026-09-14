@@ -5,11 +5,15 @@ import RoleGuard from "../RoleGuard";
 export function LeftNavigation() {
 
     return (
-        <div className="flex flex-wrap lg:flex-col w-full ">
+        <div className="flex flex-wrap flex-col w-full ">
             <StringLeftNavigation disabled={false} title="Отчеты АСУТП" navigationPath={"/"}/>
 
             <RoleGuard requiredRoles={['ROLE_SCHEDULER']}>
                 <StringLeftNavigation disabled={false} title="Планы производства" navigationPath={"/scheduler"}/>
+            </RoleGuard>
+
+            <RoleGuard requiredRoles={['ROLE_SCHEDULER']}>
+                <StringLeftNavigation disabled={false} title="Расчет материалов" navigationPath={"/materials"}/>
             </RoleGuard>
 
             <RoleGuard requiredRoles={['ROLE_EDITOR']}>

@@ -42,6 +42,7 @@ import {SchedulerDataTables} from "../components/scheduler/SchedulerDataTables";
 import {ModalColorsSettings} from "../components/scheduler/ModalColorsSettings";
 import {ModalReports} from "../components/scheduler/ModalReports";
 import Loading from "../components/loading/Loading";
+import {ModalDailyProductions} from "../components/scheduler/ModalDailyProductions";
 
 
 function SchedulerPage() {
@@ -90,6 +91,7 @@ function SchedulerPage() {
     const [isModalUpdateDelay, setIsModalUpdateDelay] = useState(false);
     const [isModalColorsSettings, setIsModalColorsSettings] = useState(false);
     const [isModalReports, setIsModalReports] = useState(false);
+    const [isModalDailyProductions, setIsModalDailyProductions] = useState(false);
 
 
     const [isSolve, setIsSolve] = useState(false);
@@ -1114,6 +1116,15 @@ function SchedulerPage() {
                     <div className="w-4/6 py-1 flex justify-end pr-3 gap-1">
 
                         <div className="relative">
+
+                            <button onClick={() => {
+                                navigate('/materials', {replace: false})
+                            }}
+                                    className="px-3 mr-1 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
+                                Расчет материалов
+                                <i className="pl-2 fa-solid fa-calculator"></i>
+                            </button>
+
                             <button
                                 onClick={() => setIsDropdownButtonOpen(!isDropdownButtonOpen)}
                                 className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600"
@@ -1183,6 +1194,17 @@ function SchedulerPage() {
                                     >
                                         <span>Управление версиями</span>
                                         <i className="fa-solid fa-code-branch "></i>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setIsModalDailyProductions(true);
+                                            setIsDropdownButtonOpen(false);
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-[0.900rem] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all duration-200 flex items-center justify-between"
+                                    >
+                                        Выработка по линиям
+                                        <i className="fa-solid fa-equals"></i>
                                     </button>
                                 </div>
                             )}
@@ -1485,6 +1507,11 @@ function SchedulerPage() {
 
                 {isModalReports &&
                     <ModalReports onClose={()=>{setIsModalReports(false)}}
+                                  setModalError={setIsModalNotifyError} setErrorMsg={setMsg}/>
+                }
+
+                {isModalDailyProductions &&
+                    <ModalDailyProductions selectDate={selectDate} onClose={()=>{setIsModalDailyProductions(false)}}
                                   setModalError={setIsModalNotifyError} setErrorMsg={setMsg}/>
                 }
 

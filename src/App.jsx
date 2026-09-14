@@ -13,6 +13,7 @@ import TrackTracePage from "./pages/TrackTracePage";
 import {configureMomentLocale} from "./utils/date/momentConfig";
 import AuthorizationScheduler from "./pages/AuthorizationScheduler";
 import ReportMonitorPage from "./pages/ReportMonitorPage";
+import MaterialsPage from "./pages/MaterialsPage";
 
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
                     <Route path="/scheduler" element={<SchedulePage/>}/>
                     <Route path="/tracktrace" element={<TrackTracePage/>}/>
 
+                    <Route path="/materials" element={<MaterialsPage/>}/>
 
                     <Route path="/designer" element={<PrivateRoute requiredRoles={['ROLE_EDITOR']} />}>
                         <Route index element={<ReportDesignerPage/>}/>

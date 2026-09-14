@@ -531,7 +531,7 @@ export default class ScheduleService {
     }
 
     static async init(startDate) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/init`, {startDate})
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule`, { startDate })
     }
 
     static async getPlan() {
@@ -559,19 +559,19 @@ export default class ScheduleService {
     }
 
     static async analyze() {
-        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/analyze`, {})
+        return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/analyze`)
     }
 
     static async pinItem(lineId, pinCount) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/pin`, {lineId, pinCount})
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/line/pin`, { lineId, pinCount })
     }
 
     static async moveJobs(fromLineId, toLineId, fromIndex, count, insertIndex) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/moveJobs`, {fromLineId, toLineId, fromIndex, count, insertIndex})
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/moveJobs`, { fromLineId, toLineId, fromIndex, count, insertIndex })
     }
 
     static async sortRangeScheduler(fromIndex, sortCount, lineId, sortUp) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/sortRange`, {fromIndex, sortCount, lineId, sortUp})
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/sort/range`, { fromIndex, sortCount, lineId, sortUp })
     }
 
     static async assignServiceWork(lineId, insertIndex, durationMinutes, maintenanceTypeId, maintenanceNote) {
@@ -591,7 +591,7 @@ export default class ScheduleService {
     }
 
     static async sortSchedule() {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/sortByNp`, {})
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/sort`, {})
     }
 
     static async sendToWork() {
@@ -599,7 +599,11 @@ export default class ScheduleService {
     }
 
     static async alignPlan() {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/alignPlan`, {})
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/alignment`, {})
+    }
+
+    static async resetAlign() {
+        return $apiSchedule.delete(`${API_URL_SCHEDULER}/schedule/alignment`)
     }
 
     static async dailyCleaning() {
@@ -607,15 +611,15 @@ export default class ScheduleService {
     }
 
     static async reloadPlan(selection) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/selection`, {selection})
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/selection`, { selection })
     }
 
     static async updateMaxEndDateTime(lineId, lineMaxEndDateTime) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/lineMaxEnd`, {lineId, lineMaxEndDateTime})
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/line/maxEnd`, { lineId, lineMaxEndDateTime })
     }
 
     static async updateLineStart(lineId, startLineDateTime) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/lineStart`, {lineId, startLineDateTime})
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/line/start`, { lineId, startLineDateTime })
     }
 
     static async reloadDirectory() {
@@ -623,31 +627,31 @@ export default class ScheduleService {
     }
 
     static async determineFactPlace(snpz) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/findPlaceFact`, {snpz})
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/facts/place`, { snpz })
     }
 
     static async determineCameraFact(snpz) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/findCameraFact`, {snpz})
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/facts/camera`, { snpz })
     }
 
     static async updateDelayJob(lineId, index, delayNote) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/delayNote`, {lineId, index, delayNote})
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/notes`, { lineId, index, delayNote })
     }
 
     static async updateDelayCleaning(lineId, index, delayNote) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/cleaningDelay`, {lineId, index, delayNote})
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/notes/cleaning`, { lineId, index, delayNote })
     }
 
     static async getVersionList(startDate) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/versionsByDate`, {startDate})
+        return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/versions`, { params: { startDate } })
     }
 
     static async saveVersion(startDate, version) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/saveVersion`, {startDate, version})
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/versions`, { startDate, version })
     }
 
     static async initVersion(startDate, version) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/initVersion`, {startDate, version})
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/versions`, { startDate, version })
     }
 
     static async getDowntimePeriodsByIdBatch(idBatch) {
@@ -655,15 +659,21 @@ export default class ScheduleService {
     }
 
     static async getUserLogReport(from, to) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/userLogReport`, {from, to}, {
+        return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/reports/userLog`, {
+            params: { from, to },
             responseType: 'blob'
         })
     }
 
     static async getCleaningReport(from, to) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/cleaningReport`, {from, to}, {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/reports/cleaning`, { from, to }, {
             responseType: 'blob'
         })
     }
+
+    static async getDailyProductions(shiftStart) {
+        return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/dailyProductions?shiftStart=` + shiftStart)
+    }
+
 
 }
