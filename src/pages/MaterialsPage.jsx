@@ -37,6 +37,7 @@ function MaterialsPage() {
     const [viewMode, setViewMode] = useState('products');
 
     const [updatingKolf, setUpdatingKolf] = useState(null);
+
     const [selectedKpp, setSelectedKpp] = useState({
         value: DEFAULT_KPP,
         label: DEFAULT_KPP_LABEL
@@ -82,11 +83,7 @@ function MaterialsPage() {
             callback([]);
             return;
         }
-        // {"kpp":"01022003","snm":"Русина В.И. (ЦМП Бер)"}
-        // {
-        //     value: "01022003",
-        //         label: "Русина В.И. (ЦМП Бер)"
-        // }
+
         try {
             const response = await MaterialService.searchRecipients(inputValue);
             const options = response.data.map(item => ({
@@ -167,6 +164,26 @@ function MaterialsPage() {
             setError(e.response?.data?.message || 'Ошибка пересчета KOLF');
         } finally {
             setUpdatingKolf(null);
+        }
+    }
+
+    function handleOrderFinalChange(kmt, value) {
+        // Обновляем локально без запроса на бэк
+        const updatedProducts = products.map(product => ({
+            ...product,
+            materials: product.materials?.map(m =>
+                m.kmt === kmt ? { ...m, orderFinal: value } : m
+            )
+        }));
+        setProducts(updatedProducts);
+
+        if (selectedProduct) {
+            setSelectedProduct(prev => ({
+                ...prev,
+                materials: prev.materials?.map(m =>
+                    m.kmt === kmt ? { ...m, orderFinal: value } : m
+                )
+            }));
         }
     }
 
@@ -260,7 +277,8 @@ function MaterialsPage() {
                         productCount: 0,
                         products: [],
                         trnd: material.trnd || 0,
-                        order: material.order || 0
+                        order: material.order || 0,
+                        orderFinal: material.orderFinal || 0
                     };
                 }
 
@@ -275,6 +293,7 @@ function MaterialsPage() {
                 item.roundStep = material.roundStep || 1;
                 item.trnd = material.trnd || 0;
                 item.order = material.order || 0;
+                item.orderFinal = material.orderFinal || 0
             });
         });
 
@@ -290,7 +309,7 @@ function MaterialsPage() {
             <input
                 type="number"
                 step="0.01"
-                className={`w-24 px-1.5 text-right text-sm font-semibold border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                className={`w-24 px-1.5 text-right text-sm font-semibold border rounded focus:outline-none focus:ring-1 focus:ring-blue-700 ${
                     isUpdating ? 'opacity-50 bg-gray-100' : ''
                 }`}
                 value={defaultKolf || 0}
@@ -336,18 +355,33 @@ function MaterialsPage() {
         );
     };
 
-    async function fetchMaterials() {
-        try {
-            setIsLoading(true);
-            const response = await MaterialService.getMaterialsByDate(date, kpp);
+    const renderOrderFinalInput = (kmt, defaultOrderFinal, eduMt) => {
+        return (
+            <div className="flex items-center justify-end gap-1">
+                <input
+                    type="number"
+                    step="0.01"
+                    className="w-24 px-1.5 text-right text-sm font-bold border rounded focus:outline-none focus:ring-1 focus:ring-blue-700"
+                    value={defaultOrderFinal ? defaultOrderFinal.toFixed(2) : '0.00'}
+                    onChange={(e) => {
+                        const rawValue = e.target.value;
+                        if (rawValue.startsWith('-')) return;
+                        const newValue = rawValue === '' ? 0 : parseFloat(rawValue) || 0;
+                        if (newValue < 0) return;
+                        handleOrderFinalChange(kmt, newValue);
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.target.blur();
+                        }
+                    }}
+                />
+                <span className="w-4 text-sm text-gray-600">{eduMt}</span>
+            </div>
+        );
+    };
 
-        } catch (e) {
-            setIsModalError(true);
-            setError(e.response?.data?.message || 'Ошибка загрузки данных');
-        } finally {
-            setIsLoading(false);
-        }
-    }
 
     return (<>
         <Navigation isHiddenMenu={false} isOpenMenu={false} setOpenMenu={() => {
@@ -604,7 +638,8 @@ function MaterialsPage() {
                                                         <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Округление
                                                             до тарного места
                                                         </th>
-                                                        <th className="px-3 w-[10%] py-1.5 font-semibold text-gray-700 border-b border-gray-200">Заказать</th>
+                                                        <th className="px-3 w-[10%] py-1.5 font-semibold text-gray-700 border-b border-gray-200">Дозаказ расчетный</th>
+                                                        <th className="px-3 w-[10%] py-1.5 font-semibold text-gray-700 border-b border-gray-200">Дозаказ итоговый</th>
                                                     </tr>
                                                     </thead>
                                                     <tbody>
@@ -627,9 +662,10 @@ function MaterialsPage() {
                                                             const isCommon = material.productCount > 1;
                                                             const totalNormf = typeof material.totalNormf === 'number' ? material.totalNormf : parseFloat(material.totalNormf) || 0;
                                                             const norm = typeof material.norm === 'number' ? material.norm : parseFloat(material.norm) || 0;
-                                                            const order = typeof material.order === 'number' ? material.order : parseFloat(material.order) || 0;
                                                             const insurancePerc = material.insurancePerc || 0;
                                                             const roundStep = material.roundStep || 1;
+                                                            const orderCalc = typeof material.order === 'number' ? material.order : parseFloat(material.order) || 0;
+                                                            const orderFinal = typeof material.orderFinal === 'number' ? material.orderFinal : parseFloat(material.orderFinal) || 0;
 
                                                             return (
                                                                 <tr key={`${material.kmt}-${index}`}
@@ -653,8 +689,11 @@ function MaterialsPage() {
                                                                     </td>
                                                                     <td className="px-3 py-1.5 text-gray-700">{insurancePerc}%</td>
                                                                     <td className="px-3 py-1.5 text-gray-700">{roundStep}</td>
-                                                                    <td className="px-3 py-1.5 text-gray-700 font-bold">
-                                                                        {`${order.toFixed(2)} ${material.eduMt}`}
+                                                                    <td className="px-3 py-1.5 text-gray-600 font-bold">
+                                                                        {`${orderCalc.toFixed(2)} ${material.eduMt}`}
+                                                                    </td>
+                                                                    <td className="px-3 py-1.5 text-gray-600 font-bold">
+                                                                        {renderOrderFinalInput(material.kmt, material.orderFinal, material.eduMt)}
                                                                     </td>
                                                                 </tr>
                                                             );
@@ -708,13 +747,14 @@ function MaterialsPage() {
                                                     <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Округление
                                                         до тарного места
                                                     </th>
-                                                    <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Заказать</th>
+                                                    <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Дозаказ расчетный</th>
+                                                    <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Дозаказ итоговый</th>
                                                 </tr>
                                                 </thead>
                                                 <tbody>
                                                 {materialSummary.length === 0 ? (
                                                     <tr>
-                                                        <td colSpan={9}
+                                                    <td colSpan={9}
                                                             className="px-3 py-8 text-center text-gray-400 text-sm">Нет
                                                             данных. Выберите дату и цех, нажмите "Загрузить".
                                                         </td>
@@ -746,6 +786,9 @@ function MaterialsPage() {
                                                                 <td className="px-3 py-1.5 text-gray-700">{item.roundStep}</td>
                                                                 <td className="px-3 py-1.5 text-gray-700 font-bold">
                                                                     {`${item.order.toFixed(2)} ${item.eduMt}`}
+                                                                </td>
+                                                                <td className="px-3 py-1.5 text-gray-700 font-bold">
+                                                                    {renderOrderFinalInput(item.kmt, item.orderFinal, item.eduMt)}
                                                                 </td>
                                                             </tr>
                                                         );
