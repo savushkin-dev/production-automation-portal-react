@@ -32,6 +32,7 @@ function MaterialsPage() {
 
     const [kpp, setKpp] = useState(DEFAULT_KPP);
 
+    const [planType, setPlanType] = useState('M');
     const [products, setProducts] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [viewMode, setViewMode] = useState('products');
@@ -403,6 +404,32 @@ function MaterialsPage() {
                             Выберите дату и материально ответственное лицо
                         </div>
                         <div className="flex flex-row flex-wrap gap-5 items-center">
+
+                            <div>
+                                <div className="flex items-center gap-1 h-[32px] border border-gray-200 rounded">
+                                    <button
+                                        onClick={() => setPlanType('M')}
+                                        className={`px-3 py-1 text-[0.800rem] font-medium transition-all duration-200 border-b-[3px] ${
+                                            planType === 'M'
+                                                ? 'text-blue-700 border-blue-600'
+                                                : 'text-gray-600 border-transparent hover:text-gray-800'
+                                        }`}
+                                    >
+                                        Основная заявка
+                                    </button>
+                                    <button
+                                        onClick={() => setPlanType('P')}
+                                        className={`px-3 py-1 text-[0.800rem] font-medium transition-all duration-200 border-b-[3px] ${
+                                            planType === 'P'
+                                                ? 'text-blue-700 border-blue-600'
+                                                : 'text-gray-600 border-transparent hover:text-gray-800'
+                                        }`}
+                                    >
+                                        Предварительная заявка
+                                    </button>
+                                </div>
+                            </div>
+
                             <div className="inline-flex items-center h-[30px] border border-gray-200 rounded-md">
                                 <span
                                     className="px-3 text-[0.950rem] font-medium text-gray-600 border-r border-gray-200">
