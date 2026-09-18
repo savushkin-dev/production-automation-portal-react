@@ -105,12 +105,12 @@ function MaterialsPage() {
             return;
         }
         loadData()
-    }, [date, kpp])
+    }, [date, kpp, planType])
 
     async function loadData() {
         try {
             setIsLoading(true);
-            const response = await MaterialService.loadProducts(date, kpp);
+            const response = await MaterialService.loadProducts(date, kpp, planType);
             setProducts(response.data || []);
             setSelectedProduct(null);
         } catch (e) {
@@ -147,6 +147,7 @@ function MaterialsPage() {
                 date,
                 kpp,
                 kmt,
+                type: planType,
                 kolf: value,
                 data: products
             };
@@ -192,6 +193,7 @@ function MaterialsPage() {
         const request = {
             date,
             kpp,
+            type: planType,
             data: products
         };
 
@@ -394,15 +396,37 @@ function MaterialsPage() {
             <div className="flex flex-col w-full">
 
                 <>
-                    <div className="px-1 lg:px-16 pt-6 pb-2">
+                    <div className="px-1 lg:px-16 pt-6 pb-2 flex flex-row gap-2 items-center justify-between text-center">
                         <span className="text-2xl font-bold">Расчет материалов в планировщике</span>
+
+                        <div className="flex flex-row gap-3">
+                            <button onClick={() => {
+                                navigate('/scheduler', {replace: false})
+                            }}
+                                    className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
+                                Планировщик
+                                <i className="pl-2 fa-solid fa-chart-gantt"></i>
+                            </button>
+
+                            <BlueButton onClick={handleSave} text={"Сохранить"}
+                                        className={"bg-cyan-600 hover:bg-cyan-700"}
+                                        icon={"fa-solid fa-floppy-disk text-sm pt-0.5"}/>
+
+
+                            <BlueButton onClick={() => {
+                            }} text={"Отправить в 1С"}
+                                        className={"bg-pink-600 hover:bg-pink-700"}
+                                        icon={"fa-solid fa-paper-plane text-sm pt-0.5"}/>
+                        </div>
+
                     </div>
 
                     {/* Фильтры */}
                     <div className="px-1 lg:px-24 pb-2">
                         <div className="text-xs text-gray-500 flex items-center gap-2 py-2">
-                            Выберите дату и материально ответственное лицо
+                            Выберите тип заявки, дату и материально ответственное лицо
                         </div>
+
                         <div className="flex flex-row flex-wrap gap-5 items-center">
 
                             <div>
@@ -471,17 +495,7 @@ function MaterialsPage() {
                                 />
                             </div>
 
-                            <BlueButton onClick={handleSave} text={"Сохранить"}
-                                        className={"bg-cyan-600 hover:bg-cyan-700"}
-                                        icon={"fa-solid fa-floppy-disk text-sm pt-0.5"}/>
 
-                            <button onClick={() => {
-                                navigate('/scheduler', {replace: false})
-                            }}
-                                    className="px-3 mr-1 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
-                                Планировщик
-                                <i className="pl-2 fa-solid fa-chart-gantt"></i>
-                            </button>
 
                             {/* Скрытый input для выбора файлов */}
                             <input
