@@ -121,6 +121,20 @@ function MaterialsPage() {
         }
     }
 
+    async function resetAndLoadData() {
+        try {
+            setIsLoading(true);
+            const response = await MaterialService.resetAndLoadProducts(date, kpp, planType);
+            setProducts(response.data || []);
+            setSelectedProduct(null);
+        } catch (e) {
+            setIsModalError(true);
+            setError(e.response?.data?.message || 'Ошибка загрузки данных');
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     const [recalcTrigger, setRecalcTrigger] = useState(0); //Для пересчета при фильтрации материалов
 
     useEffect(() => {
@@ -412,6 +426,12 @@ function MaterialsPage() {
                                         className={"bg-cyan-600 hover:bg-cyan-700"}
                                         icon={"fa-solid fa-floppy-disk text-sm pt-0.5"}/>
 
+                            <button onClick={resetAndLoadData}
+                                    className="px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
+                                Сбросить сохраненное
+                                <i className="pl-2 fa-solid fa-rotate"></i>
+                            </button>
+
 
                             <BlueButton onClick={() => {
                             }} text={"Отправить в 1С"}
@@ -568,7 +588,7 @@ function MaterialsPage() {
                         </button>
                     </div>
 
-                    <div className="px-1 lg:px-24 py-2 flex flex-col gap-4 h-[calc(100vh-240px)]">
+                    <div className="px-1 lg:px-24 flex flex-col gap-4 h-[calc(100vh-240px)]">
 
                         {isLoading && <Loading/>}
 
@@ -578,6 +598,7 @@ function MaterialsPage() {
                                     <>
                                         {/* ТАБЛИЦА ПРОДУКТОВ */}
                                         <div className="flex flex-col flex-1 min-h-0">
+                                            {/*<span className="w-full text-center font-semibold text-red-600 text-lg">Основная заявка</span>*/}
                                             <div className="mb-1">
                                                 <span className="text-sm font-semibold text-gray-700">Продукты</span>
                                                 {displayProducts.length > 0 && (

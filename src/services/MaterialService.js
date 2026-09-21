@@ -17,6 +17,12 @@ export default class MaterialService {
         });
     }
 
+    static resetAndLoadProducts(date, kpp, type) {
+        return $api.get(`${API_URL_SCHEDULER}/api/material/reset`, {
+            params: { date, kpp, type }
+        });
+    }
+
     static recalcKolf(request) {
         return $api.post(`${API_URL_SCHEDULER}/api/material/recalc`, request);
     }
