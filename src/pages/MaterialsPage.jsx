@@ -614,10 +614,11 @@ function MaterialsPage() {
                                                             кг
                                                         </th>
                                                         <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">Единиц</th>
+                                                        <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">Кол. мест</th>
                                                         <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">EAN13</th>
                                                         <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">Тара</th>
                                                         <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">Емкость</th>
-                                                        <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">Материалов</th>
+                                                        <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">Исп. материалов</th>
                                                     </tr>
                                                     </thead>
                                                     <tbody>
@@ -643,6 +644,7 @@ function MaterialsPage() {
                                                                 </td>
                                                                 <td className="px-4 py-2">{product.sumMass?.toFixed(0)}</td>
                                                                 <td className="px-4 py-2">{product.sumKolev?.toFixed(0)}</td>
+                                                                <td className="px-4 py-2">{product.sumKolev / product.emk}</td>
                                                                 <td className="px-4 py-2">{product.ean13}</td>
                                                                 <td className="px-4 py-2">{product.kt || '—'}</td>
                                                                 <td className="px-4 py-2">{product.emk !== undefined && product.emk !== null ? product.emk.toFixed(1) : '—'}</td>
@@ -720,7 +722,6 @@ function MaterialsPage() {
                                                             const totalNormf = typeof material.totalNormf === 'number' ? material.totalNormf : parseFloat(material.totalNormf) || 0;
                                                             const norm = typeof material.norm === 'number' ? material.norm : parseFloat(material.norm) || 0;
                                                             const orderCalc = typeof material.order === 'number' ? material.order : parseFloat(material.order) || 0;
-                                                            const orderFinal = typeof material.orderFinal === 'number' ? material.orderFinal : parseFloat(material.orderFinal) || 0;
                                                             const orderPre = typeof material.orderFinal === 'number' ? material.orderPre : parseFloat(material.orderPre) || null;
 
                                                             return (
