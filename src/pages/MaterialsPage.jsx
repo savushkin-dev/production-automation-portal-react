@@ -372,11 +372,10 @@ function MaterialsPage() {
 
     const renderOrderFinalInput = (kmt, defaultOrderFinal, eduMt) => {
         return (
-            <div className="flex items-center justify-end gap-1">
                 <input
                     type="number"
                     step="1"
-                    className="w-24 px-1.5 text-right text-sm font-bold border rounded focus:outline-none focus:ring-1 focus:ring-blue-700"
+                    className="w-24 px-1.5 text-right text-sm font-semibold border rounded focus:outline-none focus:ring-1 focus:ring-blue-700"
                     value={defaultOrderFinal || 0}
                     onChange={(e) => {
                         const rawValue = e.target.value;
@@ -392,8 +391,6 @@ function MaterialsPage() {
                         }
                     }}
                 />
-                <span className="w-4 text-sm text-gray-600">{eduMt}</span>
-            </div>
         );
     };
 
@@ -409,7 +406,7 @@ function MaterialsPage() {
 
                 <>
                     <div className="px-1 lg:px-16 pt-6 pb-2 flex flex-row gap-2 items-center justify-between text-center">
-                        <span className="text-2xl font-bold">Расчет материалов в планировщике</span>
+                        <span className="text-2xl font-bold">Заявка на материалы</span>
 
                         <div className="flex flex-row gap-3">
                             <button onClick={() => {
@@ -431,7 +428,7 @@ function MaterialsPage() {
                             </button>
 
 
-                            <BlueButton onClick={() => {
+                            <BlueButton disabled={true} onClick={() => {
                             }} text={"Отправить в 1С"}
                                         className={"bg-pink-600 hover:bg-pink-700"}
                                         icon={"fa-solid fa-paper-plane text-sm pt-0.5"}/>
@@ -695,10 +692,14 @@ function MaterialsPage() {
                                                         </th>
                                                         <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Остаток</th>
                                                         {planType === 'M' &&
-                                                            <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Дозаказ предварительный</th>
+                                                            <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Предварительная заявка</th>
                                                         }
-                                                        <th className="px-3 w-[10%] py-1.5 font-semibold text-gray-700 border-b border-gray-200">Дозаказ расчетный</th>
-                                                        <th className="px-3 w-[10%] py-1.5 font-semibold text-gray-700 border-b border-gray-200">Дозаказ итоговый</th>
+                                                        <th className="px-3 w-[10%] py-1.5 font-semibold text-gray-700 border-b border-gray-200">
+                                                            {planType === 'P' ? 'Расчетная заявка' : 'Дозаказ расчетный'}
+                                                        </th>
+                                                        <th className="px-3 w-[13%] py-1.5 font-semibold text-gray-700 border-b border-gray-200">
+                                                            {planType === 'P' ? 'Предварительная заявка' : 'Уточненная заявка'}
+                                                        </th>
                                                     </tr>
                                                     </thead>
                                                     <tbody>
@@ -742,7 +743,7 @@ function MaterialsPage() {
                                                                     <td className="px-3 py-1.5 text-gray-700 font-semibold">{norm.toFixed(2)}</td>
                                                                     <td className="px-3 py-1.5 text-gray-700 font-semibold">{`${totalNormf.toFixed(2)} ${material.eduMt}`}</td>
                                                                     <td className="px-3 py-1.5 text-gray-700 font-semibold">
-                                                                        {renderKolfInput(material.kmt, material.kolf || null)}
+                                                                        {renderKolfInput(material.kmt, material.kolf || null)} {material.eduMt}
                                                                     </td>
                                                                     {planType === 'M' &&
                                                                         <th className="px-3 py-1.5 text-gray-700 font-semibold">
@@ -753,7 +754,7 @@ function MaterialsPage() {
                                                                         {`${orderCalc} ${material.eduMt}`}
                                                                     </td>
                                                                     <td className="px-3 py-1.5 text-gray-600 font-bold">
-                                                                        {renderOrderFinalInput(material.kmt, material.orderFinal, material.eduMt) || null}
+                                                                        {renderOrderFinalInput(material.kmt, material.orderFinal, material.eduMt) || null} {material.eduMt}
                                                                     </td>
                                                                 </tr>
                                                             );
@@ -802,10 +803,14 @@ function MaterialsPage() {
                                                     </th>
                                                     <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Остаток</th>
                                                     {planType === 'M' &&
-                                                        <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Дозаказ предварительный</th>
+                                                        <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Предварительная заявка</th>
                                                     }
-                                                    <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Дозаказ расчетный</th>
-                                                    <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Дозаказ итоговый</th>
+                                                    <th className="px-3 w-[15%] py-1.5 font-semibold text-gray-700 border-b border-gray-200">
+                                                        {planType === 'P' ? 'Расчетная заявка' : 'Дозаказ расчетный'}
+                                                    </th>
+                                                    <th className="px-3 w-[15%] py-1.5 font-semibold text-gray-700 border-b border-gray-200">
+                                                        {planType === 'P' ? 'Предварительная заявка' : 'Уточненная заявка'}
+                                                    </th>
                                                 </tr>
                                                 </thead>
                                                 <tbody>
@@ -837,7 +842,7 @@ function MaterialsPage() {
                                                                 <td className="px-3 py-1.5 text-gray-700 font-semibold">{item.productCount}</td>
                                                                 <td className="px-3 py-1.5 text-gray-700 font-semibold">{`${item.totalNormf.toFixed(2)} ${item.eduMt}`}</td>
                                                                 <td className="px-3 py-1.5 text-gray-700 font-semibold">
-                                                                    {renderKolfInput(item.kmt, item.kolf || 0)}
+                                                                    {renderKolfInput(item.kmt, item.kolf || 0)} {item.eduMt}
                                                                 </td>
                                                                 {planType === 'M' &&
                                                                     <th className="px-3 py-1.5 text-gray-700 font-semibold">
@@ -848,7 +853,7 @@ function MaterialsPage() {
                                                                     {`${item.order} ${item.eduMt}`}
                                                                 </td>
                                                                 <td className="px-3 py-1.5 text-gray-600 font-bold">
-                                                                    {renderOrderFinalInput(item.kmt, item.orderFinal, item.eduMt)}
+                                                                    {renderOrderFinalInput(item.kmt, item.orderFinal, item.eduMt)} {item.eduMt}
                                                                 </td>
                                                             </tr>
                                                         );
