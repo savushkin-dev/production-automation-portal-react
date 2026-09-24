@@ -224,6 +224,28 @@ function MaterialsPage() {
         }
     }
 
+    async function sendTo1C() {
+        const request = {
+            date,
+            kpp,
+            type: planType,
+            data: products
+        };
+
+        try {
+            setIsLoading(true);
+            const response = await MaterialService.sendTo1C(request);
+            setProducts(response.data || []);
+            setIsModalNotify(true);
+            setMsg('Данные успешно отправлены в 1С и сохранены!');
+        } catch (e) {
+            setIsModalError(true);
+            setError(e.response?.data?.message || 'Ошибка отправки в 1С и сохранения');
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     // Обработка выбранных файлов
     const handleFileSelect = async (event) => {
         const files = event.target.files;
@@ -428,8 +450,7 @@ function MaterialsPage() {
                             </button>
 
 
-                            <BlueButton disabled={true} onClick={() => {
-                            }} text={"Отправить в 1С"}
+                            <BlueButton onClick={sendTo1C} text={"Отправить в 1С"}
                                         className={"bg-pink-600 hover:bg-pink-700"}
                                         icon={"fa-solid fa-paper-plane text-sm pt-0.5"}/>
                         </div>
@@ -594,12 +615,17 @@ function MaterialsPage() {
                                         {/* ТАБЛИЦА ПРОДУКТОВ */}
                                         <div className="flex flex-col flex-1 min-h-0">
                                             {/*<span className="w-full text-center font-semibold text-red-600 text-lg">Основная заявка</span>*/}
-                                            <div className="mb-1">
-                                                <span className="text-sm font-semibold text-gray-700">Продукты</span>
-                                                {displayProducts.length > 0 && (
-                                                    <span
-                                                        className="ml-2 text-xs text-gray-500">({displayProducts.length})</span>
-                                                )}
+                                            <div className="mb-1 flex flex-row">
+                                                <div className="w-1/3">
+                                                    <span className="text-sm font-semibold text-gray-700">Продукты</span>
+                                                    {displayProducts.length > 0 && (
+                                                        <span className="ml-2 text-xs text-gray-500">({displayProducts.length})</span>
+                                                    )}
+
+                                                </div>
+                                                <span className="text-sm font-semibold text-gray-700">
+                                                    Статус: {products[1]?.req1c? `Отправлено в 1С (№ ${products[1]?.req1c})` : "Не отправлено в 1С"}
+                                                </span>
                                             </div>
                                             <div
                                                 className="flex-1 min-h-[300px] lg:min-h-auto overflow-auto border border-gray-200 rounded-md">

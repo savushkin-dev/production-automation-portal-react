@@ -31,6 +31,10 @@ export default class MaterialService {
         return $api.post(`${API_URL_SCHEDULER}/api/material/save`, request);
     }
 
+    static sendTo1C(request) {
+        return $api.post(`${API_URL_SCHEDULER}/api/material/send-1c`, request);
+    }
+
     // Старые методы (по пути) - оставляем для обратной совместимости
     static importSprogByPath() {
         return $api.post(`${API_URL_SCHEDULER}/api/dbf/import/sprog/path`, {}, {
