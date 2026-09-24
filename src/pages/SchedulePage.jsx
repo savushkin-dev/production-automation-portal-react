@@ -96,6 +96,11 @@ function SchedulerPage() {
 
     const [isSolve, setIsSolve] = useState(false);
     const [isStopButtonDisabled, setIsStopButtonDisabled] = useState(false);
+    
+    const STOP_COOLDOWN_SECONDS = 120;
+    const [stopAvailableAt, setStopAvailableAt] = useState(0); // timestamp, когда разблокируется кнопка
+    const [stopCooldown, setStopCooldown] = useState(0);       // остаток в секундах (для отображения)
+
     const [score, setScore] = useState({hard: 0, medium: 0, soft: 0});
     const [solverStatus, setSolverStatus] = useState("");
 
@@ -416,13 +421,40 @@ function SchedulerPage() {
         }
     }, [downloadedPlan]);
 
+
+
+    function formatCooldown(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    useEffect(() => {
+        if (!isStopButtonDisabled) return;
+
+        setStopAvailableAt(Date.now() + STOP_COOLDOWN_SECONDS * 1000);
+    }, [isStopButtonDisabled]);
+
+    useEffect(() => {
+        if (!isStopButtonDisabled || !stopAvailableAt) return;
+
+        const tick = () => {
+            const remaining = Math.max(0, Math.ceil((stopAvailableAt - Date.now()) / 1000));
+            setStopCooldown(remaining);
+            if (remaining === 0) {
+                setIsStopButtonDisabled(false);
+            }
+        };
+
+        tick(); // сразу считаем, не ждём 250 мс
+
+        const id = setInterval(tick, 250); // чаще, чтобы не было ощущения "залипания"
+        return () => clearInterval(id);
+    }, [isStopButtonDisabled, stopAvailableAt]);
+
     async function solve() {
         (isValidLinesDate(startTimeLines)) ? await fetchSolve() : setLinesDateError();
-
         setIsStopButtonDisabled(true);
-        setTimeout(() => {
-            setIsStopButtonDisabled(false);
-        }, 120000); // 2 минуты
     }
 
     function setLinesDateError() {
@@ -445,7 +477,10 @@ function SchedulerPage() {
     }, [isSolve]);
 
     async function stopSolving() {
-        setIsSolve(false)
+        setIsSolve(false);
+        setIsStopButtonDisabled(false);
+        setStopCooldown(0);
+        setStopAvailableAt(0);
         await fetchStopSolving();
         await fetchPlan();
     }
@@ -1278,11 +1313,16 @@ function SchedulerPage() {
                                     <span>Планировать</span>
                                 </button>
                             }
-                            {isSolve && !isLoadingStartSolve &&
-                                <button onClick={stopSolving} disabled={isLoadingStartSolve || isLoadingStopSolve || isStopButtonDisabled}
+                            {isSolve && !isLoadingStartSolve && !isLoadingStopSolve &&
+                                <button onClick={stopSolving}
+                                        disabled={isLoadingStartSolve || isLoadingStopSolve || isStopButtonDisabled}
                                         className="px-3 h-[30px] w-34 text-[0.950rem] font-medium rounded-md bg-red-600 hover:bg-red-700 text-white transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <i className="fa-solid fa-stop text-xs pt-0.5"></i>
-                                    <span>Остановить</span>
+                                    <i className={`fa-solid ${isStopButtonDisabled ? 'fa-hourglass-half' : 'fa-stop'} text-xs pt-0.5`}></i>
+                                    <span>
+                                        {isStopButtonDisabled
+                                            ? `Подождите ${formatCooldown(stopCooldown)}`
+                                            : 'Остановить'}
+                                    </span>
                                 </button>
                             }
 
