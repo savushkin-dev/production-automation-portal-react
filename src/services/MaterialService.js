@@ -11,6 +11,12 @@ export default class MaterialService {
         });
     }
 
+    static load1CLogs(date, kpp, type) {
+        return $api.get(`${API_URL_SCHEDULER}/api/material/log-1c`, {
+            params: { date, kpp, type }
+        });
+    }
+
     static loadProducts(date, kpp, type) {
         return $api.get(`${API_URL_SCHEDULER}/api/material/load`, {
             params: { date, kpp, type }
