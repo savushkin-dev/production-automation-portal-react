@@ -1,6 +1,6 @@
 import {Navigation} from "../components/Navigation";
 import {LeftNavigation} from "../components/leftNavigation/LeftNavigation";
-import React, {useState, useMemo, useEffect, useRef} from "react";
+import React, {useState, useMemo, useEffect, useRef, useContext} from "react";
 import Loading from "../components/loading/Loading";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
 import {observer} from 'mobx-react-lite';
@@ -12,8 +12,11 @@ import {BlueButton} from "../components/reportsConstruct/buttons/BlueButton";
 import {useNavigate} from "react-router-dom";
 import {MaterialsSettings} from "../components/materials/MaterialsSettings";
 import {formatIsoToDatetimeWithoutSeconds} from "../utils/date/date";
+import {Context} from "../index";
 
 function MaterialsPage() {
+
+    const {store} = useContext(Context);
 
     const navigate = useNavigate();
 
@@ -242,10 +245,17 @@ function MaterialsPage() {
     }
 
     async function sendTo1C() {
+        if (!store.isAuth) {
+            setIsModalError(true);
+            setError('Вы не авторизованы. Войдите в систему, чтобы отправить заявку в 1С.');
+            return;
+        }
+
         const request = {
             date,
             kpp,
             type: planType,
+            userId: store.user.username || 'unknown',
             data: products
         };
 
@@ -260,6 +270,7 @@ function MaterialsPage() {
             setError(e.response?.data?.message || 'Ошибка отправки в 1С и сохранения');
         } finally {
             setIsLoading(false);
+            load1CLogs();
         }
     }
 
