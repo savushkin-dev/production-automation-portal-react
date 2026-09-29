@@ -152,6 +152,7 @@ function MaterialsPage() {
             setIsLoading(true);
             const response = await MaterialService.load1CLogs(date, kpp, planType);
             setOnecLogs(response.data || []);
+            setSelectedOnecLog([]);
         } catch (e) {
             setIsModalError(true);
             setError(e.response?.data?.message || 'Ошибка загрузки данных');
@@ -456,7 +457,7 @@ function MaterialsPage() {
                                 <i className="pl-2 fa-solid fa-chart-gantt"></i>
                             </button>
 
-                            <BlueButton onClick={handleSave} text={"Сохранить"}
+                            <BlueButton onClick={handleSave} text={"Сохранить"} disabled={viewMode !== 'summary' && viewMode !== 'products'}
                                         className={"bg-cyan-600 hover:bg-cyan-700"}
                                         icon={"fa-solid fa-floppy-disk text-sm pt-0.5"}/>
 
@@ -467,7 +468,7 @@ function MaterialsPage() {
                             </button>
 
 
-                            <BlueButton onClick={sendTo1C} text={"Отправить в 1С"}
+                            <BlueButton onClick={sendTo1C} text={"Отправить в 1С"} disabled={viewMode !== 'summary' && viewMode !== 'products'}
                                         className={"bg-pink-600 hover:bg-pink-700"}
                                         icon={"fa-solid fa-paper-plane text-sm pt-0.5"}/>
                         </div>
@@ -613,7 +614,6 @@ function MaterialsPage() {
                                         : 'hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600'
                                 }`}
                                 onClick={() => setViewMode('1CLogs')}
-                                disabled={!onecLogs.length}
                             >
                                 <i className="pr-2 fa-regular fa-envelope"></i>
                                 Просмотр заявок 1С
@@ -936,10 +936,10 @@ function MaterialsPage() {
                                 )}
 
                                 {viewMode === '1CLogs' && (
-                                    <div className="flex flex-row gap-4 h-full">
+                                    <div className="flex flex-row gap-4 flex-1 min-h-0">
                                         {/* Левая таблица — заявки */}
                                         <div className="flex flex-col w-1/2 min-h-0">
-                                            <div className="mb-1 flex flex-row items-center">
+                                            <div className="mb-1 flex flex-row items-center shrink-0">
                                                 <span className="text-sm font-semibold text-gray-700">
                                                     Отправленные заявки в 1С
                                                 </span>
@@ -947,8 +947,7 @@ function MaterialsPage() {
                                                     <span className="ml-2 text-xs text-gray-500">({onecLogs.length})</span>
                                                 )}
                                             </div>
-                                            <div className="flex-1 min-h-0 overflow-auto border border-gray-200 rounded-md"
-                                                 style={{ maxHeight: '500px' }}>
+                                            <div className="flex-1 min-h-0 overflow-auto border border-gray-200 rounded-md">
                                                 <table className="w-full border-collapse text-center">
                                                     <thead className="sticky top-0 z-10">
                                                     <tr className="bg-gray-100">
@@ -966,9 +965,8 @@ function MaterialsPage() {
                                                     <tbody>
                                                     {onecLogs.length === 0 ? (
                                                         <tr>
-                                                            <td colSpan={3}
-                                                                className="px-4 py-8 text-center text-gray-400 text-sm">
-                                                                Нет данных. Выберите дату и цех, нажмите "Загрузить".
+                                                            <td colSpan={3} className="px-4 py-8 text-center text-gray-400 text-sm">
+                                                                Нет отправленных заявок.
                                                             </td>
                                                         </tr>
                                                     ) : (
@@ -997,16 +995,15 @@ function MaterialsPage() {
 
                                         {/* Правая таблица — материалы */}
                                         <div className="flex flex-col w-1/2 min-h-0">
-                                            <div className="mb-1 flex items-center justify-between">
+                                            <div className="mb-1 flex items-center justify-between shrink-0">
                                                 <span className="text-sm font-semibold text-gray-700">Материалы</span>
                                                 {selectedOnecLog?.materials?.length > 0 && (
                                                     <span className="text-xs text-gray-500">
-                        ({selectedOnecLog.materials.length})
-                    </span>
+                                                        ({selectedOnecLog.materials.length})
+                                                    </span>
                                                 )}
                                             </div>
-                                            <div className="flex-1 min-h-0 overflow-auto border border-gray-200 rounded-md"
-                                                 style={{ maxHeight: '500px' }}>
+                                            <div className="flex-1 min-h-0 overflow-auto border border-gray-200 rounded-md">
                                                 <table className="w-full border-collapse">
                                                     <thead className="sticky top-0 z-10">
                                                     <tr className="bg-gray-100 text-center text-sm">
@@ -1021,15 +1018,13 @@ function MaterialsPage() {
                                                     <tbody>
                                                     {!selectedOnecLog.materials ? (
                                                         <tr>
-                                                            <td colSpan={2}
-                                                                className="px-3 py-8 text-center text-gray-400 text-sm">
+                                                            <td colSpan={2} className="px-3 py-8 text-center text-gray-400 text-sm">
                                                                 Выберите заявку, чтобы увидеть материалы
                                                             </td>
                                                         </tr>
                                                     ) : selectedOnecLog.materials.length === 0 ? (
                                                         <tr>
-                                                            <td colSpan={2}
-                                                                className="px-3 py-8 text-center text-gray-400 text-sm">
+                                                            <td colSpan={2} className="px-3 py-8 text-center text-gray-400 text-sm">
                                                                 Нет материалов для этой заявки
                                                             </td>
                                                         </tr>
