@@ -627,7 +627,7 @@ function MaterialsPage() {
                                 onClick={() => setViewMode('1CLogs')}
                             >
                                 <i className="pr-2 fa-regular fa-envelope"></i>
-                                Просмотр заявок 1С
+                                ({onecLogs.length}) Просмотр заявок 1С
                             </button>
 
                             <button
@@ -969,7 +969,7 @@ function MaterialsPage() {
                                                             Отправитель
                                                         </th>
                                                         <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">
-                                                            Дата отправки
+                                                            Дата и время отправки
                                                         </th>
                                                     </tr>
                                                     </thead>
