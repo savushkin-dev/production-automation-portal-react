@@ -626,6 +626,7 @@ function MaterialsPage() {
                                 }`}
                                 onClick={() => setViewMode('1CLogs')}
                             >
+
                                 <i className="pr-2 fa-regular fa-envelope"></i>
                                 ({onecLogs.length}) Просмотр заявок 1С
                             </button>
