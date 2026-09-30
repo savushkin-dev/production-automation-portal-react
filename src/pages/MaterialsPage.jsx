@@ -1,6 +1,6 @@
 import {Navigation} from "../components/Navigation";
 import {LeftNavigation} from "../components/leftNavigation/LeftNavigation";
-import React, {useState, useMemo, useEffect, useRef} from "react";
+import React, {useState, useMemo, useEffect, useRef, useContext} from "react";
 import Loading from "../components/loading/Loading";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
 import {observer} from 'mobx-react-lite';
@@ -11,8 +11,12 @@ import AsyncSelect from "react-select/async";
 import {BlueButton} from "../components/reportsConstruct/buttons/BlueButton";
 import {useNavigate} from "react-router-dom";
 import {MaterialsSettings} from "../components/materials/MaterialsSettings";
+import {formatIsoToDatetimeWithoutSeconds} from "../utils/date/date";
+import {Context} from "../index";
 
 function MaterialsPage() {
+
+    const {store} = useContext(Context);
 
     const navigate = useNavigate();
 
@@ -35,6 +39,8 @@ function MaterialsPage() {
     const [planType, setPlanType] = useState('P');
     const [products, setProducts] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState(null);
+    const [onecLogs, setOnecLogs] = useState([]);
+    const [selectedOnecLog, setSelectedOnecLog] = useState([]);
     const [viewMode, setViewMode] = useState('products');
 
     const [updatingKolf, setUpdatingKolf] = useState(null);
@@ -104,7 +110,8 @@ function MaterialsPage() {
         if (!date || !kpp) {
             return;
         }
-        loadData()
+        loadData();
+        load1CLogs();
     }, [date, kpp, planType])
 
     async function loadData() {
@@ -143,6 +150,19 @@ function MaterialsPage() {
         }
     }, [recalcTrigger]);
 
+    async function load1CLogs() {
+        try {
+            setIsLoading(true);
+            const response = await MaterialService.load1CLogs(date, kpp, planType);
+            setOnecLogs(response.data || []);
+            setSelectedOnecLog([]);
+        } catch (e) {
+            setIsModalError(true);
+            setError(e.response?.data?.message || 'Ошибка загрузки данных');
+        } finally {
+            setIsLoading(false);
+        }
+    }
 
     function handleProductSelect(product) {
         const originalProduct = products.find(p => p.kmc === product.kmc);
@@ -188,7 +208,7 @@ function MaterialsPage() {
         const updatedProducts = products.map(product => ({
             ...product,
             materials: product.materials?.map(m =>
-                m.kmt === kmt ? { ...m, orderFinal: value } : m
+                m.kmt === kmt ? {...m, orderFinal: value} : m
             )
         }));
         setProducts(updatedProducts);
@@ -197,7 +217,7 @@ function MaterialsPage() {
             setSelectedProduct(prev => ({
                 ...prev,
                 materials: prev.materials?.map(m =>
-                    m.kmt === kmt ? { ...m, orderFinal: value } : m
+                    m.kmt === kmt ? {...m, orderFinal: value} : m
                 )
             }));
         }
@@ -221,6 +241,36 @@ function MaterialsPage() {
             setError(e.response?.data?.message || 'Ошибка сохранения');
         } finally {
             setIsLoading(false);
+        }
+    }
+
+    async function sendTo1C() {
+        if (!store.isAuth) {
+            setIsModalError(true);
+            setError('Вы не авторизованы. Войдите в систему, чтобы отправить заявку в 1С.');
+            return;
+        }
+
+        const request = {
+            date,
+            kpp,
+            type: planType,
+            userId: store.user.username || 'unknown',
+            data: products
+        };
+
+        try {
+            setIsLoading(true);
+            const response = await MaterialService.sendTo1C(request);
+            setProducts(response.data || []);
+            setIsModalNotify(true);
+            setMsg('Данные успешно отправлены в 1С и сохранены!');
+        } catch (e) {
+            setIsModalError(true);
+            setError(e.response?.data?.message || 'Ошибка отправки в 1С и сохранения');
+        } finally {
+            setIsLoading(false);
+            load1CLogs();
         }
     }
 
@@ -292,7 +342,7 @@ function MaterialsPage() {
                         productCount: 0,
                         products: [],
                         trnd: material.trnd,
-                        order: material.order ,
+                        order: material.order,
                         orderFinal: material.orderFinal,
                         orderPre: material.orderPre
                     };
@@ -372,25 +422,25 @@ function MaterialsPage() {
 
     const renderOrderFinalInput = (kmt, defaultOrderFinal, eduMt) => {
         return (
-                <input
-                    type="number"
-                    step="1"
-                    className="w-24 px-1.5 text-right text-sm font-semibold border rounded focus:outline-none focus:ring-1 focus:ring-blue-700"
-                    value={defaultOrderFinal || 0}
-                    onChange={(e) => {
-                        const rawValue = e.target.value;
-                        if (rawValue.startsWith('-')) return;
-                        const newValue = rawValue === '' ? 0 : parseFloat(rawValue) || 0;
-                        if (newValue < 0) return;
-                        handleOrderFinalChange(kmt, newValue);
-                    }}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            e.target.blur();
-                        }
-                    }}
-                />
+            <input
+                type="number"
+                step="1"
+                className="w-24 px-1.5 text-right text-sm font-semibold border rounded focus:outline-none focus:ring-1 focus:ring-blue-700"
+                value={defaultOrderFinal || 0}
+                onChange={(e) => {
+                    const rawValue = e.target.value;
+                    if (rawValue.startsWith('-')) return;
+                    const newValue = rawValue === '' ? 0 : parseFloat(rawValue) || 0;
+                    if (newValue < 0) return;
+                    handleOrderFinalChange(kmt, newValue);
+                }}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.target.blur();
+                    }
+                }}
+            />
         );
     };
 
@@ -405,7 +455,8 @@ function MaterialsPage() {
             <div className="flex flex-col w-full">
 
                 <>
-                    <div className="px-1 lg:px-16 pt-6 pb-2 flex flex-row gap-2 items-center justify-between text-center">
+                    <div
+                        className="px-1 lg:px-16 pt-6 pb-2 flex flex-row gap-2 items-center justify-between text-center">
                         <span className="text-2xl font-bold">Заявка на материалы</span>
 
                         <div className="flex flex-row gap-3">
@@ -417,7 +468,7 @@ function MaterialsPage() {
                                 <i className="pl-2 fa-solid fa-chart-gantt"></i>
                             </button>
 
-                            <BlueButton onClick={handleSave} text={"Сохранить"}
+                            <BlueButton onClick={handleSave} text={"Сохранить"} disabled={viewMode !== 'summary' && viewMode !== 'products'}
                                         className={"bg-cyan-600 hover:bg-cyan-700"}
                                         icon={"fa-solid fa-floppy-disk text-sm pt-0.5"}/>
 
@@ -428,8 +479,7 @@ function MaterialsPage() {
                             </button>
 
 
-                            <BlueButton disabled={true} onClick={() => {
-                            }} text={"Отправить в 1С"}
+                            <BlueButton onClick={sendTo1C} text={"Отправить в 1С"} disabled={viewMode !== 'summary' && viewMode !== 'products'}
                                         className={"bg-pink-600 hover:bg-pink-700"}
                                         icon={"fa-solid fa-paper-plane text-sm pt-0.5"}/>
                         </div>
@@ -511,7 +561,6 @@ function MaterialsPage() {
                             </div>
 
 
-
                             {/* Скрытый input для выбора файлов */}
                             <input
                                 ref={fileInputRef}
@@ -568,19 +617,33 @@ function MaterialsPage() {
                             </button>
                         </div>
 
+                        <div className="flex gap-2">
+                            <button
+                                className={`px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md disabled:bg-gray-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 ${
+                                    viewMode === '1CLogs'
+                                        ? 'bg-blue-800 text-white hover:bg-blue-700'
+                                        : 'hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600'
+                                }`}
+                                onClick={() => setViewMode('1CLogs')}
+                            >
 
-                        <button
-                            className={`px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md disabled:bg-gray-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 ${
-                                viewMode === 'settings'
-                                    ? 'bg-blue-800 text-white hover:bg-blue-700'
-                                    : 'hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600'
-                            }`}
-                            onClick={() => setViewMode('settings')}
-                            disabled={!products.length}
-                        >
-                            <i className="pr-2 fa-solid fa-gears"></i>
-                            Настройка материалов
-                        </button>
+                                <i className="pr-2 fa-regular fa-envelope"></i>
+                                ({onecLogs.length}) Просмотр заявок 1С
+                            </button>
+
+                            <button
+                                className={`px-3 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md disabled:bg-gray-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 ${
+                                    viewMode === 'settings'
+                                        ? 'bg-blue-800 text-white hover:bg-blue-700'
+                                        : 'hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600'
+                                }`}
+                                onClick={() => setViewMode('settings')}
+                                disabled={!products.length}
+                            >
+                                <i className="pr-2 fa-solid fa-gears"></i>
+                                Настройка материалов
+                            </button>
+                        </div>
                     </div>
 
                     <div className="px-1 lg:px-24 flex flex-col gap-4 h-[calc(100vh-240px)]">
@@ -594,12 +657,19 @@ function MaterialsPage() {
                                         {/* ТАБЛИЦА ПРОДУКТОВ */}
                                         <div className="flex flex-col flex-1 min-h-0">
                                             {/*<span className="w-full text-center font-semibold text-red-600 text-lg">Основная заявка</span>*/}
-                                            <div className="mb-1">
-                                                <span className="text-sm font-semibold text-gray-700">Продукты</span>
-                                                {displayProducts.length > 0 && (
+                                            <div className="mb-1 flex flex-row">
+                                                <div className="w-1/3">
                                                     <span
-                                                        className="ml-2 text-xs text-gray-500">({displayProducts.length})</span>
-                                                )}
+                                                        className="text-sm font-semibold text-gray-700">Продукты</span>
+                                                    {displayProducts.length > 0 && (
+                                                        <span
+                                                            className="ml-2 text-xs text-gray-500">({displayProducts.length})</span>
+                                                    )}
+
+                                                </div>
+                                                {/*<span className="text-sm font-semibold text-gray-700">*/}
+                                                {/*    Статус: {products[1]?.req1c? `Отправлено в 1С (№ ${products[1]?.req1c})` : "Не отправлено в 1С"}*/}
+                                                {/*</span>*/}
                                             </div>
                                             <div
                                                 className="flex-1 min-h-[300px] lg:min-h-auto overflow-auto border border-gray-200 rounded-md">
@@ -611,11 +681,15 @@ function MaterialsPage() {
                                                             кг
                                                         </th>
                                                         <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">Единиц</th>
-                                                        <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">Кол. мест</th>
+                                                        <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">Кол.
+                                                            мест
+                                                        </th>
                                                         <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">EAN13</th>
                                                         <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">Тара</th>
                                                         <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">Емкость</th>
-                                                        <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">Исп. материалов</th>
+                                                        <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">Исп.
+                                                            материалов
+                                                        </th>
                                                     </tr>
                                                     </thead>
                                                     <tbody>
@@ -658,7 +732,8 @@ function MaterialsPage() {
                                         <div className="flex flex-col min-h-[300px] lg:min-h-[273px] max-h-[308px]">
                                             <div className="mb-1 flex items-center justify-between">
                                                 <div>
-                                                    <span className="text-sm font-semibold text-gray-700">Материалы</span>
+                                                    <span
+                                                        className="text-sm font-semibold text-gray-700">Материалы</span>
                                                     {selectedProduct && (
                                                         <span
                                                             className="ml-2 text-xs text-gray-500">{selectedProduct.name?.trim()}</span>
@@ -692,7 +767,8 @@ function MaterialsPage() {
                                                         </th>
                                                         <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Остаток</th>
                                                         {planType === 'M' &&
-                                                            <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Предварительная заявка</th>
+                                                            <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Предварительная
+                                                                заявка</th>
                                                         }
                                                         <th className="px-3 w-[10%] py-1.5 font-semibold text-gray-700 border-b border-gray-200">
                                                             {planType === 'P' ? 'Расчетная заявка' : 'Дозаказ расчетный'}
@@ -803,7 +879,8 @@ function MaterialsPage() {
                                                     </th>
                                                     <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Остаток</th>
                                                     {planType === 'M' &&
-                                                        <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Предварительная заявка</th>
+                                                        <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">Предварительная
+                                                            заявка</th>
                                                     }
                                                     <th className="px-3 w-[15%] py-1.5 font-semibold text-gray-700 border-b border-gray-200">
                                                         {planType === 'P' ? 'Расчетная заявка' : 'Дозаказ расчетный'}
@@ -816,7 +893,7 @@ function MaterialsPage() {
                                                 <tbody>
                                                 {materialSummary.length === 0 ? (
                                                     <tr>
-                                                    <td colSpan={9}
+                                                        <td colSpan={9}
                                                             className="px-3 py-8 text-center text-gray-400 text-sm">Нет
                                                             данных. Выберите дату и цех, нажмите "Загрузить".
                                                         </td>
@@ -868,6 +945,119 @@ function MaterialsPage() {
                                 {viewMode === 'settings' && (
                                     <MaterialsSettings date={date} kpp={kpp} updateData={loadData}
                                                        recalcTriger={() => setRecalcTrigger(prev => prev + 1)}/>
+                                )}
+
+                                {viewMode === '1CLogs' && (
+                                    <div className="flex flex-row gap-4 flex-1 min-h-0">
+                                        {/* Левая таблица — заявки */}
+                                        <div className="flex flex-col w-1/2 min-h-0">
+                                            <div className="mb-1 flex flex-row items-center shrink-0">
+                                                <span className="text-sm font-semibold text-gray-700">
+                                                    Отправленные заявки в 1С
+                                                </span>
+                                                {onecLogs.length > 0 && (
+                                                    <span className="ml-2 text-xs text-gray-500">({onecLogs.length})</span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-h-0 overflow-auto border border-gray-200 rounded-md">
+                                                <table className="w-full border-collapse text-center">
+                                                    <thead className="sticky top-0 z-10">
+                                                    <tr className="bg-gray-100">
+                                                        <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">
+                                                            Номер заявки
+                                                        </th>
+                                                        <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">
+                                                            Отправитель
+                                                        </th>
+                                                        <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">
+                                                            Дата и время отправки
+                                                        </th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {onecLogs.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={3} className="px-4 py-8 text-center text-gray-400 text-sm">
+                                                                Нет отправленных заявок.
+                                                            </td>
+                                                        </tr>
+                                                    ) : (
+                                                        onecLogs.map((product) => (
+                                                            <tr
+                                                                key={product.req1c}
+                                                                className={`border-b border-gray-200 text-sm cursor-pointer ${
+                                                                    selectedOnecLog?.req1c === product.req1c
+                                                                        ? 'bg-blue-800 text-white'
+                                                                        : 'text-gray-700 hover:bg-gray-100'
+                                                                }`}
+                                                                onClick={() => setSelectedOnecLog(product)}
+                                                            >
+                                                                <td className="px-4 py-2">{product.req1c}</td>
+                                                                <td className="px-4 py-2">{product.userId}</td>
+                                                                <td className="px-4 py-2">
+                                                                    {formatIsoToDatetimeWithoutSeconds(product.sentAt)}
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        {/* Правая таблица — материалы */}
+                                        <div className="flex flex-col w-1/2 min-h-0">
+                                            <div className="mb-1 flex items-center justify-between shrink-0">
+                                                <span className="text-sm font-semibold text-gray-700">Материалы</span>
+                                                {selectedOnecLog?.materials?.length > 0 && (
+                                                    <span className="text-xs text-gray-500">
+                                                        ({selectedOnecLog.materials.length})
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-h-0 overflow-auto border border-gray-200 rounded-md">
+                                                <table className="w-full border-collapse">
+                                                    <thead className="sticky top-0 z-10">
+                                                    <tr className="bg-gray-100 text-center text-sm">
+                                                        <th className="px-3 w-[60%] py-1.5 font-semibold text-gray-700 border-b border-gray-200">
+                                                            Материал
+                                                        </th>
+                                                        <th className="px-3 py-1.5 font-semibold text-gray-700 border-b border-gray-200">
+                                                            Количество
+                                                        </th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {!selectedOnecLog.materials ? (
+                                                        <tr>
+                                                            <td colSpan={2} className="px-3 py-8 text-center text-gray-400 text-sm">
+                                                                Выберите заявку, чтобы увидеть материалы
+                                                            </td>
+                                                        </tr>
+                                                    ) : selectedOnecLog.materials.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={2} className="px-3 py-8 text-center text-gray-400 text-sm">
+                                                                Нет материалов для этой заявки
+                                                            </td>
+                                                        </tr>
+                                                    ) : (
+                                                        selectedOnecLog.materials.map((material, index) => (
+                                                            <tr key={`${material.kmt}-${index}`}
+                                                                className="border-b border-gray-200 text-sm text-center hover:bg-gray-50">
+                                                                <td className="px-3 py-1.5 text-gray-700 font-semibold">
+                                                                    {material.snmMt}
+                                                                </td>
+                                                                <td className="px-3 py-1.5 text-gray-700 font-semibold">
+                                                                    {`${material.kole} ${material.eduMt}`}
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
 
                             </>}

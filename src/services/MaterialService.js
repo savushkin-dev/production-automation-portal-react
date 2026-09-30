@@ -11,6 +11,12 @@ export default class MaterialService {
         });
     }
 
+    static load1CLogs(date, kpp, type) {
+        return $api.get(`${API_URL_SCHEDULER}/api/material/log-1c`, {
+            params: { date, kpp, type }
+        });
+    }
+
     static loadProducts(date, kpp, type) {
         return $api.get(`${API_URL_SCHEDULER}/api/material/load`, {
             params: { date, kpp, type }
@@ -29,6 +35,10 @@ export default class MaterialService {
 
     static saveAll(request) {
         return $api.post(`${API_URL_SCHEDULER}/api/material/save`, request);
+    }
+
+    static sendTo1C(request) {
+        return $api.post(`${API_URL_SCHEDULER}/api/material/send-1c`, request);
     }
 
     // Старые методы (по пути) - оставляем для обратной совместимости
