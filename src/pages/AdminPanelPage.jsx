@@ -27,6 +27,7 @@ function AdminPanelPage() {
     const [newUser, setNewUser] = useState({
         username: '',
         password: '',
+        fio: '',
         roles: ['ROLE_VIEWER'],
         isNtlm: authType === 'ntlm'
     });
@@ -137,6 +138,12 @@ function AdminPanelPage() {
             return;
         }
 
+        if (!newUser.fio.trim()) {
+            setMsg("Введите ФИО пользователя");
+            setIsModalNotify(true);
+            return;
+        }
+
         const rolesToSend = newUser.roles.filter(role => role !== "ROLE_VIEWER");
 
         try {
@@ -144,6 +151,7 @@ function AdminPanelPage() {
             const response = await UserService.createUser({
                 username: newUser.username,
                 password: authType === 'ntlm' ? "password" : newUser.password,
+                fio: newUser.fio,
                 roles: rolesToSend,
                 ntlm: authType === 'ntlm'
             });
@@ -164,6 +172,7 @@ function AdminPanelPage() {
         setNewUser({
             username: '',
             password: '',
+            fio: '',
             roles: ['ROLE_VIEWER']
         });
     };
@@ -296,6 +305,7 @@ function AdminPanelPage() {
                                     <thead>
                                     <tr className="border-b border-gray-100 bg-gray-50/50">
                                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Пользователь</th>
+                                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">ФИО</th>
                                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Тип</th>
                                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Роли</th>
                                         <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
@@ -306,37 +316,50 @@ function AdminPanelPage() {
                                         <tr key={user.id} className="hover:bg-gray-50/50 transition-colors group">
                                             <td className="px-6 py-3">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
+                                                    <div
+                                                        className="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
                                                             <span className="text-sm font-medium text-gray-600">
                                                                 {user.username.charAt(0).toUpperCase()}
                                                             </span>
                                                     </div>
-                                                    <span className="text-md font-medium text-gray-900">{user.username}</span>
+                                                    <span
+                                                        className="text-md font-medium text-gray-900">{user.username}</span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-3">
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-700">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-md font-medium text-gray-900">{user.fio || '-'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-3">
+                                                    <span
+                                                        className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-700">
                                                         {user.authType}
                                                     </span>
                                             </td>
                                             <td className="px-6 py-3">
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {user.roles?.map((role, index) => (
-                                                        <span key={index} className={`${getBgColor(role.name)} px-2 py-0.5 rounded-md text-sm font-medium text-white shadow-sm`}>
+                                                        <span key={index}
+                                                              className={`${getBgColor(role.name)} px-2 py-0.5 rounded-md text-sm font-medium text-white shadow-sm`}>
                                                                 {role.name.substring(5)}
                                                             </span>
                                                     ))}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-3 text-right">
-                                                <div className="flex items-center justify-end gap-1  transition-opacity">
+                                                <div
+                                                    className="flex items-center justify-end gap-1  transition-opacity">
                                                     <button
                                                         onClick={() => handleUserSelect(user)}
                                                         className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                                                         title="Редактировать роли"
                                                     >
-                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor"
+                                                             viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round"
+                                                                  strokeWidth={2}
+                                                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                                                         </svg>
                                                     </button>
                                                     <button
@@ -344,8 +367,11 @@ function AdminPanelPage() {
                                                         className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                                                         title="Удалить пользователя"
                                                     >
-                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor"
+                                                             viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round"
+                                                                  strokeWidth={2}
+                                                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                                         </svg>
                                                     </button>
                                                 </div>
@@ -357,8 +383,10 @@ function AdminPanelPage() {
                             </div>
                             {users.length === 0 && (
                                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                                    <svg className="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    <svg className="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor"
+                                         viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
+                                              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                                     </svg>
                                     <h3 className="text-lg font-medium mb-1">Нет пользователей</h3>
                                     <p className="text-sm">Нажмите "Добавить пользователя" чтобы создать первого</p>
@@ -503,6 +531,18 @@ function AdminPanelPage() {
                                         />
                                     </div>
                                 )}
+
+                                {/* Поле ФИО */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">ФИО</label>
+                                    <input
+                                        type="text"
+                                        value={newUser.fio}
+                                        onChange={(e) => setNewUser({...newUser, fio: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent transition-all"
+                                        placeholder={'Иванов И.И.'}
+                                    />
+                                </div>
 
                                 {/* Роли */}
                                 <div>

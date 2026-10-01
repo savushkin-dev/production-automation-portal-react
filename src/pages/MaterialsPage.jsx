@@ -256,6 +256,7 @@ function MaterialsPage() {
             kpp,
             type: planType,
             userId: store.user.username || 'unknown',
+            userFio: store.user.fio || 'unknown',
             data: products
         };
 
@@ -970,6 +971,12 @@ function MaterialsPage() {
                                                             Отправитель
                                                         </th>
                                                         <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">
+                                                            ФИО
+                                                        </th>
+                                                        <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">
+                                                            IP
+                                                        </th>
+                                                        <th className="px-4 py-1.5 text-sm font-semibold text-gray-700 border-b border-gray-200">
                                                             Дата и время отправки
                                                         </th>
                                                     </tr>
@@ -994,6 +1001,8 @@ function MaterialsPage() {
                                                             >
                                                                 <td className="px-4 py-2">{product.req1c}</td>
                                                                 <td className="px-4 py-2">{product.userId}</td>
+                                                                <td className="px-4 py-2">{product.userFio}</td>
+                                                                <td className="px-4 py-2">{product.ip}</td>
                                                                 <td className="px-4 py-2">
                                                                     {formatIsoToDatetimeWithoutSeconds(product.sentAt)}
                                                                 </td>

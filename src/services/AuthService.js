@@ -61,8 +61,22 @@ export default class AuthService {
     static decodeToken(token) {
         try {
             if (!token) return null;
-            const payload = token.split('.')[1];
-            return JSON.parse(atob(payload));
+
+            // JWT использует Base64URL — приводим к стандартному Base64
+            let base64Url = token.split('.')[1];
+            let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+
+            // Добавляем паддинг, если его нет
+            while (base64.length % 4) {
+                base64 += '=';
+            }
+
+            // Base64 -> бинарная строка -> UTF-8
+            const binary = atob(base64);
+            const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+            const json = new TextDecoder('utf-8').decode(bytes);
+
+            return JSON.parse(json);
         } catch (error) {
             console.error('Error decoding token:', error);
             return null;
