@@ -5,6 +5,7 @@ export default class Store {
 
     user = {
         username: "",
+        fio: "",
         userRoles: []
     };
     isAuth = false;
@@ -95,6 +96,7 @@ export default class Store {
             const decoded = AuthService.decodeToken(token);
             if (decoded && decoded.username) {
                 this.user.username = decoded.username;
+                // this.user.fio = decoded.fio;
                 this.user.userRoles = decoded.roles || [];
                 this.setAuth(true);
             } else {
