@@ -675,5 +675,23 @@ export default class ScheduleService {
         return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/dailyProductions?shiftStart=` + shiftStart)
     }
 
+    static async getParallelOperations() {
+        return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/parallel-operations`)
+    }
+
+    static async addParallelOperation(operation) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/parallel-operations`, operation)
+    }
+
+    static async updateParallelOperation(operation) {
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/parallel-operations`, { operation })
+    }
+
+    static async removeParallelOperation(id) {
+        return $apiSchedule.delete(`${API_URL_SCHEDULER}/schedule/parallel-operations?id=` + id)
+    }
+
+
+
 
 }
