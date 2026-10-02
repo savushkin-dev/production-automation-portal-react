@@ -109,6 +109,7 @@ function SchedulerPage() {
     const [isModalAnalyze, setIsModalAnalyze] = useState(false);
 
     const [downloadedPlan, setDownloadedPlan] = useState(null);
+    const [downloadedOperationPlan, setDownloadedOperationPlan] = useState(null);
     const [analyzeObj, setAnalyzeObj] = useState(null);
 
     const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0]);
@@ -176,6 +177,7 @@ function SchedulerPage() {
 
             const response = await SchedulerService.init(date);
             fetchPlan();
+            getParallelOperations()
 
             const groupedData = groupDataByDay(response.data, baseDate);
 
@@ -804,6 +806,37 @@ function SchedulerPage() {
         }
     }
 
+    async function addParallelOperation(lineId, insertIndex, time, duration, type, description) {
+        try {
+
+            let operation = {
+                lineId: "170610010000",
+                startDateTime: "2026-10-02T09:00",
+                duration: 90,
+                eventTypeId: 3,
+                note: "Параллельная мойка"
+            }
+
+            await SchedulerService.addParallelOperation(operation);
+            await getParallelOperations();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка добавления параллельной операции: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
+    async function getParallelOperations() {
+        try {
+            const response = await SchedulerService.getParallelOperations();
+            setDownloadedOperationPlan(response.data)
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка получения параллельных операций: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
     async function determineFactPlace(snpz) {
         try {
             await SchedulerService.determineFactPlace(snpz);
@@ -1151,6 +1184,11 @@ function SchedulerPage() {
                     <div className="w-4/6 py-1 flex justify-end pr-3 gap-1">
 
                         <div className="relative">
+
+                            <button onClick={addParallelOperation}
+                                    className="bg-red-500 px-3 mr-1 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
+                                Добавить параллельную операцию
+                            </button>
 
                             <button onClick={() => {
                                 navigate('/materials', {replace: false})
