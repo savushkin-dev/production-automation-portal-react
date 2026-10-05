@@ -150,10 +150,10 @@
 
 /* Параллельная сервисная операция — рисуется поверх обычных */
 .rct-item-parallel {
-    height: 32px !important;
+    height: 22px !important;
     border-style: dashed !important;
     border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(3, 105, 161, 0.2);
+    box-shadow: 8px 4px 3px rgba(128, 128, 128, 0.2);
 }
 
 /* Стиль для сервисной операции фасовки или выравнивания */

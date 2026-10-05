@@ -57,9 +57,9 @@ export default class ScheduleService {
             item.canResize = false;
             item.itemProps = {
                 style: {
-                    background: "#e0f2fe",
+                    background: "#ffeaea",
                     border: "1px dashed #0369a1",
-                    color: "#0369a1",
+                    color: "#a81a65",
                 },
             };
             item.info = {

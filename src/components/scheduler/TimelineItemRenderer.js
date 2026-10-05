@@ -24,23 +24,27 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
     const leftBorderWidth = getStoredWidth(STORAGE_KEYS.LEFT_BORDER_WIDTH, DEFAULT_WIDTHS.leftBorder);
     const bottomBorderWidth = getStoredWidth(STORAGE_KEYS.BOTTOM_BORDER_WIDTH, DEFAULT_WIDTHS.bottomBorder);
 
+    const FACT_BG = "#f9efff";
+    const SELECT_BG = "#cbff93";
+
+    /**
+     * Определяет цвет фона элемента
+     */
+    function defineBackground(item, isSelected, isFactEl, isFact) {
+        if (isSelected) return SELECT_BG;
+        if (isFactEl) return item.itemProps?.style?.background;
+        if (isFact) return FACT_BG;
+        return item.itemProps?.style?.background || '#fff';
+    }
+
     function defineStyle(activeDisplay, isFactEl, isLeveling, isSelected, isParallel) {
         const { plan, fact, planFact } = activeDisplay || {};
 
-        // // Параллельные операции показываем только в режиме plan / planFact,
-        // // в режиме fact — скрываем (или реши сам)
-        // if (isParallel) {
-        //     if (fact) {
-        //         return { display: 'none', marginTop: '-16px' };
-        //     }
-        //     // plan и planFact — рисуем сверху
-        //     return { display: 'block', marginTop: '-24px' };
-        // }
 
         if (plan) {
 
             if(isParallel) {
-                return { display: 'block', marginTop: '-20px' };
+                return { display: 'block', marginTop: '-12px' };
             }
 
             return isFactEl
@@ -76,25 +80,21 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
     return ({item, itemContext, getItemProps}) => {
         const isSelected = selectedItems.some(sel => sel.id === item.id);
         const isSingleSelected = selectedItem?.id === item.id;
-        const isFact = item.info?.startFact !== null && !isCleaningItem(item) && !isDelayItem(item);
+        const isFact = item.info?.startFact !== null && !isCleaningItem(item) && !isDelayItem(item) && !isParallelOperationItem(item);
         const isLinesMatch = item.info?.lineIdFact === item.info?.lineInfo?.id;
 
-        const factBg = "#f9efff";
-        const selectBg = "#cbff93";
 
         const isFactEl = isFactItem(item);
         const isLeveling =  isDelayItem(item);
-        const isParallel = isParallelOperationItem(item);
+        const isParallelOper = isParallelOperationItem(item);
 
-        let settings = defineStyle(activeDisplay, isFactEl, isLeveling, isSelected, isParallel);
+        let settings = defineStyle(activeDisplay, isFactEl, isLeveling, isSelected, isParallelOper);
 
         const itemProps = getItemProps({
             style: {
-                background: isSelected
-                    ? (isSingleSelected ? selectBg : selectBg)
-                    : (isFactEl ? item.itemProps?.style?.background : (isFact ? factBg : item.itemProps?.style?.background || '#fff')),
+                background: defineBackground(item, isSelected, isFactEl, isFact),
 
-                borderStyle: isParallel ? 'dashed' : 'solid',
+                borderStyle: isParallelOper ? 'solid' : 'solid',
                 borderColor: '#aeaeae',
                 borderLeftColor: isCleaningItem(item) && item.info.cleaningDelay < 0 ? leftBorderColor : '#aeaeae',
                 borderLeftWidth: isCleaningItem(item) && item.info.cleaningDelay < 0 ? `${leftBorderWidth}px` : '1px',
@@ -129,6 +129,29 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                 result = `${item.title}\nПлан: ${defineHoursAndMinToString(item.info.cleaningDurationPlan)}\nФакт: ${defineHoursAndMinToString(Math.max(0, item.info.cleaningDurationFact))}`
             }
 
+            // Для параллельных сервисных операций
+            if (isParallelOperationItem(item)) {
+                const lines = [];
+
+                // title
+                if (item.title) lines.push(item.title);
+
+                // duration + время
+                if (item.info?.duration) {
+                    const dur = defineHoursAndMinToString(item.info.duration);
+                    const start = moment(item.start_time).format('HH:mm');
+                    const end = moment(item.end_time).format('HH:mm');
+                    lines.push(`${dur} | ${start} - ${end} Время`);
+                }
+
+                // maintenanceNote
+                if (item.info?.maintenanceNote) {
+                    lines.push(item.info.maintenanceNote);
+                }
+
+                result = lines.join('\n');
+            }
+
             return result;
         }
 
@@ -145,14 +168,46 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                 key={item.id}
                 {...safeItemProps}
                 className={
-                    isParallel
+                    isParallelOper
                         ? "rct-item-parallel"
                         : (isFactEl ? "rct-item-fact" : (isLeveling ? "rct-item-alignment" : "rct-item"))
                 }
                 title={defineHint()}
             >
 
-                {!isFactEl ? (
+                {isParallelOper ? (
+                        <>
+
+                            <div className="flex flex-row justify-start items-center text-center text-xs">
+                                <span className="px-1 font-medium text-sm text-gray-800">{item.title}</span>
+
+                                {item.info?.duration && (
+                                    <span className="px-1 rounded">
+                                      <span className="text-pink-500">
+                                          {item.info.duration >= 60
+                                              ? `${Math.floor(item.info.duration / 60)} ч. ${item.info.duration % 60} мин.`
+                                              : `${item.info.duration} мин.`}
+                                      </span>
+                                      <span className="text-gray-500 px-1">|</span>
+                                      <span className="text-green-600">
+                                        {moment(item.start_time).format('HH:mm')}
+                                      </span>
+                                        {' - '}
+                                        <span className="text-red-500">
+                                            {moment(item.end_time).format('HH:mm')}
+                                        </span>
+                                      <span className="pl-1">Время</span>
+                                </span>
+                                )}
+
+                                <span className="px-1 rounded">
+                                    <span className="text-blue-900">{item.info.maintenanceNote}</span>
+                                </span>
+
+                            </div>
+                        </>
+
+                ): !isFactEl ? (
                     <>
                         <div className="flex px-1 justify-between font-medium text-sm text-gray-800">
                             {item.info?.pinned && !isFactEl && !isCleaningDelayItem(item) ? (
