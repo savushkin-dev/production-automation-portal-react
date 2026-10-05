@@ -7,6 +7,7 @@ import {
     isDelayItem, isFactCleaningItem,
     isFactItem,
     isMaintenanceItem,
+    isParallelOperationItem,
     isMaintenancePackingOrLeveling, isSimpleItem
 } from "../../utils/scheduler/items";
 import {DEFAULT_COLORS, DEFAULT_WIDTHS, getStoredColor, getStoredWidth, STORAGE_KEYS} from "./utils/colorsUtils";
@@ -23,25 +24,50 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
     const leftBorderWidth = getStoredWidth(STORAGE_KEYS.LEFT_BORDER_WIDTH, DEFAULT_WIDTHS.leftBorder);
     const bottomBorderWidth = getStoredWidth(STORAGE_KEYS.BOTTOM_BORDER_WIDTH, DEFAULT_WIDTHS.bottomBorder);
 
-    function defineStyle(activeDisplay, isFactEl, isLeveling, isSelected) {
+    function defineStyle(activeDisplay, isFactEl, isLeveling, isSelected, isParallel) {
         const { plan, fact, planFact } = activeDisplay || {};
 
+        // // Параллельные операции показываем только в режиме plan / planFact,
+        // // в режиме fact — скрываем (или реши сам)
+        // if (isParallel) {
+        //     if (fact) {
+        //         return { display: 'none', marginTop: '-16px' };
+        //     }
+        //     // plan и planFact — рисуем сверху
+        //     return { display: 'block', marginTop: '-24px' };
+        // }
+
         if (plan) {
+
+            if(isParallel) {
+                return { display: 'block', marginTop: '-20px' };
+            }
+
             return isFactEl
                 ? { display: 'none', marginTop: '-16px'}
-                : (isLeveling? { display: 'block', marginTop: '28px'}:{ display: 'block', marginTop: '-4px'});
+                : (isLeveling ? { display: 'block', marginTop: '48px'} : { display: 'block', marginTop: '16px'});
         }
 
         if (fact) {
+
+            if(isParallel) {
+                return { display: 'none', marginTop: '-20px' };
+            }
+
             return isFactEl
-                ?(isSelected? { display: 'block', marginTop: '9px'} : { display: 'block', marginTop: '4px'})
+                ? (isSelected ? { display: 'block', marginTop: '9px'} : { display: 'block', marginTop: '4px'})
                 : { display: 'none', marginTop: '-16px'};
         }
 
         if (planFact) {
+
+            if(isParallel) {
+                return { display: 'block', marginTop: '-20px' };
+            }
+
             return isFactEl
-                ? (isSelected? { display: 'block', marginTop: '70px'} : { display: 'block', marginTop: '65px'})
-                : (isLeveling? { display: 'block', marginTop: '16px'}:{ display: 'block', marginTop: '-16px'});
+                ? (isSelected ? { display: 'block', marginTop: '70px'} : { display: 'block', marginTop: '65px'})
+                : (isLeveling ? { display: 'block', marginTop: '16px'} : { display: 'block', marginTop: '-16px'});
         }
 
         return { display: 'block', marginTop: '-16px'};
@@ -58,8 +84,9 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
         const isFactEl = isFactItem(item);
         const isLeveling =  isDelayItem(item);
+        const isParallel = isParallelOperationItem(item);
 
-        let settings = defineStyle(activeDisplay, isFactEl, isLeveling, isSelected)
+        let settings = defineStyle(activeDisplay, isFactEl, isLeveling, isSelected, isParallel);
 
         const itemProps = getItemProps({
             style: {
@@ -67,7 +94,7 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
                     ? (isSingleSelected ? selectBg : selectBg)
                     : (isFactEl ? item.itemProps?.style?.background : (isFact ? factBg : item.itemProps?.style?.background || '#fff')),
 
-                borderStyle: 'solid',
+                borderStyle: isParallel ? 'dashed' : 'solid',
                 borderColor: '#aeaeae',
                 borderLeftColor: isCleaningItem(item) && item.info.cleaningDelay < 0 ? leftBorderColor : '#aeaeae',
                 borderLeftWidth: isCleaningItem(item) && item.info.cleaningDelay < 0 ? `${leftBorderWidth}px` : '1px',
@@ -117,7 +144,11 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
             <div
                 key={item.id}
                 {...safeItemProps}
-                className={isFactEl ? "rct-item-fact" : (isLeveling? "rct-item-alignment" : "rct-item")}
+                className={
+                    isParallel
+                        ? "rct-item-parallel"
+                        : (isFactEl ? "rct-item-fact" : (isLeveling ? "rct-item-alignment" : "rct-item"))
+                }
                 title={defineHint()}
             >
 

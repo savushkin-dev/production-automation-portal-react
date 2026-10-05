@@ -29,9 +29,58 @@ export const ItemType = {
     FACT: 'fact',
     MAINTENANCE: 'maintenance',
     CLEANING_DELAY: 'cleaning_delay',
+    PARALLEL_OPERATION: 'parallel_operation',
 };
 
 export default class ScheduleService {
+
+    static async parseParallelOperations(json, lineNameMap = {}) {
+        if (!Array.isArray(json)) return [];
+
+        const result = [];
+
+        for (let i = 0; i < json.length; i++) {
+            const op = json[i];
+            if (!op) continue;
+
+            const start = new Date(op.startDateTime);
+            const end = new Date(op.endDateTime);
+            const dur = Number(op.duration) || Math.round((end - start) / 60000);
+
+            const item = Object.assign({}, exampleTask);
+            item.id = `parallel-${op.id}`;
+            item.start_time = start.getTime();
+            item.end_time = end.getTime();
+            item.title = (op.name || "Параллельная операция").trim();
+            item.group = op.lineId;
+            item.canMove = false;
+            item.canResize = false;
+            item.itemProps = {
+                style: {
+                    background: "#e0f2fe",
+                    border: "1px dashed #0369a1",
+                    color: "#0369a1",
+                },
+            };
+            item.info = {
+                itemType: ItemType.PARALLEL_OPERATION,
+                name: (op.name || "").trim(),
+                start,
+                end,
+                duration: dur,
+                line: lineNameMap[op.lineId] || op.lineId,
+                maintenanceTypeId: op.maintenanceTypeId,
+                maintenanceNote: op.maintenanceNote,
+                pinned: false,
+                isParallel: true,
+                parallelId: op.id,
+            };
+
+            result.push(item);
+        }
+
+        return result;
+    }
 
     static async parseDateTimeSettings(json) {
         return json.lines

@@ -8,6 +8,9 @@ export function isFactItem(item) {
 //Определяет что это обычная задача, а не задержка, мойка и тд
 export const isSimpleItem = (item) => item?.info.itemType === ItemType.SIMPLE;
 
+//Определяет что это параллельная сервисная операция
+export const isParallelOperationItem = (item) => item?.info.itemType === ItemType.PARALLEL_OPERATION;
+
 //Определяет если ли уже факт
 export function isPackagedItem(item) {
     return item.info.startFact !== null

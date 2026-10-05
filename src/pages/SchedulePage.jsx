@@ -148,7 +148,7 @@ function SchedulerPage() {
     const [selectedItems, setSelectedItems] = useState([]);
     const [lastSelectedItem, setLastSelectedItem] = useState(null);
 
-    const heightGroupScheduler = activeDisplay.fact || activeDisplay.plan ? 100 : 164;
+    const heightGroupScheduler = activeDisplay.fact || activeDisplay.plan ? 140 : 164;
 
     const [clickedCameras, setClickedCameras] = useState({});
 
@@ -404,24 +404,60 @@ function SchedulerPage() {
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }
 
+    // useEffect(() => {
+    //     if (downloadedPlan) {
+    //         ScheduleService.parseHardware(downloadedPlan).then((e) => {
+    //             setHardware(e);
+    //             if (isDisplayByHardware)
+    //                 setGroups(e);
+    //         });
+    //         ScheduleService.parsePlanByHardware(downloadedPlan).then((e) => {
+    //             setPlanByHardware(e);
+    //             if (isDisplayByHardware)
+    //                 setItems(e);
+    //         });
+    //         SchedulerService.parseDateTimeSettings(downloadedPlan).then((e) => {
+    //             setStartTimeLines(e)
+    //         })
+    //         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
+    //     }
+    // }, [downloadedPlan]);
+
     useEffect(() => {
-        if (downloadedPlan) {
-            ScheduleService.parseHardware(downloadedPlan).then((e) => {
-                setHardware(e);
-                if (isDisplayByHardware)
-                    setGroups(e);
-            });
-            ScheduleService.parsePlanByHardware(downloadedPlan).then((e) => {
-                setPlanByHardware(e);
-                if (isDisplayByHardware)
-                    setItems(e);
-            });
-            SchedulerService.parseDateTimeSettings(downloadedPlan).then((e) => {
-                setStartTimeLines(e)
-            })
-            setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
-        }
-    }, [downloadedPlan]);
+        if (!downloadedPlan) return;
+
+        const jobsPromise = ScheduleService.parsePlanByHardware(downloadedPlan);
+
+        const lineNameMap = {};
+        (downloadedPlan.lines || []).forEach(l => {
+            lineNameMap[l.id] = l.name?.trim();
+        });
+
+
+        const parallelPromise = downloadedOperationPlan
+            ? ScheduleService.parseParallelOperations(downloadedOperationPlan, lineNameMap)
+            : Promise.resolve([]);
+
+
+
+        Promise.all([jobsPromise, parallelPromise]).then(([planItems, parallelItems]) => {
+            const merged = [...planItems, ...parallelItems];
+            setPlanByHardware(merged);
+            if (isDisplayByHardware) setItems(merged);
+        });
+
+        ScheduleService.parseHardware(downloadedPlan).then((e) => {
+            setHardware(e);
+            if (isDisplayByHardware) setGroups(e);
+        });
+
+        SchedulerService.parseDateTimeSettings(downloadedPlan).then(setStartTimeLines);
+        setTimelineKey(prev => prev + 1);
+    }, [downloadedPlan, downloadedOperationPlan]);
+
+    useEffect(() => {
+        // console.log(planByHardware)
+    }, [planByHardware]);
 
 
 
@@ -811,8 +847,8 @@ function SchedulerPage() {
 
             let operation = {
                 lineId: "170610010000",
-                startDateTime: "2026-10-02T09:00",
-                duration: 90,
+                startDateTime: "2026-09-05T09:00",
+                duration: 180,
                 eventTypeId: 3,
                 note: "Параллельная мойка"
             }
