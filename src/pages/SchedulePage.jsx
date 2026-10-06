@@ -43,6 +43,7 @@ import {ModalColorsSettings} from "../components/scheduler/ModalColorsSettings";
 import {ModalReports} from "../components/scheduler/ModalReports";
 import Loading from "../components/loading/Loading";
 import {ModalDailyProductions} from "../components/scheduler/ModalDailyProductions";
+import {ModalAddParallelOperation} from "../components/scheduler/ModalAddParallelOperation";
 
 
 function SchedulerPage() {
@@ -92,6 +93,7 @@ function SchedulerPage() {
     const [isModalColorsSettings, setIsModalColorsSettings] = useState(false);
     const [isModalReports, setIsModalReports] = useState(false);
     const [isModalDailyProductions, setIsModalDailyProductions] = useState(false);
+    const [isModalAddParallelOperation, setIsModalAddParallelOperation] = useState(false);
 
 
     const [isSolve, setIsSolve] = useState(false);
@@ -842,17 +844,15 @@ function SchedulerPage() {
         }
     }
 
-    async function addParallelOperation(lineId, insertIndex, time, duration, type, description) {
+    async function addParallelOperation(lineId, time, duration, type, description) {
         try {
-
             let operation = {
-                lineId: "170610010000",
-                startDateTime: "2026-09-05T09:00",
-                duration: 180,
-                eventTypeId: 3,
-                note: "Параллельная мойка"
+                lineId: lineId,
+                startDateTime: time,
+                duration: duration,
+                eventTypeId: type,
+                note: description
             }
-
             await SchedulerService.addParallelOperation(operation);
             await getParallelOperations();
         } catch (e) {
@@ -1585,6 +1585,7 @@ function SchedulerPage() {
                                                              removeServiceWork={removeServiceWork}
                                                              sortRange={sortRange}
                                                              updateDelay={() => setIsModalUpdateDelay(true)}
+                                                             openModalAddParallelOperation={()=>setIsModalAddParallelOperation(true)}
                                                              removeParallelOperation={removeParallelOperation}
                 />}
 
@@ -1592,6 +1593,15 @@ function SchedulerPage() {
                     <ModalMoveJobs selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}
                                    moveJobs={moveJobs} onClose={() => setIsModalMoveJobs(false)}
                                    lines={startTimeLines} planByHardware={planByHardware}
+                    />}
+
+                {isModalAddParallelOperation &&
+                    <ModalAddParallelOperation
+                                            addParallelOperation={addParallelOperation}
+                                            onClose={() => setIsModalAddParallelOperation(false)}
+                                            lines={startTimeLines}
+                                            planByHardware={planByHardware} selectDate={selectDate}
+                                            serviceTypes={serviceTypes}
                     />}
 
                 {isModalAssignServiceWork &&

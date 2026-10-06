@@ -140,20 +140,20 @@
 .rct-item {
     margin-top: -16px ;
     height: 72px !important;
+    /*box-shadow: 0 4px 6px -2px rgba(128, 128, 128, 0.5);*/
 }
 
 /* Стиль для фактического элемента плана */
 .rct-item-fact {
     margin-top: 65px ;
     height: 56px !important;
+    /*box-shadow: 0 4px 6px -2px rgba(128, 128, 128, 0.5);*/
 }
 
 /* Параллельная сервисная операция — рисуется поверх обычных */
 .rct-item-parallel {
     height: 22px !important;
-    border-style: dashed !important;
-    border-radius: 4px;
-    box-shadow: 8px 4px 3px rgba(128, 128, 128, 0.2);
+    box-shadow: 0 4px 6px -2px rgba(128, 128, 128, 0.5);
 }
 
 /* Стиль для сервисной операции фасовки или выравнивания */
