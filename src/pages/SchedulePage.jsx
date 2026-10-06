@@ -862,6 +862,17 @@ function SchedulerPage() {
         }
     }
 
+    async function removeParallelOperation(id) {
+        try {
+            await SchedulerService.removeParallelOperation(id);
+            await getParallelOperations();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка удаления параллельной операции: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
     async function getParallelOperations() {
         try {
             const response = await SchedulerService.getParallelOperations();
@@ -1574,6 +1585,7 @@ function SchedulerPage() {
                                                              removeServiceWork={removeServiceWork}
                                                              sortRange={sortRange}
                                                              updateDelay={() => setIsModalUpdateDelay(true)}
+                                                             removeParallelOperation={removeParallelOperation}
                 />}
 
                 {isModalMoveJobs &&

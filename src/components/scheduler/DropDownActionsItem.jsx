@@ -1,9 +1,10 @@
 import React, {useEffect} from "react";
-import {isCleaningItem, isDelayItem, isFactItem} from "../../utils/scheduler/items";
+import {isCleaningItem, isDelayItem, isFactItem, isParallelOperationItem} from "../../utils/scheduler/items";
 
 
 export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs, openModalAssignSettings, selectedItems,
-                                    updateServiceWork, removeServiceWork, sortRange, updateDelay}) {
+                                    updateServiceWork, removeServiceWork, sortRange, updateDelay, openModalAddParallelOperation,
+                                    removeParallelOperation, updateParallelOperation}) {
 
     const isDateWithinLastDays = (isoDateString, days) => {
         if (!isoDateString) return false;
@@ -42,7 +43,7 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                         {!contextMenu.forCanvas &&
                             <>
 
-                                {!isDelayItem(contextMenu.item) && !isCleaningItem(contextMenu.item) &&
+                                {!isDelayItem(contextMenu.item) && !isCleaningItem(contextMenu.item) && !isParallelOperationItem(contextMenu.item) &&
                                     <>
                                         <button onClick={() => {
                                             pin()
@@ -60,6 +61,11 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                                             openModalAssignSettings()
                                         }} className={styleButton}>
                                             Добавить сервисную операцию
+                                        </button>
+                                        <button onClick={() => {
+                                            openModalAddParallelOperation()
+                                        }} className={styleButton}>
+                                            Добавить параллельную сервисную операцию
                                         </button>
                                     </>
                                 }
@@ -110,15 +116,44 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                                     </>
                                 }
 
+                                {/*Отображение для параллельной сервисной операции*/}
+                                {isParallelOperationItem(contextMenu.item) && selectedItems.length === 1 &&
+                                    <>
+                                        <button onClick={() => {
+                                            updateServiceWork()
+                                        }} className={styleButton}>
+                                            Изменить параллельную сервисную операцию
+                                        </button>
+
+                                        {/*{contextMenu.item.info.start && isDateWithinLastDays(contextMenu.item.info.start, 2) &&*/}
+                                        <button onClick={() => {
+                                            removeParallelOperation(selectedItems[0].info.parallelId)
+                                        }} className={styleButton}>
+                                            Удалить параллельную сервисную операцию
+                                        </button>
+                                        {/*}*/}
+                                    </>
+                                }
+
                             </>
                         }
                         {/*Меню вне элементов*/}
                         {contextMenu.forCanvas &&
-                            <button onClick={() => {
-                                openModalAssignSettings()
-                            }} className={styleButton}>
-                                Добавить сервисную операцию
-                            </button>
+                            <>
+                                <button onClick={() => {
+                                    openModalAssignSettings()
+                                }} className={styleButton}>
+                                    Добавить сервисную операцию
+                                </button>
+
+                                <button onClick={() => {
+                                    openModalAddParallelOperation()
+                                }} className={styleButton}>
+                                    Добавить параллельную сервисную операцию
+                                </button>
+                            </>
+
+
                         }
                     </div>
 

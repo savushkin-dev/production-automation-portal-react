@@ -733,11 +733,11 @@ export default class ScheduleService {
     }
 
     static async updateParallelOperation(operation) {
-        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/parallel-operations`, { operation })
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/parallel-operations`, operation)
     }
 
     static async removeParallelOperation(id) {
-        return $apiSchedule.delete(`${API_URL_SCHEDULER}/schedule/parallel-operations?id=` + id)
+        return $apiSchedule.delete(`${API_URL_SCHEDULER}/schedule/parallel-operations/` + id)
     }
 
 
