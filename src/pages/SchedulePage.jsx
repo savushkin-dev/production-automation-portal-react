@@ -29,7 +29,7 @@ import {
     isCleaningItem,
     isDelayItem, isFactCleaningItem,
     isFactItem,
-    isPackagedItem
+    isPackagedItem, isParallelOperationItem
 } from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
@@ -148,7 +148,7 @@ function SchedulerPage() {
     const [selectedItems, setSelectedItems] = useState([]);
     const [lastSelectedItem, setLastSelectedItem] = useState(null);
 
-    const heightGroupScheduler = activeDisplay.fact || activeDisplay.plan ? 140 : 164;
+    const heightGroupScheduler = activeDisplay.fact || activeDisplay.plan ? 120 : 184;
 
     const [clickedCameras, setClickedCameras] = useState({});
 
@@ -795,7 +795,7 @@ function SchedulerPage() {
         if (!lastItem || !currentItem) return;
 
         const groupItems = itemsArray.filter(item =>
-            item.group === groupId && !isCleaningItem(item) && !isDelayItem(item) && !isFactItem(item)
+            item.group === groupId && !isCleaningItem(item) && !isDelayItem(item) && !isFactItem(item) && !isParallelOperationItem(item)
         );
 
         const sortedGroupItems = [...groupItems].sort((a, b) => a.start_time - b.start_time);

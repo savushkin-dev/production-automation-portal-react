@@ -66,12 +66,12 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
         if (planFact) {
 
             if(isParallel) {
-                return { display: 'block', marginTop: '-20px' };
+                return { display: 'block', marginTop: '-22px' };
             }
 
             return isFactEl
-                ? (isSelected ? { display: 'block', marginTop: '70px'} : { display: 'block', marginTop: '65px'})
-                : (isLeveling ? { display: 'block', marginTop: '16px'} : { display: 'block', marginTop: '-16px'});
+                ? (isSelected ? { display: 'block', marginTop: '95px'} : { display: 'block', marginTop: '85px'})
+                : (isLeveling ? { display: 'block', marginTop: '38px'} : { display: 'block', marginTop: '6px'});
         }
 
         return { display: 'block', marginTop: '-16px'};
