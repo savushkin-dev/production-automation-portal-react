@@ -29,7 +29,7 @@ import {
     isCleaningItem,
     isDelayItem, isFactCleaningItem,
     isFactItem,
-    isPackagedItem, isParallelOperationItem
+    isParallelOperationItem
 } from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
@@ -41,9 +41,9 @@ import {ModalVersionSettings} from "../components/scheduler/ModalVersionSettings
 import {SchedulerDataTables} from "../components/scheduler/SchedulerDataTables";
 import {ModalColorsSettings} from "../components/scheduler/ModalColorsSettings";
 import {ModalReports} from "../components/scheduler/ModalReports";
-import Loading from "../components/loading/Loading";
 import {ModalDailyProductions} from "../components/scheduler/ModalDailyProductions";
 import {ModalAddParallelOperation} from "../components/scheduler/ModalAddParallelOperation";
+import {ModalUpdateParallelOperation} from "../components/scheduler/ModalUpdateParallelOperation";
 
 
 function SchedulerPage() {
@@ -94,6 +94,7 @@ function SchedulerPage() {
     const [isModalReports, setIsModalReports] = useState(false);
     const [isModalDailyProductions, setIsModalDailyProductions] = useState(false);
     const [isModalAddParallelOperation, setIsModalAddParallelOperation] = useState(false);
+    const [isModalUpdateParallelOperation, setIsModalUpdateParallelOperation] = useState(false);
 
 
     const [isSolve, setIsSolve] = useState(false);
@@ -862,6 +863,21 @@ function SchedulerPage() {
         }
     }
 
+    async function updateParallelOperation(id, duration) {
+        try {
+            let operation = {
+                id: id,
+                duration: duration
+            }
+            await SchedulerService.updateParallelOperation(operation);
+            await getParallelOperations();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка обновления параллельной операции: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
     async function removeParallelOperation(id) {
         try {
             await SchedulerService.removeParallelOperation(id);
@@ -1232,11 +1248,6 @@ function SchedulerPage() {
 
                         <div className="relative">
 
-                            <button onClick={addParallelOperation}
-                                    className="bg-red-500 px-3 mr-1 h-[30px] text-[0.900rem] font-medium transition-all duration-200 border border-gray-200 rounded-md hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 text-gray-600">
-                                Добавить параллельную операцию
-                            </button>
-
                             <button onClick={() => {
                                 navigate('/materials', {replace: false})
                             }}
@@ -1587,6 +1598,7 @@ function SchedulerPage() {
                                                              updateDelay={() => setIsModalUpdateDelay(true)}
                                                              openModalAddParallelOperation={()=>setIsModalAddParallelOperation(true)}
                                                              removeParallelOperation={removeParallelOperation}
+                                                             openModalUpdateParallelOperation={()=>setIsModalUpdateParallelOperation(true)}
                 />}
 
                 {isModalMoveJobs &&
@@ -1603,6 +1615,14 @@ function SchedulerPage() {
                                             planByHardware={planByHardware} selectDate={selectDate}
                                             serviceTypes={serviceTypes}
                     />}
+
+                {isModalUpdateParallelOperation &&
+                    <ModalUpdateParallelOperation selectedItems={selectedItems}
+                                            onClose={() => setIsModalUpdateParallelOperation(false)}
+                                            updateParallelOperation={updateParallelOperation}
+                                            serviceTypes={serviceTypes}
+                    />
+                }
 
                 {isModalAssignServiceWork &&
                     <ModalAssignServiceWork selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}

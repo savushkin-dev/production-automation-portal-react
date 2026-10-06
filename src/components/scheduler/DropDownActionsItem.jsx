@@ -4,7 +4,7 @@ import {isCleaningItem, isDelayItem, isFactItem, isParallelOperationItem} from "
 
 export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs, openModalAssignSettings, selectedItems,
                                     updateServiceWork, removeServiceWork, sortRange, updateDelay, openModalAddParallelOperation,
-                                    removeParallelOperation, updateParallelOperation}) {
+                                    removeParallelOperation, openModalUpdateParallelOperation}) {
 
     const isDateWithinLastDays = (isoDateString, days) => {
         if (!isoDateString) return false;
@@ -65,7 +65,7 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                                         <button onClick={() => {
                                             openModalAddParallelOperation()
                                         }} className={styleButton}>
-                                            Добавить параллельную сервисную операцию
+                                            Добавить параллельную операцию
                                         </button>
                                     </>
                                 }
@@ -119,19 +119,15 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                                 {/*Отображение для параллельной сервисной операции*/}
                                 {isParallelOperationItem(contextMenu.item) && selectedItems.length === 1 &&
                                     <>
-                                        <button onClick={() => {
-                                            updateServiceWork()
-                                        }} className={styleButton}>
-                                            Изменить параллельную сервисную операцию
+                                        <button onClick={openModalUpdateParallelOperation} className={styleButton}>
+                                            Изменить параллельную операцию
                                         </button>
 
-                                        {/*{contextMenu.item.info.start && isDateWithinLastDays(contextMenu.item.info.start, 2) &&*/}
                                         <button onClick={() => {
                                             removeParallelOperation(selectedItems[0].info.parallelId)
                                         }} className={styleButton}>
-                                            Удалить параллельную сервисную операцию
+                                            Удалить параллельную операцию
                                         </button>
-                                        {/*}*/}
                                     </>
                                 }
 
@@ -149,11 +145,9 @@ export function DropDownActionsItem({contextMenu, pin, unpin, openModalMoveJobs,
                                 <button onClick={() => {
                                     openModalAddParallelOperation()
                                 }} className={styleButton}>
-                                    Добавить параллельную сервисную операцию
+                                    Добавить параллельную операцию
                                 </button>
                             </>
-
-
                         }
                     </div>
 
