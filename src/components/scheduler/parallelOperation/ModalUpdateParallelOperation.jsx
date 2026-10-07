@@ -1,13 +1,13 @@
 import React, {useEffect, useState} from 'react'
-import {styleInputWithoutRounded} from "../../data/styles";
+import {styleInputWithoutRounded} from "../../../data/styles";
 import {
     convertHoursMinutesToMinutes,
     convertMinutesToHoursMinutes,
     validateHours,
     validateMinutes
-} from "../../utils/scheduler/serviceWork";
-import {GrayButton} from "./buttons/GrayButton";
-import {BlueButton} from "./buttons/BlueButton";
+} from "../../../utils/scheduler/serviceWork";
+import {GrayButton} from "../buttons/GrayButton";
+import {BlueButton} from "../buttons/BlueButton";
 
 
 export function ModalUpdateParallelOperation({onClose, selectedItems, updateParallelOperation, serviceTypes}) {

@@ -16,8 +16,8 @@ import {observer} from "mobx-react-lite";
 import {ModalConfirmation} from "../components/modal/ModalConfirmation";
 import {DropDownActionsItem} from "../components/scheduler/DropDownActionsItem";
 import {ModalMoveJobs} from "../components/scheduler/ModalMoveJobs";
-import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
-import {ModalUpdateServiceWork} from "../components/scheduler/ModalUpdateServiceWork";
+import {ModalAssignServiceWork} from "../components/scheduler/serviceWork/ModalAssignServiceWork";
+import {ModalUpdateServiceWork} from "../components/scheduler/serviceWork/ModalUpdateServiceWork";
 import {MyTimeline} from "../components/scheduler/MyTimeline";
 import {convertLinesWithTimeFields, isValidLinesDate} from "../utils/scheduler/lines";
 import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
@@ -42,8 +42,8 @@ import {SchedulerDataTables} from "../components/scheduler/SchedulerDataTables";
 import {ModalColorsSettings} from "../components/scheduler/ModalColorsSettings";
 import {ModalReports} from "../components/scheduler/ModalReports";
 import {ModalDailyProductions} from "../components/scheduler/ModalDailyProductions";
-import {ModalAddParallelOperation} from "../components/scheduler/ModalAddParallelOperation";
-import {ModalUpdateParallelOperation} from "../components/scheduler/ModalUpdateParallelOperation";
+import {ModalAddParallelOperation} from "../components/scheduler/parallelOperation/ModalAddParallelOperation";
+import {ModalUpdateParallelOperation} from "../components/scheduler/parallelOperation/ModalUpdateParallelOperation";
 
 
 function SchedulerPage() {

@@ -1,15 +1,15 @@
 import React, {useEffect, useState} from 'react'
-import {styleInputWithoutRounded} from "../../data/styles";
+import {styleInputWithoutRounded} from "../../../data/styles";
 import {
     convertHoursMinutesToMinutes,
     convertMinutesToHoursMinutes,
     validateHours,
     validateMinutes
-} from "../../utils/scheduler/serviceWork";
+} from "../../../utils/scheduler/serviceWork";
 import Select from "react-select";
-import {CustomStyle} from "../../data/styleForSelect";
-import {GrayButton} from "./buttons/GrayButton";
-import {BlueButton} from "./buttons/BlueButton";
+import {CustomStyle} from "../../../data/styleForSelect";
+import {GrayButton} from "../buttons/GrayButton";
+import {BlueButton} from "../buttons/BlueButton";
 
 
 export function ModalUpdateServiceWork({onClose, selectedItems, updateServiceWork, serviceTypes}) {

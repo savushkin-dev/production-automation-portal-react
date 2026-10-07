@@ -1,19 +1,18 @@
-import React, {useEffect, useState} from 'react'
-import {styleInputWithoutRounded} from "../../data/styles";
+import React, {useState} from 'react'
+import {styleInputWithoutRounded} from "../../../data/styles";
 import Select from "react-select";
-import {CustomStyle} from "../../data/styleForSelect";
-import {convertHoursMinutesToMinutes, validateHours, validateMinutes} from "../../utils/scheduler/serviceWork";
-import {calculateTimeToNext8AM, getLastItemIndexInGroup, getLastItemInGroup} from "../../utils/scheduler/items";
-import {GrayButton} from "./buttons/GrayButton";
-import {BlueButton} from "./buttons/BlueButton";
+import {CustomStyle} from "../../../data/styleForSelect";
+import {convertHoursMinutesToMinutes, validateHours, validateMinutes} from "../../../utils/scheduler/serviceWork";
+import {calculateTimeToNext8AM, getLastItemInGroup} from "../../../utils/scheduler/items";
+import {GrayButton} from "../buttons/GrayButton";
+import {BlueButton} from "../buttons/BlueButton";
 
 
-export function ModalAssignServiceWork({
-                                  onClose, assignServiceWork,
-                                  selectedItems,
-                                  planByHardware,
-                                  lines, selectDate, serviceTypes
-                              }) {
+export function ModalAddParallelOperation({
+                                              onClose, addParallelOperation,
+                                              planByHardware,
+                                              lines, selectDate, serviceTypes
+                                          }) {
 
     const optLines = lines.map(line => ({
         value: line.lineId,
@@ -26,8 +25,6 @@ export function ModalAssignServiceWork({
     }));
 
     const [selectLine, setSelectLine] = useState(optLines[0]);
-    const [insertIndex, setInsertIndex] = useState(1);
-    const [isLastPos, setIsLastPos] = useState(false);
     const [time, setTime] = useState(new Date(selectDate).toISOString().replace(/T.*/, 'T08:00'));
     const [descriptionOperation, setDescriptionOperation] = useState("");
     const [selectService, setSelectService] = useState(optServiceTypes[0]);
@@ -35,10 +32,9 @@ export function ModalAssignServiceWork({
     const [hour, setHour] = useState(1);
     const [min, setMin] = useState(0);
 
-    const [isAddingEmptyLine, setIsAddingEmptyLine] = useState(false);
 
     function assign() {
-        assignServiceWork(selectLine.value, insertIndex - 1, time, getTotalMinutes(), selectService.value, descriptionOperation, isAddingEmptyLine);
+        addParallelOperation(selectLine.value, time, getTotalMinutes(), selectService.value, descriptionOperation);
     }
 
     const getTotalMinutes = () => {
@@ -58,14 +54,8 @@ export function ModalAssignServiceWork({
     const handleChangeSelectLine = (event) => {
         if (event != null) {
             setSelectLine(event);
-            if (isLastPos) {
-                setInsertIndex(getLastItemIndexInGroup(event.value, planByHardware) + 2)
-            }
         } else {
             setSelectLine(optLines[1]);
-            if (isLastPos) {
-                setInsertIndex(getLastItemIndexInGroup(optLines[1].value, planByHardware) + 2)
-            }
         }
     };
 
@@ -73,29 +63,10 @@ export function ModalAssignServiceWork({
         event != null ? setSelectService(event) : setSelectService(optServiceTypes[1]);
     };
 
-    useEffect(()=>{
-        const hasJobsOnLine = planByHardware.some(job => job.group === selectLine.value);
-        if (hasJobsOnLine) {
-            setIsAddingEmptyLine(false)
-        } else {
-            setIsAddingEmptyLine(true)
-        }
-    }, [selectLine])
-
-    const handleChangeInsertIndex = (event) => {
-        setInsertIndex(event)
-    };
-
-    const handleChangeIsLastPos = (event) => {
-        setIsLastPos(event)
-        if (event === true) {
-            setInsertIndex(getLastItemIndexInGroup(selectLine.value, planByHardware) + 2)
-        }
-    };
 
     const handleChangeFillingVoids = (event) => {
         let res = getLastItemInGroup(selectLine.value, planByHardware)
-        if(!res){
+        if (!res) {
             setHour(24)
             setMin(0)
             return
@@ -115,7 +86,7 @@ export function ModalAssignServiceWork({
             <div className="fixed inset-0 flex  items-center justify-center p-4 z-100 pointer-events-none"
                  style={{zIndex: 100}}>
                 <div className="w-auto min-w-[700px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
-                    <h1 className="text-xl font-medium text-start mb-2">Добавление сервисной операции</h1>
+                    <h1 className="text-xl font-medium text-start mb-2">Добавление параллельной сервисной операции</h1>
                     <hr/>
 
                     <div className="flex flex-row my-2">
@@ -127,57 +98,23 @@ export function ModalAssignServiceWork({
                                 options={optLines}
                                 isClearable={false} isSearchable={false}/>
                     </div>
-                    {!isAddingEmptyLine &&
-                        <div className="flex flex-row my-2">
-                            <span className="py-1 font-medium w-1/3">На какую позицию добавить:</span>
-                            <div className="w-2/3 flex flex-row">
-                                <div style={{display: 'flex', alignItems: 'center'}}
-                                     className="font-medium w-[100%] ml-2">
-                                    <input className={styleInputWithoutRounded + "rounded w-[100%]"}
-                                           type="number"
-                                           min={0}
-                                           value={insertIndex}
-                                           onChange={(e) => handleChangeInsertIndex(e.target.value)}
-                                           style={{
-                                               paddingRight: '50%',
-                                           }}
-                                    />
-                                    <span className="text-sm" style={{
-                                        marginLeft: '-80px',
-                                        cursor: 'pointer',
-                                    }}>
-                                        В конец
-                                    </span>
-                                    <input className={styleInputWithoutRounded}
-                                           type="checkbox"
-                                           checked={isLastPos}
-                                           onChange={(e) => handleChangeIsLastPos(e.target.checked || "")}
-                                           style={{
-                                               marginLeft: '5px',
-                                               cursor: 'pointer',
-                                           }}
-                                    />
 
-                                </div>
+
+                    <div className="flex flex-row my-2">
+                        <span className="py-1 font-medium w-1/3">Начало сервисной операции:</span>
+                        <div className="w-2/3 flex flex-row">
+                            <div style={{display: 'flex', alignItems: 'center'}}
+                                 className="font-medium w-[100%] ml-2">
+                                <input className={styleInputWithoutRounded + "rounded w-[100%]"}
+                                       type="datetime-local"
+                                       min={0}
+                                       value={time}
+                                       onChange={(e) => setTime(e.target.value)}
+                                />
                             </div>
                         </div>
-                    }
-                    {isAddingEmptyLine &&
-                        <div className="flex flex-row my-2">
-                            <span className="py-1 font-medium w-1/3">Начало сервисной операции:</span>
-                            <div className="w-2/3 flex flex-row">
-                                <div style={{display: 'flex', alignItems: 'center'}}
-                                     className="font-medium w-[100%] ml-2">
-                                    <input className={styleInputWithoutRounded + "rounded w-[100%]"}
-                                           type="datetime-local"
-                                           min={0}
-                                           value={time}
-                                           onChange={(e) => setTime(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    }
+                    </div>
+
 
                     <div className="flex flex-row my-2 font-medium">
                         <span className="py-1 font-medium w-1/3">Длительность операции:</span>
@@ -200,7 +137,8 @@ export function ModalAssignServiceWork({
 
                             <button
                                 onClick={handleChangeFillingVoids}
-                                className=" text-xs h-7 font-medium px-2 py-1 rounded text-white bg-gray-700 hover:bg-gray-600">Определить время до
+                                className=" text-xs h-7 font-medium px-2 py-1 rounded text-white bg-gray-700 hover:bg-gray-600">Определить
+                                время до
                                 08:00
                             </button>
                         </div>
@@ -218,8 +156,8 @@ export function ModalAssignServiceWork({
                     <div className="flex flex-row my-2 font-medium">
                         <span className="py-1 font-medium w-1/3">Описание (опционально):</span>
                         <textarea className={styleInputWithoutRounded + " h-[68px] rounded ml-4 w-2/3"}
-                               value={descriptionOperation}
-                               onChange={(e) => setDescriptionOperation(e.target.value)}
+                                  value={descriptionOperation}
+                                  onChange={(e) => setDescriptionOperation(e.target.value)}
                         />
                     </div>
 
