@@ -1,5 +1,5 @@
 // components/scheduler/TimelineRenderers.js
-import React, {useEffect} from "react";
+import React from "react";
 import moment from "moment/moment";
 import {
     isCleaningDelayItem,
@@ -7,8 +7,7 @@ import {
     isDelayItem, isFactCleaningItem,
     isFactItem,
     isMaintenanceItem,
-    isParallelOperationItem,
-    isMaintenancePackingOrLeveling, isSimpleItem, isFactElement
+    isParallelOperationItem, isSimpleItem, isFactElement
 } from "../../utils/scheduler/items";
 import {DEFAULT_COLORS, DEFAULT_WIDTHS, getStoredColor, getStoredWidth, STORAGE_KEYS} from "./utils/colorsUtils";
 import {ItemType} from "../../services/ScheduleService";
@@ -85,7 +84,6 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
 
         const isFactEl = isFactItem(item) || isFactCleaningItem(item);
-        // const isFactEl = isFactItem(item);
         const isLeveling =  isDelayItem(item);
         const isParallelOper = isParallelOperationItem(item);
 
@@ -245,11 +243,6 @@ export const createItemRendererScheduler = (selectedItems, selectedItem, activeD
 
                                     {isCleaningItem(item) &&
                                         <div className="flex justify-start">
-                                            {/*{item.info.cleaningDelay < 0 &&*/}
-                                            {/*    <span className="text-blue-600 pr-2 h-[20px] w-[20px]">*/}
-                                            {/*        <i className="fa-solid fa-triangle-exclamation"></i>*/}
-                                            {/*    </span>*/}
-                                            {/*}*/}
                                             <span className="">{item.title}</span>
                                         </div>
                                     }

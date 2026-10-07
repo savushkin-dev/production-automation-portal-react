@@ -135,12 +135,12 @@ export function ModalAddParallelOperation({
                                 <span className="py-1 font-medium text-center w-[40px] px-1">мин.</span>
                             </div>
 
-                            <button
-                                onClick={handleChangeFillingVoids}
-                                className=" text-xs h-7 font-medium px-2 py-1 rounded text-white bg-gray-700 hover:bg-gray-600">Определить
-                                время до
-                                08:00
-                            </button>
+                            {/*<button*/}
+                            {/*    onClick={handleChangeFillingVoids}*/}
+                            {/*    className=" text-xs h-7 font-medium px-2 py-1 rounded text-white bg-gray-700 hover:bg-gray-600">Определить*/}
+                            {/*    время до*/}
+                            {/*    08:00*/}
+                            {/*</button>*/}
                         </div>
 
                     </div>

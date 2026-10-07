@@ -407,25 +407,6 @@ function SchedulerPage() {
         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
     }
 
-    // useEffect(() => {
-    //     if (downloadedPlan) {
-    //         ScheduleService.parseHardware(downloadedPlan).then((e) => {
-    //             setHardware(e);
-    //             if (isDisplayByHardware)
-    //                 setGroups(e);
-    //         });
-    //         ScheduleService.parsePlanByHardware(downloadedPlan).then((e) => {
-    //             setPlanByHardware(e);
-    //             if (isDisplayByHardware)
-    //                 setItems(e);
-    //         });
-    //         SchedulerService.parseDateTimeSettings(downloadedPlan).then((e) => {
-    //             setStartTimeLines(e)
-    //         })
-    //         setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
-    //     }
-    // }, [downloadedPlan]);
-
     useEffect(() => {
         if (!downloadedPlan) return;
 
@@ -436,12 +417,9 @@ function SchedulerPage() {
             lineNameMap[l.id] = l.name?.trim();
         });
 
-
         const parallelPromise = downloadedOperationPlan
             ? ScheduleService.parseParallelOperations(downloadedOperationPlan, lineNameMap)
             : Promise.resolve([]);
-
-
 
         Promise.all([jobsPromise, parallelPromise]).then(([planItems, parallelItems]) => {
             const merged = [...planItems, ...parallelItems];
@@ -457,11 +435,6 @@ function SchedulerPage() {
         SchedulerService.parseDateTimeSettings(downloadedPlan).then(setStartTimeLines);
         setTimelineKey(prev => prev + 1);
     }, [downloadedPlan, downloadedOperationPlan]);
-
-    useEffect(() => {
-        // console.log(planByHardware)
-    }, [planByHardware]);
-
 
 
     function formatCooldown(seconds) {
@@ -1007,12 +980,6 @@ function SchedulerPage() {
     function sortRange(sortUp) {
         const filteredItems = selectedItems
             .filter(item => !isFactItem(item));
-
-        // if (filteredItems.some(item => isPackagedItem(item) || isMaintenanceItem(item))) {
-        //     setMsg("Сортировка невозможна. В выделенном диапазоне присутствуют сервисные операции.");
-        //     setIsModalNotify(true);
-        //     return;
-        // }
 
         const groupId = filteredItems[0].group;
         const sortedSelected = filteredItems
