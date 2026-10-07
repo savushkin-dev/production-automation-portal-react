@@ -1,9 +1,11 @@
-//Проверяет или это отдельный фактический элемент
 import {ItemType} from "../../services/ScheduleService";
 
-export function isFactItem(item) {
-    return item.id.endsWith("fact_camera") || item.id.endsWith("fact_cleaning")
-}
+
+//Определяет что это какой-то из фактических элементов
+export const isFactElement = (item) =>
+    isFactItem(item) || isFactCleaningItem(item);
+
+export const isFactItem = (item) => item?.info.itemType === ItemType.FACT;
 
 //Определяет что это обычная задача, а не задержка, мойка и тд
 export const isSimpleItem = (item) => item?.info.itemType === ItemType.SIMPLE;
@@ -17,9 +19,7 @@ export function isPackagedItem(item) {
 }
 
 //Определяет является ли сервисной операцией
-export function isMaintenanceItem(item) {
-    return item.info.maintenance === true
-}
+export const isMaintenanceItem = (item) => item?.info.itemType === ItemType.MAINTENANCE;
 
 export const getLastItemIndexInGroup = (groupId, plan) => {
     const groupItems = filterGroupItems(groupId, plan)

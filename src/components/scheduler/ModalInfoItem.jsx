@@ -5,7 +5,7 @@ import {
     isFactCleaningItem,
     isFactItem,
     isPackagedItem,
-    isParallelOperationItem
+    isParallelOperationItem, isSimpleItem
 } from "../../utils/scheduler/items";
 import {formatIsoToDateOnly, formatIsoToDatetimeRegex} from "../../utils/date/date";
 import SchedulerService from "../../services/ScheduleService";
@@ -22,7 +22,6 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
 
     const isFact = isPackagedItem(item);
     const isLinesMatch = item.info?.lineIdFact === item.info?.lineInfo?.id;
-    const isFactEl = isFactItem(item);
 
     async function clickFindCameraFact(){
         await determineCameraFact(item.info.snpz);
@@ -34,8 +33,9 @@ export function ModalInfoItem({item, onClose, lines, determineFactPlace, determi
     }
 
     useEffect(()=>{
-        console.log(item)
-        fetchDowntimePeriods();
+        if(isSimpleItem(item) || isFactItem(item)) {
+            fetchDowntimePeriods();
+        }
     }, [])
 
     async function fetchDowntimePeriods() {
