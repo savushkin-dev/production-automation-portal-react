@@ -27,7 +27,7 @@ import {
     calculateTimeToNext8AM,
     filterGroupItems, getLastItemIndexInGroup, isCleaningDelayItem,
     isCleaningItem,
-    isDelayItem, isFactCleaningItem,
+    isDelayItem, isFactCleaningItem, isFactElement,
     isFactItem,
     isParallelOperationItem
 } from "../utils/scheduler/items";
@@ -771,7 +771,7 @@ function SchedulerPage() {
         if (!lastItem || !currentItem) return;
 
         const groupItems = itemsArray.filter(item =>
-            item.group === groupId && !isCleaningItem(item) && !isDelayItem(item) && !isFactItem(item) && !isParallelOperationItem(item)
+            item.group === groupId && !isCleaningItem(item) && !isDelayItem(item) && !isFactElement(item)
         );
 
         const sortedGroupItems = [...groupItems].sort((a, b) => a.start_time - b.start_time);
