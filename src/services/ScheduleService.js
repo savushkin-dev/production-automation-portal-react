@@ -428,7 +428,7 @@ export default class ScheduleService {
                 }
             };
             planByHardware[i].info = { //Доп информация
-                itemType: ItemType.SIMPLE, //Для идентификации элемента на плане
+                itemType: json.jobs[i].maintenance? ItemType.MAINTENANCE : ItemType.SIMPLE, //Для идентификации элемента на плане
                 name: json.jobs[i].name,
                 start: json.jobs[i].startProductionDateTime,
                 end: planEndDateTime,
@@ -632,11 +632,11 @@ export default class ScheduleService {
     }
 
     static async updateServiceWork(lineId, updateIndex, durationMinutes, maintenanceTypeId, maintenanceNote) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, updateIndex, durationMinutes, maintenanceTypeId, maintenanceNote})
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, updateIndex, durationMinutes, maintenanceTypeId, maintenanceNote})
     }
 
     static async removeServiceWork(lineId, removeIndex) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, removeIndex})
+        return $apiSchedule.delete(`${API_URL_SCHEDULER}/schedule/maintenance?lineId=` + lineId +`&removeIndex=` + removeIndex)
     }
 
     static async sortSchedule() {
