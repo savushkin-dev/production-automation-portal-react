@@ -1,0 +1,19 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+ENV HOST=0.0.0.0 \
+    PORT=3000 \
+    BROWSER=none \
+    CHOKIDAR_USEPOLLING=true \
+    WATCHPACK_POLLING=true \
+    DANGEROUSLY_DISABLE_HOST_CHECK=true
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

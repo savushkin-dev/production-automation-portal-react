@@ -1,0 +1,19 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: papr-frontend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      # REACT_APP_* are inlined into the browser bundle, so use host-visible
+      # URLs (localhost), not host.docker.internal.
+      REACT_APP_API_SCHEDULER_URL: ${REACT_APP_API_SCHEDULER_URL:-http://localhost:8080}
+      REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL}
+      REACT_APP_PRODUCTION_BRANCH_NAME: ${REACT_APP_PRODUCTION_BRANCH_NAME:-}
+    volumes:
+      - .:/app
+      - /app/node_modules
+    stdin_open: true
+    tty: true
