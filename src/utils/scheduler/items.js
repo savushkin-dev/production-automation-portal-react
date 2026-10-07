@@ -13,12 +13,12 @@ export const isSimpleItem = (item) => item?.info.itemType === ItemType.SIMPLE;
 //Определяет что это параллельная сервисная операция
 export const isParallelOperationItem = (item) => item?.info.itemType === ItemType.PARALLEL_OPERATION;
 
-//Определяет если ли уже факт
+//Определяет если ли уже факт (расфасованный)
 export function isPackagedItem(item) {
     return item.info.startFact !== null
 }
 
-//Определяет является ли сервисной операцией
+//Определяет что это сервисная операция
 export const isMaintenanceItem = (item) => item?.info.itemType === ItemType.MAINTENANCE;
 
 export const getLastItemIndexInGroup = (groupId, plan) => {
