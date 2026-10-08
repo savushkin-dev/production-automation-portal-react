@@ -1049,17 +1049,16 @@ function SchedulerPage() {
         }
 
         let successCount = 0;
-        let errorCount = 0;
         const errors = [];
 
         for (const line of allLines) {
             const lineId = line.lineId || line.id || line.value;
 
-            const lineItems = planByHardware?.filter(item =>
-                item.info?.lineInfo?.id === lineId
-            ) || [];
-
-            const filteredItems = filterGroupItems(lineId, lineItems);
+            const filteredItems = planByHardware?.filter(item =>
+                item.group === lineId &&
+                !isParallelOperationItem(item) &&
+                !isFactElement(item)
+            ).sort((a, b) => a.start_time - b.start_time) || [];
 
             const hasJobsOnLine = filteredItems.length > 0;
 
@@ -1111,7 +1110,6 @@ function SchedulerPage() {
                     successCount++;
                 }
             } catch (error) {
-                errorCount++;
                 errors.push({lineId, error: error.response?.data?.message || error.message});
                 console.error(`Ошибка при добавлении на линию ${lineId}:`, error);
             }
