@@ -1,6 +1,6 @@
 import $apiSchedule, {API_URL_SCHEDULER} from "../http/scheduler";
 import moment from "moment/moment";
-import {isCleaningItem, isDelayItem, isFactItem} from "../utils/scheduler/items";
+import {isCleaningItem, isDelayItem, isFactItem, isMaintenanceItem, isSimpleItem} from "../utils/scheduler/items";
 
 export let hardware = []
 export let planByHardware = []
@@ -528,7 +528,7 @@ export default class ScheduleService {
 
         // Исключаем cleaning и фактические элементы из группы
         const groupItems = allItems.filter(i =>
-            i.group === item.group && !isCleaningItem(i) && !isDelayItem(i) && !isFactItem(i)
+            i.group === item.group && (isSimpleItem(i) || isMaintenanceItem(i))
         )
 
         const sorted = groupItems.sort((a, b) =>

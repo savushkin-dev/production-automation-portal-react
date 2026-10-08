@@ -39,7 +39,7 @@ export const getLastItemInGroup = (groupId, plan) => {
 
 export const filterGroupItems = (groupId, plan) => {
     // Фильтруем элементы по группе и ИСКЛЮЧАЕМ мойки и фактические элементы
-    return plan.filter(item => item.group === groupId && !isCleaningItem(item) && !isDelayItem(item) && !isFactItem(item))
+    return plan.filter(item => item.group === groupId && (isSimpleItem(item) || isMaintenanceItem(item)))
         .sort((a, b) => a.start_time - b.start_time);
 }
 

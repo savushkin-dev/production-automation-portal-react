@@ -28,8 +28,8 @@ import {
     filterGroupItems, getLastItemIndexInGroup, isCleaningDelayItem,
     isCleaningItem,
     isDelayItem, isFactCleaningItem, isFactElement,
-    isFactItem,
-    isParallelOperationItem
+    isFactItem, isMaintenanceItem,
+    isParallelOperationItem, isSimpleItem
 } from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
@@ -771,7 +771,7 @@ function SchedulerPage() {
         if (!lastItem || !currentItem) return;
 
         const groupItems = itemsArray.filter(item =>
-            item.group === groupId && !isCleaningItem(item) && !isDelayItem(item) && !isFactElement(item)
+            item.group === groupId && (isSimpleItem(item) || isMaintenanceItem(item))
         );
 
         const sortedGroupItems = [...groupItems].sort((a, b) => a.start_time - b.start_time);
