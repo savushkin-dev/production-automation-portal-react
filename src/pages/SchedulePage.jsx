@@ -836,11 +836,13 @@ function SchedulerPage() {
         }
     }
 
-    async function updateParallelOperation(id, duration) {
+    async function updateParallelOperation(id, duration, type, description) {
         try {
             let operation = {
                 id: id,
-                duration: duration
+                duration: duration,
+                eventTypeId: type,
+                note: description
             }
             await SchedulerService.updateParallelOperation(operation);
             await getParallelOperations();

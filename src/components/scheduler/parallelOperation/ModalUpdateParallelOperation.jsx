@@ -8,16 +8,29 @@ import {
 } from "../../../utils/scheduler/serviceWork";
 import {GrayButton} from "../buttons/GrayButton";
 import {BlueButton} from "../buttons/BlueButton";
+import Select from "react-select";
+import {CustomStyle} from "../../../data/styleForSelect";
 
 
 export function ModalUpdateParallelOperation({onClose, selectedItems, updateParallelOperation, serviceTypes}) {
+
+    const optServiceTypes = serviceTypes.map(service => ({
+        value: service.id,
+        label: service.name
+    }));
+
+    const initialLabel = selectedItems[0].info.name.trim();
+    const initialService = optServiceTypes.find(service => service.label === initialLabel);
+
+    const [selectService, setSelectService] = useState(initialService);
+    const [descriptionOperation, setDescriptionOperation] = useState(selectedItems[0].info.maintenanceNote.trim() || "");
 
     const [hour, setHour] = useState(0);
     const [min, setMin] = useState(0);
 
     function update() {
         const totalMinutes = convertHoursMinutesToMinutes(hour, min)
-        updateParallelOperation(selectedItems[0].info.parallelId, totalMinutes)
+        updateParallelOperation(selectedItems[0].info.parallelId, totalMinutes, selectService.value, descriptionOperation)
     }
 
     useEffect(()=>{
@@ -36,6 +49,10 @@ export function ModalUpdateParallelOperation({onClose, selectedItems, updatePara
         setMin(validatedValue);
     }
 
+    const handleChangeSelectService = (event) => {
+        event != null ? setSelectService(event) : setSelectService(optServiceTypes[1]);
+    };
+
     return (
         <>
             <div
@@ -45,7 +62,7 @@ export function ModalUpdateParallelOperation({onClose, selectedItems, updatePara
             <div className="fixed inset-0 flex  items-center justify-center p-4 z-100 pointer-events-none"
                  style={{zIndex: 100}}>
                 <div className="w-auto min-w-[600px] bg-white rounded-lg p-5 px-8 pointer-events-auto">
-                    <h1 className="text-xl font-medium text-start mb-2">Изменение сервисной операции</h1>
+                    <h1 className="text-xl font-medium text-start mb-2">Изменение параллельной операции</h1>
                     <hr/>
 
                     <div className="flex flex-row my-2 font-medium">
@@ -66,6 +83,24 @@ export function ModalUpdateParallelOperation({onClose, selectedItems, updatePara
                             <span className="py-1 font-medium text-center w-[40px]">мин.</span>
                         </div>
 
+                    </div>
+
+                    <div className="flex flex-row my-2">
+                        <span className="py-1 font-medium w-1/2">Выберите операцию:</span>
+                        <Select className=" ml-4 py-1 font-medium text-md w-1/2"
+                                value={selectService}
+                                onChange={handleChangeSelectService}
+                                styles={CustomStyle}
+                                options={optServiceTypes}
+                                isClearable={false} isSearchable={false}/>
+                    </div>
+
+                    <div className="flex flex-row my-2 font-medium">
+                        <span className="py-1 font-medium w-1/2">Описание (опционально):</span>
+                        <textarea className={styleInputWithoutRounded + " h-[68px] rounded ml-4 w-1/2"}
+                                  value={descriptionOperation}
+                                  onChange={(e) => setDescriptionOperation(e.target.value)}
+                        />
                     </div>
 
 
