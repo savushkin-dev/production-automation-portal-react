@@ -1,11 +1,11 @@
 import React, {useEffect, useState} from 'react'
-import {styleInputWithoutRounded} from "../../data/styles";
+import {styleInputWithoutRounded} from "../../../data/styles";
 import Select from "react-select";
-import {CustomStyle} from "../../data/styleForSelect";
-import {convertHoursMinutesToMinutes, validateHours, validateMinutes} from "../../utils/scheduler/serviceWork";
-import {calculateTimeToNext8AM, getLastItemIndexInGroup, getLastItemInGroup} from "../../utils/scheduler/items";
-import {GrayButton} from "./buttons/GrayButton";
-import {BlueButton} from "./buttons/BlueButton";
+import {CustomStyle} from "../../../data/styleForSelect";
+import {convertHoursMinutesToMinutes, validateHours, validateMinutes} from "../../../utils/scheduler/serviceWork";
+import {calculateTimeToNext8AM, getLastItemIndexInGroup, getLastItemInGroup} from "../../../utils/scheduler/items";
+import {GrayButton} from "../buttons/GrayButton";
+import {BlueButton} from "../buttons/BlueButton";
 
 
 export function ModalAssignServiceWork({

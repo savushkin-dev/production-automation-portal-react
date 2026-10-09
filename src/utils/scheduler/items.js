@@ -1,22 +1,25 @@
-//Проверяет или это отдельный фактический элемент
 import {ItemType} from "../../services/ScheduleService";
 
-export function isFactItem(item) {
-    return item.id.endsWith("fact_camera") || item.id.endsWith("fact_cleaning")
-}
+
+//Определяет что это какой-то из фактических элементов
+export const isFactElement = (item) =>
+    isFactItem(item) || isFactCleaningItem(item);
+
+export const isFactItem = (item) => item?.info.itemType === ItemType.FACT;
 
 //Определяет что это обычная задача, а не задержка, мойка и тд
 export const isSimpleItem = (item) => item?.info.itemType === ItemType.SIMPLE;
 
-//Определяет если ли уже факт
+//Определяет что это параллельная сервисная операция
+export const isParallelOperationItem = (item) => item?.info.itemType === ItemType.PARALLEL_OPERATION;
+
+//Определяет если ли уже факт (расфасованный)
 export function isPackagedItem(item) {
     return item.info.startFact !== null
 }
 
-//Определяет является ли сервисной операцией
-export function isMaintenanceItem(item) {
-    return item.info.maintenance === true
-}
+//Определяет что это сервисная операция
+export const isMaintenanceItem = (item) => item?.info.itemType === ItemType.MAINTENANCE;
 
 export const getLastItemIndexInGroup = (groupId, plan) => {
     const groupItems = filterGroupItems(groupId, plan)
@@ -36,7 +39,7 @@ export const getLastItemInGroup = (groupId, plan) => {
 
 export const filterGroupItems = (groupId, plan) => {
     // Фильтруем элементы по группе и ИСКЛЮЧАЕМ мойки и фактические элементы
-    return plan.filter(item => item.group === groupId && !isCleaningItem(item) && !isDelayItem(item) && !isFactItem(item))
+    return plan.filter(item => item.group === groupId && (isSimpleItem(item) || isMaintenanceItem(item)))
         .sort((a, b) => a.start_time - b.start_time);
 }
 
