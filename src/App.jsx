@@ -14,6 +14,7 @@ import {configureMomentLocale} from "./utils/date/momentConfig";
 import AuthorizationScheduler from "./pages/AuthorizationScheduler";
 import ReportMonitorPage from "./pages/ReportMonitorPage";
 import MaterialsPage from "./pages/MaterialsPage";
+import EmployeePlanningPage from "./pages/EmployeePlanningPage";
 
 
 function App() {
@@ -40,6 +41,7 @@ function App() {
                     <Route path="/" element={<ReportsPage/>}/>
                     <Route path="/report" element={<ViewReportPage/>}/>
                     <Route path="/scheduler" element={<SchedulePage/>}/>
+                    <Route path="/employee" element={<EmployeePlanningPage/>}/>
                     <Route path="/tracktrace" element={<TrackTracePage/>}/>
 
                     <Route path="/materials" element={<MaterialsPage/>}/>
