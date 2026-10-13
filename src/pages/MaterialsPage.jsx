@@ -52,9 +52,6 @@ function MaterialsPage() {
 
     const [isImporting, setIsImporting] = useState(false);
 
-    // Ref для скрытого input
-    const fileInputRef = useRef(null);
-
     const displayProducts = useMemo(() => {
         return (products || []).map(product => {
             const groupedMaterials = {};
@@ -281,14 +278,13 @@ function MaterialsPage() {
             setIsImporting(true);
             setMsg('Обновление справочников. Пожалуйста подождите.');
 
-            // Sprog — обязательно дождаться
             await MaterialService.importSprog();
+            await MaterialService.importMt()
 
             // Остальные — параллельно
             await Promise.all([
                 MaterialService.importRnpp(),
-                MaterialService.importPp(),
-                MaterialService.importMt(),
+                MaterialService.importPp()
             ]);
 
             setIsModalNotify(true);
