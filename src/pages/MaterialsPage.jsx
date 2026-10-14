@@ -278,13 +278,14 @@ function MaterialsPage() {
             setIsImporting(true);
             setMsg('Обновление справочников. Пожалуйста подождите.');
 
+            // Сначала загружаем программы SPROG, затем нормы RNPP
             await MaterialService.importSprog();
-            await MaterialService.importMt()
 
             // Остальные — параллельно
             await Promise.all([
                 MaterialService.importRnpp(),
-                MaterialService.importPp()
+                MaterialService.importPp(),
+                MaterialService.importMt()
             ]);
 
             setIsModalNotify(true);
