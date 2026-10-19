@@ -281,12 +281,20 @@ function MaterialsPage() {
             // Сначала загружаем программы SPROG, затем нормы RNPP
             await MaterialService.importSprog();
 
-            // Остальные — параллельно
-            await Promise.all([
+            // Остальные — параллельно, собираем ВСЕ ошибки
+            const results = await Promise.allSettled([
                 MaterialService.importRnpp(),
                 MaterialService.importPp(),
                 MaterialService.importMt()
             ]);
+
+            const errors = results
+                .filter(r => r.status === 'rejected')
+                .map(r => r.reason?.response?.data?.message || r.reason?.message || 'unknown');
+
+            if (errors.length > 0) {
+                throw new Error(errors.join('; '));
+            }
 
             setIsModalNotify(true);
             setMsg('Справочные данные успешно обновлены!');
