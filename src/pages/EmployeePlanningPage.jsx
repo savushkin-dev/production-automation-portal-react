@@ -20,57 +20,93 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 // ─────────────────────────────────────────────
-// Статичные данные
+// Справочники и данные
 // ─────────────────────────────────────────────
+const DAYS_IN_MONTH = 31;
+const MONTH_NAME = "Октябрь 2026";
 
-const INITIAL_EMPLOYEES = [
-    { id: "e1", name: "Иванов И.И." },
-    { id: "e2", name: "Петров П.П." },
-    { id: "e3", name: "Сидоров С.С." },
-    { id: "e4", name: "Кузнецов К.К." },
-    { id: "e5", name: "Смирнов С.С." },
-    { id: "e6", name: "Попов П.П." },
-    { id: "e7", name: "Васильев В.В." },
-    { id: "e8", name: "Соколов С.С." },
-    { id: "e9", name: "Михайлов М.М." },
-    { id: "e10", name: "Новиков Н.Н." },
-    { id: "e11", name: "Фёдоров Ф.Ф." },
-    { id: "e12", name: "Морозов М.М." },
+const SHIFT_TYPES = {
+    D: { code: 'Д', label: 'Дневная', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+    N: { code: 'Н', label: 'Ночная', color: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
+    O: { code: 'О', label: 'Отдых', color: 'bg-gray-100 text-gray-500 border-gray-200' },
+    V: { code: 'В', label: 'Выходной', color: 'bg-red-50 text-red-600 border-red-100' },
+    B: { code: 'Б', label: 'Больничный', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+};
+
+const BRIGADES = Array.from({ length: 10 }).map((_, i) => ({
+    id: `b${i + 1}`,
+    name: `Бригада ${i + 1}`,
+    employees: Array.from({ length: 5 }).map((_, j) => ({
+        id: `e${i + 1}-${j + 1}`,
+        name: `Сотр. ${i + 1}.${j + 1}`,
+        brigadeId: `b${i + 1}`
+    })),
+}));
+
+const ALL_EMPLOYEES = BRIGADES.flatMap(b => b.employees);
+const getEmpById = (id) => ALL_EMPLOYEES.find(e => e.id === id);
+
+const LINES = [
+    { id: 'l1', name: 'Линия 1/1' },
+    { id: 'l2', name: 'Линия 2/1' },
+    { id: 'l3', name: 'Линия 3/1' },
+    { id: 'l4', name: 'Линия 4/1' },
+    { id: 'l5', name: 'Линия 5/1' },
+    { id: 'l6', name: 'Линия 6/1' },
+    { id: 'l7', name: 'Линия 7/1' },
+    { id: 'l8', name: 'Линия 8/1' },
 ];
 
-const EMPTY_SLOTS = () => Array(6).fill(null);
+const generateLinePlan = () => {
+    const plan = {};
+    LINES.forEach((line, lineIdx) => {
+        plan[line.id] = [];
+        for (let i = 0; i < DAYS_IN_MONTH; i++) {
+            const dayBrigade = BRIGADES[(i + lineIdx) % 10];
+            const nightBrigade = BRIGADES[(i + lineIdx + 5) % 10];
+            plan[line.id].push({
+                D: { brigadeId: dayBrigade.id, employees: dayBrigade.employees.map(e => e.id) },
+                N: { brigadeId: nightBrigade.id, employees: nightBrigade.employees.map(e => e.id) }
+            });
+        }
+    });
+    return plan;
+};
 
-const INITIAL_SHIFTS = [
-    {
-        id: "day-2026-10-12",
-        type: "day",
-        label: "Дневная смена",
-        time: "08:00 – 20:00",
-        slots: EMPTY_SLOTS(),
-    },
-    {
-        id: "night-2026-10-12",
-        type: "night",
-        label: "Ночная смена",
-        time: "20:00 – 08:00",
-        slots: EMPTY_SLOTS(),
-    },
-];
+const generateEmployeePlan = () => {
+    const empPlan = {};
+
+    ALL_EMPLOYEES.forEach((emp, index) => {
+        empPlan[emp.id] = [];
+        for (let day = 0; day < DAYS_IN_MONTH; day++) {
+            const seed = (day + index * 3) % 10;
+
+            if (seed === 0 || seed === 1) empPlan[emp.id].push('D');
+            else if (seed === 2 || seed === 3) empPlan[emp.id].push('N');
+            else if (seed === 4 || seed === 5) empPlan[emp.id].push('O');
+            else if (seed === 6) empPlan[emp.id].push('V');
+            else if (seed === 7 && index % 7 === 0) empPlan[emp.id].push('B');
+            else empPlan[emp.id].push('O');
+        }
+    });
+
+    return empPlan;
+};
 
 // ─────────────────────────────────────────────
-// Draggable-карточка сотрудника
+// Компоненты Drag-and-Drop
 // ─────────────────────────────────────────────
 
-function EmployeeCard({ employee, isOverlay = false }) {
-    const { attributes, listeners, setNodeRef, transform, isDragging } =
-        useDraggable({
-            id: employee.id,
-            data: { employee },
-        });
+function DraggableEmployee({ employee, sourceInfo, isOverlay = false }) {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id: `drag-${employee.id}-${sourceInfo?.lineId || ''}-${sourceInfo?.dayIdx || ''}-${sourceInfo?.shift || ''}`,
+        data: { employee, sourceInfo, type: 'employee-card' },
+    });
 
     const style = {
         transform: CSS.Translate.toString(transform),
-        opacity: isDragging && !isOverlay ? 0.4 : 1,
+        opacity: isDragging && !isOverlay ? 0.3 : 1,
+        zIndex: isDragging ? 50 : 1,
     };
 
     return (
@@ -79,42 +115,119 @@ function EmployeeCard({ employee, isOverlay = false }) {
             style={style}
             {...listeners}
             {...attributes}
-            className={`px-3 py-2 rounded-md border border-gray-300 bg-white shadow-sm
-                cursor-grab active:cursor-grabbing text-sm select-none
-                ${isOverlay ? "ring-2 ring-blue-400" : ""}`}
+            className={`w-full px-1 py-[2px] mb-[2px] text-[10px] font-medium leading-tight rounded bg-white border border-gray-300 shadow-sm cursor-grab active:cursor-grabbing truncate
+                ${isOverlay ? 'ring-2 ring-blue-400 shadow-lg scale-105 z-50' : ''}`}
+            title={employee.name}
         >
             {employee.name}
         </div>
     );
 }
 
-// ─────────────────────────────────────────────
-// Droppable-слот в смене
-// ─────────────────────────────────────────────
-
-function ShiftSlot({ shiftId, slotIndex, employee }) {
+function EmptySlot({ lineId, dayIdx, shiftType, slotIdx, brigadeId }) {
     const { isOver, setNodeRef } = useDroppable({
-        id: `slot:${shiftId}:${slotIndex}`,
-        data: { shiftId, slotIndex },
+        id: `slot-${lineId}-${dayIdx}-${shiftType}-${slotIdx}`,
+        data: { lineId, dayIdx, shiftType, slotIdx, brigadeId, type: 'slot' },
     });
 
     return (
         <div
             ref={setNodeRef}
-            className={`h-14 rounded-md flex items-center justify-center text-sm
-                transition-colors border-2
-                ${
-                isOver
-                    ? "border-blue-400 bg-blue-50"
-                    : employee
-                        ? "border-transparent bg-white shadow-sm"
-                        : "border-dashed border-gray-300 bg-gray-50"
-            }`}
+            className={`w-full h-[18px] mb-[2px] rounded border border-dashed transition-colors
+                ${isOver ? 'border-blue-400 bg-blue-100' : 'border-gray-200 bg-gray-50/50'}`}
+        />
+    );
+}
+
+function BrigadeCell({ lineId, dayIdx, shiftType, brigadeData }) {
+    const brigade = BRIGADES.find(b => b.id === brigadeData.brigadeId);
+    const { isOver, setNodeRef } = useDroppable({
+        id: `brigade-${lineId}-${dayIdx}-${shiftType}`,
+        data: { lineId, dayIdx, shiftType, isBrigadeContainer: true, type: 'brigade' },
+    });
+
+    const isDay = shiftType === 'D';
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={`flex flex-col p-[2px] rounded-md border min-h-[120px] transition-colors
+                ${isDay ? 'bg-gray-50' : 'bg-gray-200'}
+                ${isOver ? 'ring-2 ring-blue-400 ring-inset' : 'border-gray-200'}
+            `}
         >
-            {employee ? (
-                <EmployeeCard employee={employee} />
+            <div className={`text-[9px] font-bold text-center mb-1 uppercase tracking-wider ${isDay ? 'text-blue-600' : 'text-indigo-600'}`}>
+                {brigade?.name || '—'}
+            </div>
+            <div className="flex flex-col gap-0.5 flex-1">
+                {brigadeData.employees.map((empId, idx) => {
+                    const emp = empId ? getEmpById(empId) : null;
+                    return emp ? (
+                        <DraggableEmployee
+                            key={empId}
+                            employee={emp}
+                            sourceInfo={{ lineId, dayIdx, shiftType, slotIdx: idx }}
+                        />
+                    ) : (
+                        <EmptySlot
+                            key={`empty-${idx}`}
+                            lineId={lineId}
+                            dayIdx={dayIdx}
+                            shiftType={shiftType}
+                            slotIdx={idx}
+                            brigadeId={brigadeData.brigadeId}
+                        />
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+function DraggableShift({ shiftCode, empId, dayIdx, isOverlay = false }) {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id: `drag-shift-${empId}-${dayIdx}`,
+        data: { empId, dayIdx, shiftCode, type: 'shift-cell' },
+    });
+
+    const style = {
+        transform: CSS.Translate.toString(transform),
+        opacity: isDragging && !isOverlay ? 0.3 : 1,
+        zIndex: isDragging ? 50 : 1,
+    };
+
+    const shift = SHIFT_TYPES[shiftCode] || { code: '', color: 'bg-gray-50 border-gray-100' };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...listeners}
+            {...attributes}
+            className={`w-full h-full min-h-[24px] flex items-center justify-center font-semibold text-[11px] border rounded cursor-grab active:cursor-grabbing select-none ${shift.color}`}
+        >
+            {shift.code}
+        </div>
+    );
+}
+
+function EmployeeShiftCell({ empId, dayIdx, shiftCode, onContextMenu }) {
+    const { isOver, setNodeRef } = useDroppable({
+        id: `cell-${empId}-${dayIdx}`,
+        data: { empId, dayIdx, type: 'shift-cell-target' },
+    });
+
+    return (
+        <div
+            ref={setNodeRef}
+            onContextMenu={(e) => onContextMenu(e, empId, dayIdx)}
+            className={`w-full h-full p-0.5 border-r border-b border-gray-200 transition-colors
+                ${isOver ? 'bg-blue-100 ring-2 ring-inset ring-blue-400' : ''}`}
+        >
+            {shiftCode ? (
+                <DraggableShift shiftCode={shiftCode} empId={empId} dayIdx={dayIdx} />
             ) : (
-                <span className="text-gray-400">+</span>
+                <div className="w-full h-full min-h-[24px] flex items-center justify-center text-gray-300">—</div>
             )}
         </div>
     );
@@ -128,233 +241,308 @@ function EmployeePlanningPage() {
     const { store } = useContext(Context);
     const navigate = useNavigate();
 
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [msg, setMsg] = useState("");
     const [isModalError, setIsModalError] = useState(false);
     const [isModalNotify, setIsModalNotify] = useState(false);
+    const [viewMode, setViewMode] = useState('lines');
 
-    // ── Состояние доски ──
-    const [shifts, setShifts] = useState(INITIAL_SHIFTS);
-    const [unassigned, setUnassigned] = useState(INITIAL_EMPLOYEES);
-    const [activeEmployee, setActiveEmployee] = useState(null);
+    const [planByLine, setPlanByLine] = useState(() => generateLinePlan());
+    const [planByEmp, setPlanByEmp] = useState(() => generateEmployeePlan());
+
+    const [activeDragData, setActiveDragData] = useState(null);
+    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, empId: null, dayIdx: null });
 
     const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: { distance: 8 }, // защита от случайного drag
-        }),
-        useSensor(TouchSensor, {
-            activationConstraint: { delay: 150, tolerance: 5 },
-        })
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
     );
 
-    // ── Helpers для поиска/удаления сотрудника ──
-
-    const findEmployeeLocation = (employeeId, shiftsArr, unassignedArr) => {
-        const uIdx = unassignedArr.findIndex((e) => e.id === employeeId);
-        if (uIdx !== -1) return { type: "unassigned", index: uIdx };
-
-        for (const shift of shiftsArr) {
-            const sIdx = shift.slots.findIndex((e) => e && e.id === employeeId);
-            if (sIdx !== -1) return { type: "shift", shiftId: shift.id, index: sIdx };
-        }
-        return null;
-    };
-
-    const removeEmployee = (employeeId, shiftsArr, unassignedArr) => {
-        const newUnassigned = unassignedArr.filter((e) => e.id !== employeeId);
-        const newShifts = shiftsArr.map((shift) => ({
-            ...shift,
-            slots: shift.slots.map((e) =>
-                e && e.id === employeeId ? null : e
-            ),
-        }));
-        return { newShifts, newUnassigned };
-    };
-
-    // ── Drag handlers ──
-
-    const handleDragStart = (event) => {
-        const { active } = event;
-        const employee = active.data.current?.employee;
-        setActiveEmployee(employee || null);
-    };
+    const handleDragStart = (event) => setActiveDragData(event.active.data.current);
 
     const handleDragEnd = (event) => {
         const { active, over } = event;
-        setActiveEmployee(null);
-
+        setActiveDragData(null);
         if (!over) return;
 
-        const employeeId = active.id;
-        const employee = active.data.current?.employee;
-        if (!employee) return;
+        const source = active.data.current;
+        const target = over.data.current;
+        if (!source || !target) return;
 
-        // Куда упало
-        const overData = over.data.current;
-
-        // Сначала вынимаем сотрудника из текущего места
-        const { newShifts: shiftsAfterRemove, newUnassigned: unassignedAfterRemove } =
-            removeEmployee(employeeId, shifts, unassigned);
-
-        // Если упало в слот смены
-        if (overData?.shiftId !== undefined) {
-            const { shiftId, slotIndex } = overData;
-
-            const targetShift = shiftsAfterRemove.find((s) => s.id === shiftId);
-            if (!targetShift) return;
-
-            // Если слот занят — вернуть "вытесненного" в unassigned
-            const occupant = targetShift.slots[slotIndex];
-            let finalUnassigned = unassignedAfterRemove;
-            if (occupant) {
-                finalUnassigned = [...unassignedAfterRemove, occupant];
-            }
-
-            const finalShifts = shiftsAfterRemove.map((shift) => {
-                if (shift.id !== shiftId) return shift;
-                const newSlots = [...shift.slots];
-                newSlots[slotIndex] = employee;
-                return { ...shift, slots: newSlots };
+        if (source.type === 'shift-cell' && target.type === 'shift-cell-target') {
+            if (source.empId === target.empId && source.dayIdx === target.dayIdx) return;
+            setPlanByEmp(prev => {
+                const newPlan = { ...prev };
+                newPlan[source.empId] = [...newPlan[source.empId]];
+                if (source.empId !== target.empId) newPlan[target.empId] = [...newPlan[target.empId]];
+                const sourceShift = newPlan[source.empId][source.dayIdx];
+                const targetShift = newPlan[target.empId][target.dayIdx];
+                newPlan[source.empId][source.dayIdx] = targetShift;
+                newPlan[target.empId][target.dayIdx] = sourceShift;
+                return newPlan;
             });
-
-            setShifts(finalShifts);
-            setUnassigned(finalUnassigned);
-            return;
         }
 
-        // Если упало в панель нераспределённых
-        if (overData?.type === "unassigned") {
-            setShifts(shiftsAfterRemove);
-            setUnassigned([...unassignedAfterRemove, employee]);
-            return;
-        }
+        if (source.type === 'employee-card' && (target.type === 'slot' || target.type === 'brigade')) {
+            const sInfo = source.sourceInfo;
+            const tInfo = target;
+            if (sInfo.lineId === tInfo.lineId && sInfo.dayIdx === tInfo.dayIdx && sInfo.shiftType === tInfo.shiftType && sInfo.slotIdx === tInfo.slotIdx) return;
 
-        // Упало куда-то ещё — просто фиксируем удаление из старого места
-        setShifts(shiftsAfterRemove);
-        setUnassigned(unassignedAfterRemove);
+            setPlanByLine(prev => {
+                const newPlan = { ...prev };
+                const ensurePath = (lineId, dayIdx, shiftType) => {
+                    if (!newPlan[lineId]) newPlan[lineId] = [...prev[lineId]];
+                    if (!newPlan[lineId][dayIdx]) newPlan[lineId][dayIdx] = { ...prev[lineId][dayIdx] };
+                    if (!newPlan[lineId][dayIdx][shiftType]) newPlan[lineId][dayIdx][shiftType] = { ...prev[lineId][dayIdx][shiftType] };
+                    newPlan[lineId][dayIdx][shiftType].employees = [...prev[lineId][dayIdx][shiftType].employees];
+                };
+
+                const sourceShiftData = prev[sInfo.lineId][sInfo.dayIdx][sInfo.shiftType];
+                const targetShiftData = prev[tInfo.lineId][tInfo.dayIdx][tInfo.shiftType];
+                const sourceEmpId = sourceShiftData.employees[sInfo.slotIdx];
+
+                let targetSlotIdx = tInfo.slotIdx;
+                if (tInfo.isBrigadeContainer) {
+                    targetSlotIdx = targetShiftData.employees.findIndex(id => id === null);
+                    if (targetSlotIdx === -1) targetSlotIdx = 0;
+                }
+                const targetEmpId = targetShiftData.employees[targetSlotIdx];
+
+                ensurePath(sInfo.lineId, sInfo.dayIdx, sInfo.shiftType);
+                if (sInfo.lineId !== tInfo.lineId || sInfo.dayIdx !== tInfo.dayIdx || sInfo.shiftType !== tInfo.shiftType) {
+                    ensurePath(tInfo.lineId, tInfo.dayIdx, tInfo.shiftType);
+                }
+
+                newPlan[sInfo.lineId][sInfo.dayIdx][sInfo.shiftType].employees[sInfo.slotIdx] = targetEmpId;
+                if (tInfo.isBrigadeContainer && targetSlotIdx !== -1) {
+                    newPlan[tInfo.lineId][tInfo.dayIdx][tInfo.shiftType].employees[targetSlotIdx] = sourceEmpId;
+                } else if (tInfo.slotIdx !== undefined) {
+                    newPlan[tInfo.lineId][tInfo.dayIdx][tInfo.shiftType].employees[tInfo.slotIdx] = sourceEmpId;
+                }
+                return newPlan;
+            });
+        }
     };
 
-    // ── Droppable-панель нераспределённых ──
+    const handleContextMenu = (e, empId, dayIdx) => {
+        e.preventDefault();
+        setContextMenu({ visible: true, x: e.clientX, y: e.clientY, empId, dayIdx });
+    };
 
-    function UnassignedPanel() {
-        const { isOver, setNodeRef } = useDroppable({
-            id: "unassigned-panel",
-            data: { type: "unassigned" },
+    const setShiftManually = (shiftCode) => {
+        if (!contextMenu.empId) return;
+        setPlanByEmp(prev => {
+            const newPlan = { ...prev };
+            newPlan[contextMenu.empId] = [...newPlan[contextMenu.empId]];
+            newPlan[contextMenu.empId][contextMenu.dayIdx] = shiftCode;
+            return newPlan;
         });
+        setContextMenu({ ...contextMenu, visible: false });
+    };
 
-        return (
-            <div
-                ref={setNodeRef}
-                className={`w-56 shrink-0 rounded-lg p-3 border-2 transition-colors
-                    ${isOver ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-gray-50"}`}
-            >
-                <h3 className="font-semibold text-sm mb-3 text-gray-700">
-                    Не распределены
-                </h3>
-                <div className="flex flex-col gap-2">
-                    {unassigned.length === 0 && (
-                        <span className="text-xs text-gray-400">
-                            Все распределены
-                        </span>
-                    )}
-                    {unassigned.map((emp) => (
-                        <EmployeeCard key={emp.id} employee={emp} />
+    React.useEffect(() => {
+        const close = () => setContextMenu(prev => ({ ...prev, visible: false }));
+        document.addEventListener('click', close);
+        return () => document.removeEventListener('click', close);
+    }, []);
+
+    // ── Рендер: По линиям ──
+    const renderLinesView = () => (
+        <table className="border-collapse text-center w-full">
+            <thead className="sticky top-0 z-20 bg-white">
+            <tr>
+                <th rowSpan={2} className="sticky left-0 z-30 bg-white p-2 border-r border-b border-gray-300 font-semibold text-left text-sm text-gray-600 w-[120px] min-w-[120px]">
+                    Линия
+                </th>
+                {Array.from({ length: DAYS_IN_MONTH }).map((_, i) => {
+                    const date = new Date(2026, 9, i + 1);
+                    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                    return (
+                        <th key={i} colSpan={2} className={`p-1 border-r border-b border-gray-300 text-xs font-medium ${isWeekend ? 'bg-gray-100 text-gray-800' : 'bg-white text-gray-500'}`}>
+                            {i + 1}
+                            <div className="text-[9px] font-normal opacity-60 mt-0.5">
+                                {['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'][date.getDay()]}
+                            </div>
+                        </th>
+                    );
+                })}
+            </tr>
+            <tr>
+                {Array.from({ length: DAYS_IN_MONTH }).map((_, i) => (
+                    <React.Fragment key={i}>
+                        <th className="p-0.5 border-r border-b border-gray-300 text-[10px] font-medium bg-blue-50 text-blue-800 min-w-[100px] w-[100px]">Д</th>
+                        <th className="p-0.5 border-r border-b border-gray-300 text-[10px] font-medium bg-indigo-50 text-indigo-800 min-w-[100px] w-[100px]">Н</th>
+                    </React.Fragment>
+                ))}
+            </tr>
+            </thead>
+            <tbody>
+            {LINES.map(line => (
+                <tr key={line.id} className="virtual-row">
+                    <td className="sticky left-0 z-10 bg-white p-2 border-r border-b border-gray-200 font-medium text-sm whitespace-nowrap">
+                        {line.name}
+                    </td>
+                    {Array.from({ length: DAYS_IN_MONTH }).map((_, dayIdx) => {
+                        const dayData = planByLine[line.id][dayIdx];
+                        return (
+                            <React.Fragment key={dayIdx}>
+                                <td className="p-1  border-b border-gray-400 align-top min-w-[100px] w-[100px]">
+                                    <BrigadeCell lineId={line.id} dayIdx={dayIdx} shiftType="D" brigadeData={dayData.D} />
+                                </td>
+                                <td className="p-1 border-r border-b border-gray-400 align-top bg-gray-50/20 min-w-[100px] w-[100px]">
+                                    <BrigadeCell lineId={line.id} dayIdx={dayIdx} shiftType="N" brigadeData={dayData.N} />
+                                </td>
+                            </React.Fragment>
+                        );
+                    })}
+                </tr>
+            ))}
+            </tbody>
+        </table>
+    );
+
+    // ── Рендер: По сотрудникам ──
+    const renderEmployeesView = () => (
+        <table className="border-collapse text-center w-full">
+            <thead className="sticky top-0 z-20 bg-white">
+            <tr>
+                <th className="sticky left-0 z-30 bg-white p-2 border-r border-b border-gray-300 font-semibold text-left text-sm text-gray-600 w-[150px] min-w-[150px]">
+                    Сотрудник
+                </th>
+                {Array.from({ length: DAYS_IN_MONTH }).map((_, i) => {
+                    const date = new Date(2026, 9, i + 1);
+                    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                    return (
+                        <th key={i} className={`p-1 border-r border-b border-gray-300 text-xs font-medium min-w-[40px] w-[40px] ${isWeekend ? 'bg-gray-100 text-gray-800' : 'bg-white text-gray-500'}`}>
+                            {i + 1}
+                            <div className="text-[9px] font-normal opacity-60 mt-0.5">
+                                {['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'][date.getDay()]}
+                            </div>
+                        </th>
+                    );
+                })}
+            </tr>
+            </thead>
+            <tbody>
+            {ALL_EMPLOYEES.map(emp => (
+                <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="sticky left-0 z-10 bg-white p-1.5 border-r border-b border-gray-200 font-medium text-xs whitespace-nowrap">
+                        {emp.name}
+                    </td>
+                    {Array.from({ length: DAYS_IN_MONTH }).map((_, dayIdx) => (
+                        <td key={dayIdx} className="p-0 border-b border-gray-200 min-w-[40px] w-[40px] h-8">
+                            <EmployeeShiftCell
+                                empId={emp.id}
+                                dayIdx={dayIdx}
+                                shiftCode={planByEmp[emp.id]?.[dayIdx] || ''}
+                                onContextMenu={handleContextMenu}
+                            />
+                        </td>
                     ))}
-                </div>
-            </div>
-        );
-    }
+                </tr>
+            ))}
+            </tbody>
+        </table>
+    );
 
     return (
         <>
-            <Navigation
-                isHiddenMenu={false}
-                isOpenMenu={false}
-                setOpenMenu={() => {}}
-            />
-            <div className="flex flex-row window-height">
-                <div className="hidden lg:block w-[200px] py-2 border-r-2 bg-gray-50 justify-stretch">
+            <Navigation isHiddenMenu={false} isOpenMenu={false} setOpenMenu={() => {}} />
+            <div className="flex flex-row w-screen overflow-hidden bg-gray-100" style={{ height: 'calc(100vh - 50px)' }}>
+                <div className="hidden lg:block w-[200px] py-2 border-r-2 bg-gray-50 shrink-0">
                     <LeftNavigation />
                 </div>
-                <div className="flex flex-col w-full">
-                    <>
-                        <div className="px-1 lg:px-16 pt-6 pb-2 flex flex-row gap-2 items-center justify-between text-center">
-                            <span className="text-2xl font-bold">
-                                Планирование персонала
-                            </span>
-                            <div className="flex flex-row gap-3"></div>
+
+                <div className="flex flex-col flex-1 h-full min-w-0">
+                    <div className="px-4 lg:px-8 pt-6 pb-4 flex flex-row gap-2 items-center justify-between bg-white border-b border-gray-100 shrink-0 z-30">
+                        <div>
+                            <span className="text-2xl font-bold block">Планирование персонала</span>
+                            <span className="text-sm text-gray-500">{MONTH_NAME}</span>
                         </div>
 
-                        {/* Фильтры */}
-                        <div className="px-1 lg:px-24 pb-2"></div>
+                        <div className="flex flex-row gap-3 items-center">
+                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                <button
+                                    onClick={() => setViewMode('lines')}
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'lines' ? 'bg-white shadow-sm text-blue-700' : 'text-gray-600 hover:text-gray-900'}`}
+                                >
+                                    По линиям
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('employees')}
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'employees' ? 'bg-white shadow-sm text-blue-700' : 'text-gray-600 hover:text-gray-900'}`}
+                                >
+                                    По сотрудникам
+                                </button>
+                            </div>
 
-                        {/* ── Доска ── */}
-                        <div className="px-1 lg:px-16 pb-6">
-                            <DndContext
-                                sensors={sensors}
-                                onDragStart={handleDragStart}
-                                onDragEnd={handleDragEnd}
-                            >
-                                <div className="flex gap-4 items-start">
-                                    <UnassignedPanel />
-
-                                    {shifts.map((shift) => (
-                                        <div
-                                            key={shift.id}
-                                            className="flex-1 border border-gray-200 rounded-lg p-3 bg-white shadow-sm"
-                                        >
-                                            <div className="flex items-baseline justify-between mb-1">
-                                                <h3 className="font-semibold text-gray-800">
-                                                    {shift.label}
-                                                </h3>
-                                                <span className="text-xs text-gray-500">
-                                                    {shift.slots.filter(Boolean).length} / 6
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-gray-500 mb-3">
-                                                {shift.time}
-                                            </p>
-
-                                            <div className="grid grid-cols-3 gap-2">
-                                                {shift.slots.map((emp, idx) => (
-                                                    <ShiftSlot
-                                                        key={idx}
-                                                        shiftId={shift.id}
-                                                        slotIndex={idx}
-                                                        employee={emp}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <DragOverlay>
-                                    {activeEmployee ? (
-                                        <EmployeeCard employee={activeEmployee} isOverlay />
-                                    ) : null}
-                                </DragOverlay>
-                            </DndContext>
+                            <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors shadow-sm">
+                                Сохранить план
+                            </button>
                         </div>
-                    </>
+                    </div>
+
+                    {/* Внешний контейнер — только layout, без скролла */}
+                    <div className="flex-1 p-4 bg-white relative min-h-0">
+                        {/* Скроллящийся контейнер — фиксированная высота/ширина, скролл внутри */}
+                        <div className="h-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+                            {/* Внутренний padding через отдельный div, чтобы отступ справа не съедался */}
+                            <div className=" min-w-max">
+                                <DndContext
+                                    sensors={sensors}
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handleDragEnd}
+                                >
+                                    {viewMode === 'lines' ? renderLinesView() : renderEmployeesView()}
+
+                                    {/* ... DragOverlay ... */}
+                                </DndContext>
+                            </div>
+
+                                {/* Легенда */}
+                                {viewMode === 'employees' && (
+                                    <div className="mt-4 flex flex-wrap gap-4 items-center text-sm bg-white p-3 rounded-lg border border-gray-200 inline-flex shadow-sm">
+                                        <span className="font-medium text-gray-700">Обозначения:</span>
+                                        {Object.entries(SHIFT_TYPES).map(([code, type]) => (
+                                            <div key={code} className="flex items-center gap-1.5">
+                                                <div className={`w-5 h-5 border rounded flex items-center justify-center font-bold text-xs ${type.color}`}>
+                                                    {type.code}
+                                                </div>
+                                                <span className="text-gray-600 text-xs">{type.label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                        </div>
+                    </div>
                 </div>
-
-                {isModalError && (
-                    <ModalNotifyError
-                        title={"Ошибка"}
-                        message={error}
-                        onClose={() => setIsModalError(false)}
-                    />
-                )}
-                {isModalNotify && (
-                    <ModalNotify
-                        title={"Результат операции"}
-                        message={msg}
-                        onClose={() => setIsModalNotify(false)}
-                    />
-                )}
             </div>
+
+            {/* Контекстное меню */}
+            {contextMenu.visible && viewMode === 'employees' && (
+                <div
+                    className="fixed bg-white border border-gray-200 shadow-xl rounded-md py-1 z-[100] w-32"
+                    style={{ top: contextMenu.y, left: contextMenu.x }}
+                >
+                    {['D', 'N', 'O', 'V', 'B', ''].map(code => {
+                        const shift = SHIFT_TYPES[code] || { code: '—', label: 'Очистить', color: 'bg-gray-100' };
+                        return (
+                            <button
+                                key={code}
+                                onClick={() => setShiftManually(code)}
+                                className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100 flex items-center gap-2"
+                            >
+                                <span className={`w-4 h-4 rounded border flex items-center justify-center text-[10px] font-bold ${shift.color}`}>
+                                    {shift.code}
+                                </span>
+                                {shift.label}
+                            </button>
+                        )
+                    })}
+                </div>
+            )}
+
+            {/* Модалки */}
+            {isModalError && <ModalNotifyError title={"Ошибка"} message={""} onClose={() => setIsModalError(false)} />}
+            {isModalNotify && <ModalNotify title={"Результат операции"} message={""} onClose={() => setIsModalNotify(false)} />}
         </>
     );
 }
