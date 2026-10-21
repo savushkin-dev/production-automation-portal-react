@@ -16,8 +16,8 @@ import {observer} from "mobx-react-lite";
 import {ModalConfirmation} from "../components/modal/ModalConfirmation";
 import {DropDownActionsItem} from "../components/scheduler/DropDownActionsItem";
 import {ModalMoveJobs} from "../components/scheduler/ModalMoveJobs";
-import {ModalAssignServiceWork} from "../components/scheduler/ModalAssignServiceWork";
-import {ModalUpdateServiceWork} from "../components/scheduler/ModalUpdateServiceWork";
+import {ModalAssignServiceWork} from "../components/scheduler/serviceWork/ModalAssignServiceWork";
+import {ModalUpdateServiceWork} from "../components/scheduler/serviceWork/ModalUpdateServiceWork";
 import {MyTimeline} from "../components/scheduler/MyTimeline";
 import {convertLinesWithTimeFields, isValidLinesDate} from "../utils/scheduler/lines";
 import {formatTimelineLabel, formatTimelineLabelMain} from "../utils/scheduler/formatTimeline";
@@ -27,9 +27,9 @@ import {
     calculateTimeToNext8AM,
     filterGroupItems, getLastItemIndexInGroup, isCleaningDelayItem,
     isCleaningItem,
-    isDelayItem, isFactCleaningItem,
-    isFactItem,
-    isPackagedItem
+    isDelayItem, isFactCleaningItem, isFactElement,
+    isFactItem, isMaintenanceItem,
+    isParallelOperationItem, isSimpleItem
 } from "../utils/scheduler/items";
 import {DisplayButtons} from "../components/scheduler/DisplayButtons";
 import {ModalNotifyError} from "../components/modal/ModalNotifyError";
@@ -41,8 +41,9 @@ import {ModalVersionSettings} from "../components/scheduler/ModalVersionSettings
 import {SchedulerDataTables} from "../components/scheduler/SchedulerDataTables";
 import {ModalColorsSettings} from "../components/scheduler/ModalColorsSettings";
 import {ModalReports} from "../components/scheduler/ModalReports";
-import Loading from "../components/loading/Loading";
 import {ModalDailyProductions} from "../components/scheduler/ModalDailyProductions";
+import {ModalAddParallelOperation} from "../components/scheduler/parallelOperation/ModalAddParallelOperation";
+import {ModalUpdateParallelOperation} from "../components/scheduler/parallelOperation/ModalUpdateParallelOperation";
 
 
 function SchedulerPage() {
@@ -92,6 +93,8 @@ function SchedulerPage() {
     const [isModalColorsSettings, setIsModalColorsSettings] = useState(false);
     const [isModalReports, setIsModalReports] = useState(false);
     const [isModalDailyProductions, setIsModalDailyProductions] = useState(false);
+    const [isModalAddParallelOperation, setIsModalAddParallelOperation] = useState(false);
+    const [isModalUpdateParallelOperation, setIsModalUpdateParallelOperation] = useState(false);
 
 
     const [isSolve, setIsSolve] = useState(false);
@@ -109,6 +112,7 @@ function SchedulerPage() {
     const [isModalAnalyze, setIsModalAnalyze] = useState(false);
 
     const [downloadedPlan, setDownloadedPlan] = useState(null);
+    const [downloadedOperationPlan, setDownloadedOperationPlan] = useState(null);
     const [analyzeObj, setAnalyzeObj] = useState(null);
 
     const [selectDate, setSelectDate] = useState(new Date(new Date().setDate(new Date().getDate())).toISOString().split('T')[0]);
@@ -147,7 +151,7 @@ function SchedulerPage() {
     const [selectedItems, setSelectedItems] = useState([]);
     const [lastSelectedItem, setLastSelectedItem] = useState(null);
 
-    const heightGroupScheduler = activeDisplay.fact || activeDisplay.plan ? 100 : 164;
+    const heightGroupScheduler = activeDisplay.fact || activeDisplay.plan ? 120 : 184;
 
     const [clickedCameras, setClickedCameras] = useState({});
 
@@ -176,6 +180,7 @@ function SchedulerPage() {
 
             const response = await SchedulerService.init(date);
             fetchPlan();
+            getParallelOperations()
 
             const groupedData = groupDataByDay(response.data, baseDate);
 
@@ -403,24 +408,33 @@ function SchedulerPage() {
     }
 
     useEffect(() => {
-        if (downloadedPlan) {
-            ScheduleService.parseHardware(downloadedPlan).then((e) => {
-                setHardware(e);
-                if (isDisplayByHardware)
-                    setGroups(e);
-            });
-            ScheduleService.parsePlanByHardware(downloadedPlan).then((e) => {
-                setPlanByHardware(e);
-                if (isDisplayByHardware)
-                    setItems(e);
-            });
-            SchedulerService.parseDateTimeSettings(downloadedPlan).then((e) => {
-                setStartTimeLines(e)
-            })
-            setTimelineKey(prev => prev + 1); //для корректной прокрутки в начале
-        }
-    }, [downloadedPlan]);
+        if (!downloadedPlan) return;
 
+        const jobsPromise = ScheduleService.parsePlanByHardware(downloadedPlan);
+
+        const lineNameMap = {};
+        (downloadedPlan.lines || []).forEach(l => {
+            lineNameMap[l.id] = l.name?.trim();
+        });
+
+        const parallelPromise = downloadedOperationPlan
+            ? ScheduleService.parseParallelOperations(downloadedOperationPlan, lineNameMap)
+            : Promise.resolve([]);
+
+        Promise.all([jobsPromise, parallelPromise]).then(([planItems, parallelItems]) => {
+            const merged = [...planItems, ...parallelItems];
+            setPlanByHardware(merged);
+            if (isDisplayByHardware) setItems(merged);
+        });
+
+        ScheduleService.parseHardware(downloadedPlan).then((e) => {
+            setHardware(e);
+            if (isDisplayByHardware) setGroups(e);
+        });
+
+        SchedulerService.parseDateTimeSettings(downloadedPlan).then(setStartTimeLines);
+        setTimelineKey(prev => prev + 1);
+    }, [downloadedPlan, downloadedOperationPlan]);
 
 
     function formatCooldown(seconds) {
@@ -757,7 +771,7 @@ function SchedulerPage() {
         if (!lastItem || !currentItem) return;
 
         const groupItems = itemsArray.filter(item =>
-            item.group === groupId && !isCleaningItem(item) && !isDelayItem(item) && !isFactItem(item)
+            item.group === groupId && (isSimpleItem(item) || isMaintenanceItem(item))
         );
 
         const sortedGroupItems = [...groupItems].sort((a, b) => a.start_time - b.start_time);
@@ -800,6 +814,63 @@ function SchedulerPage() {
         } catch (e) {
             console.error(e)
             setMsg("Ошибка назначения сервисной операции: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
+    async function addParallelOperation(lineId, time, duration, type, description) {
+        try {
+            let operation = {
+                lineId: lineId,
+                startDateTime: time,
+                duration: duration,
+                eventTypeId: type,
+                note: description
+            }
+            await SchedulerService.addParallelOperation(operation);
+            await getParallelOperations();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка добавления параллельной операции: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
+    async function updateParallelOperation(id, duration, type, description) {
+        try {
+            let operation = {
+                id: id,
+                duration: duration,
+                eventTypeId: type,
+                note: description
+            }
+            await SchedulerService.updateParallelOperation(operation);
+            await getParallelOperations();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка обновления параллельной операции: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
+    async function removeParallelOperation(id) {
+        try {
+            await SchedulerService.removeParallelOperation(id);
+            await getParallelOperations();
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка удаления параллельной операции: " + e.response.data.message)
+            setIsModalNotifyError(true);
+        }
+    }
+
+    async function getParallelOperations() {
+        try {
+            const response = await SchedulerService.getParallelOperations();
+            setDownloadedOperationPlan(response.data)
+        } catch (e) {
+            console.error(e)
+            setMsg("Ошибка получения параллельных операций: " + e.response.data.message)
             setIsModalNotifyError(true);
         }
     }
@@ -912,12 +983,6 @@ function SchedulerPage() {
         const filteredItems = selectedItems
             .filter(item => !isFactItem(item));
 
-        // if (filteredItems.some(item => isPackagedItem(item) || isMaintenanceItem(item))) {
-        //     setMsg("Сортировка невозможна. В выделенном диапазоне присутствуют сервисные операции.");
-        //     setIsModalNotify(true);
-        //     return;
-        // }
-
         const groupId = filteredItems[0].group;
         const sortedSelected = filteredItems
             .sort((a, b) => a.start_time - b.start_time);
@@ -986,17 +1051,16 @@ function SchedulerPage() {
         }
 
         let successCount = 0;
-        let errorCount = 0;
         const errors = [];
 
         for (const line of allLines) {
             const lineId = line.lineId || line.id || line.value;
 
-            const lineItems = planByHardware?.filter(item =>
-                item.info?.lineInfo?.id === lineId
-            ) || [];
-
-            const filteredItems = filterGroupItems(lineId, lineItems);
+            const filteredItems = planByHardware?.filter(item =>
+                item.group === lineId &&
+                !isParallelOperationItem(item) &&
+                !isFactElement(item)
+            ).sort((a, b) => a.start_time - b.start_time) || [];
 
             const hasJobsOnLine = filteredItems.length > 0;
 
@@ -1048,7 +1112,6 @@ function SchedulerPage() {
                     successCount++;
                 }
             } catch (error) {
-                errorCount++;
                 errors.push({lineId, error: error.response?.data?.message || error.message});
                 console.error(`Ошибка при добавлении на линию ${lineId}:`, error);
             }
@@ -1500,6 +1563,9 @@ function SchedulerPage() {
                                                              removeServiceWork={removeServiceWork}
                                                              sortRange={sortRange}
                                                              updateDelay={() => setIsModalUpdateDelay(true)}
+                                                             openModalAddParallelOperation={()=>setIsModalAddParallelOperation(true)}
+                                                             removeParallelOperation={removeParallelOperation}
+                                                             openModalUpdateParallelOperation={()=>setIsModalUpdateParallelOperation(true)}
                 />}
 
                 {isModalMoveJobs &&
@@ -1507,6 +1573,23 @@ function SchedulerPage() {
                                    moveJobs={moveJobs} onClose={() => setIsModalMoveJobs(false)}
                                    lines={startTimeLines} planByHardware={planByHardware}
                     />}
+
+                {isModalAddParallelOperation &&
+                    <ModalAddParallelOperation
+                                            addParallelOperation={addParallelOperation}
+                                            onClose={() => setIsModalAddParallelOperation(false)}
+                                            lines={startTimeLines}
+                                            planByHardware={planByHardware} selectDate={selectDate}
+                                            serviceTypes={serviceTypes}
+                    />}
+
+                {isModalUpdateParallelOperation &&
+                    <ModalUpdateParallelOperation selectedItems={selectedItems}
+                                            onClose={() => setIsModalUpdateParallelOperation(false)}
+                                            updateParallelOperation={updateParallelOperation}
+                                            serviceTypes={serviceTypes}
+                    />
+                }
 
                 {isModalAssignServiceWork &&
                     <ModalAssignServiceWork selectedItems={selectedItems} isDisplayByHardware={isDisplayByHardware}

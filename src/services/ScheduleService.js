@@ -1,6 +1,6 @@
 import $apiSchedule, {API_URL_SCHEDULER} from "../http/scheduler";
 import moment from "moment/moment";
-import {isCleaningItem, isDelayItem, isFactItem} from "../utils/scheduler/items";
+import {isCleaningItem, isDelayItem, isFactItem, isMaintenanceItem, isSimpleItem} from "../utils/scheduler/items";
 
 export let hardware = []
 export let planByHardware = []
@@ -29,9 +29,58 @@ export const ItemType = {
     FACT: 'fact',
     MAINTENANCE: 'maintenance',
     CLEANING_DELAY: 'cleaning_delay',
+    PARALLEL_OPERATION: 'parallel_operation',
 };
 
 export default class ScheduleService {
+
+    static async parseParallelOperations(json, lineNameMap = {}) {
+        if (!Array.isArray(json)) return [];
+
+        const result = [];
+
+        for (let i = 0; i < json.length; i++) {
+            const op = json[i];
+            if (!op) continue;
+
+            const start = new Date(op.startDateTime);
+            const end = new Date(op.endDateTime);
+            const dur = Number(op.duration) || Math.round((end - start) / 60000);
+
+            const item = Object.assign({}, exampleTask);
+            item.id = `parallel-${op.id}`;
+            item.start_time = start.getTime();
+            item.end_time = end.getTime();
+            item.title = (op.name || "Параллельная операция").trim();
+            item.group = op.lineId;
+            item.canMove = false;
+            item.canResize = false;
+            item.itemProps = {
+                style: {
+                    background: "#dcffee",
+                    border: "1px dashed #0369a1",
+                    color: "#a81a65",
+                },
+            };
+            item.info = {
+                itemType: ItemType.PARALLEL_OPERATION,
+                name: (op.name || "").trim(),
+                start,
+                end,
+                duration: dur,
+                line: lineNameMap[op.lineId] || op.lineId,
+                maintenanceTypeId: op.maintenanceTypeId,
+                maintenanceNote: op.maintenanceNote,
+                pinned: false,
+                isParallel: true,
+                parallelId: op.id,
+            };
+
+            result.push(item);
+        }
+
+        return result;
+    }
 
     static async parseDateTimeSettings(json) {
         return json.lines
@@ -379,7 +428,7 @@ export default class ScheduleService {
                 }
             };
             planByHardware[i].info = { //Доп информация
-                itemType: ItemType.SIMPLE, //Для идентификации элемента на плане
+                itemType: json.jobs[i].maintenance? ItemType.MAINTENANCE : ItemType.SIMPLE, //Для идентификации элемента на плане
                 name: json.jobs[i].name,
                 start: json.jobs[i].startProductionDateTime,
                 end: planEndDateTime,
@@ -479,7 +528,7 @@ export default class ScheduleService {
 
         // Исключаем cleaning и фактические элементы из группы
         const groupItems = allItems.filter(i =>
-            i.group === item.group && !isCleaningItem(i) && !isDelayItem(i) && !isFactItem(i)
+            i.group === item.group && (isSimpleItem(i) || isMaintenanceItem(i))
         )
 
         const sorted = groupItems.sort((a, b) =>
@@ -583,11 +632,11 @@ export default class ScheduleService {
     }
 
     static async updateServiceWork(lineId, updateIndex, durationMinutes, maintenanceTypeId, maintenanceNote) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, updateIndex, durationMinutes, maintenanceTypeId, maintenanceNote})
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, updateIndex, durationMinutes, maintenanceTypeId, maintenanceNote})
     }
 
     static async removeServiceWork(lineId, removeIndex) {
-        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/maintenance`, {lineId, removeIndex})
+        return $apiSchedule.delete(`${API_URL_SCHEDULER}/schedule/maintenance?lineId=` + lineId +`&removeIndex=` + removeIndex)
     }
 
     static async sortSchedule() {
@@ -674,6 +723,24 @@ export default class ScheduleService {
     static async getDailyProductions(shiftStart) {
         return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/dailyProductions?shiftStart=` + shiftStart)
     }
+
+    static async getParallelOperations() {
+        return $apiSchedule.get(`${API_URL_SCHEDULER}/schedule/parallel-operations`)
+    }
+
+    static async addParallelOperation(operation) {
+        return $apiSchedule.post(`${API_URL_SCHEDULER}/schedule/parallel-operations`, operation)
+    }
+
+    static async updateParallelOperation(operation) {
+        return $apiSchedule.put(`${API_URL_SCHEDULER}/schedule/parallel-operations`, operation)
+    }
+
+    static async removeParallelOperation(id) {
+        return $apiSchedule.delete(`${API_URL_SCHEDULER}/schedule/parallel-operations/` + id)
+    }
+
+
 
 
 }
