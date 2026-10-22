@@ -296,3 +296,11 @@ table.scheduler-bg-table td {
     border-right: none !important; /* Убирает вертикальные линии */
 }
 
+
+/* Для строк в виде "По линиям" */
+.virtual-row {
+    content-visibility: auto;
+    /* auto — ширина (запомнит реальную), 140px — высота */
+    contain-intrinsic-size: auto 140px;
+}
+
