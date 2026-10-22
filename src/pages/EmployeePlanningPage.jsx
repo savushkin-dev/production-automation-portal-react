@@ -1,6 +1,6 @@
 import { Navigation } from "../components/Navigation";
 import { LeftNavigation } from "../components/leftNavigation/LeftNavigation";
-import React, { useContext, useState } from "react";
+import React, {useContext, useState, useRef, useCallback, useEffect} from "react";
 import { ModalNotifyError } from "../components/modal/ModalNotifyError";
 import { observer } from 'mobx-react-lite';
 import { ModalNotify } from "../components/modal/ModalNotify";
@@ -20,6 +20,62 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 // ─────────────────────────────────────────────
+// Хук drag-to-scroll
+// ─────────────────────────────────────────────
+function useDragScroll() {
+    const ref = useRef(null);
+    const drag = useRef({ isDown: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0, moved: false });
+
+    const onMouseDown = useCallback((e) => {
+        if (e.button !== 0) return;
+        const el = ref.current;
+        if (!el) return;
+        if (e.target.closest('[data-no-drag-scroll]')) return;
+
+        drag.current = {
+            isDown: true,
+            startX: e.pageX,
+            startY: e.pageY,
+            scrollLeft: el.scrollLeft,
+            scrollTop: el.scrollTop,
+            moved: false,
+        };
+        el.style.cursor = 'grabbing';
+        el.style.userSelect = 'none';
+
+        const onMove = (ev) => {
+            if (!drag.current.isDown) return;
+            const dx = ev.pageX - drag.current.startX;
+            const dy = ev.pageY - drag.current.startY;
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.current.moved = true;
+            el.scrollLeft = drag.current.scrollLeft - dx;
+            el.scrollTop = drag.current.scrollTop - dy;
+        };
+
+        const onUp = () => {
+            drag.current.isDown = false;
+            el.style.cursor = '';
+            el.style.userSelect = '';
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+    }, []);
+
+    const onClickCapture = useCallback((e) => {
+        if (drag.current.moved) {
+            e.stopPropagation();
+            e.preventDefault();
+            drag.current.moved = false;
+        }
+    }, []);
+
+    return { ref, onMouseDown, onClickCapture };
+}
+
+// ─────────────────────────────────────────────
 // Справочники и данные
 // ─────────────────────────────────────────────
 const DAYS_IN_MONTH = 31;
@@ -33,28 +89,131 @@ const SHIFT_TYPES = {
     B: { code: 'Б', label: 'Больничный', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
 };
 
-const BRIGADES = Array.from({ length: 10 }).map((_, i) => ({
-    id: `b${i + 1}`,
-    name: `Бригада ${i + 1}`,
-    employees: Array.from({ length: 5 }).map((_, j) => ({
-        id: `e${i + 1}-${j + 1}`,
-        name: `Сотр. ${i + 1}.${j + 1}`,
-        brigadeId: `b${i + 1}`
-    })),
-}));
+const BRIGADES = [
+    {
+        id: 'b1',
+        name: 'Бригада 1',
+        employees: [
+            { id: 'e1-1', name: 'Иванов И.И.', brigadeId: 'b1' },
+            { id: 'e1-2', name: 'Петров П.П.', brigadeId: 'b1' },
+            { id: 'e1-3', name: 'Сидоров С.С.', brigadeId: 'b1' },
+            { id: 'e1-4', name: 'Кузнецов К.К.', brigadeId: 'b1' },
+            { id: 'e1-5', name: 'Смирнов С.С.', brigadeId: 'b1' },
+        ]
+    },
+    {
+        id: 'b2',
+        name: 'Бригада 2',
+        employees: [
+            { id: 'e2-1', name: 'Попов П.П.', brigadeId: 'b2' },
+            { id: 'e2-2', name: 'Васильев В.В.', brigadeId: 'b2' },
+            { id: 'e2-3', name: 'Соколов С.С.', brigadeId: 'b2' },
+            { id: 'e2-4', name: 'Михайлов М.М.', brigadeId: 'b2' },
+            { id: 'e2-5', name: 'Новиков Н.Н.', brigadeId: 'b2' },
+        ]
+    },
+    {
+        id: 'b3',
+        name: 'Бригада 3',
+        employees: [
+            { id: 'e3-1', name: 'Фёдоров Ф.Ф.', brigadeId: 'b3' },
+            { id: 'e3-2', name: 'Морозов М.М.', brigadeId: 'b3' },
+            { id: 'e3-3', name: 'Волков В.В.', brigadeId: 'b3' },
+            { id: 'e3-4', name: 'Алексеев А.А.', brigadeId: 'b3' },
+            { id: 'e3-5', name: 'Лебедев Л.Л.', brigadeId: 'b3' },
+        ]
+    },
+    {
+        id: 'b4',
+        name: 'Бригада 4',
+        employees: [
+            { id: 'e4-1', name: 'Семёнов С.С.', brigadeId: 'b4' },
+            { id: 'e4-2', name: 'Егоров Е.Е.', brigadeId: 'b4' },
+            { id: 'e4-3', name: 'Павлов П.П.', brigadeId: 'b4' },
+            { id: 'e4-4', name: 'Козлов К.К.', brigadeId: 'b4' },
+            { id: 'e4-5', name: 'Степанов С.С.', brigadeId: 'b4' },
+        ]
+    },
+    {
+        id: 'b5',
+        name: 'Бригада 5',
+        employees: [
+            { id: 'e5-1', name: 'Николаев Н.Н.', brigadeId: 'b5' },
+            { id: 'e5-2', name: 'Орлов О.О.', brigadeId: 'b5' },
+            { id: 'e5-3', name: 'Андреев А.А.', brigadeId: 'b5' },
+            { id: 'e5-4', name: 'Макаров М.М.', brigadeId: 'b5' },
+            { id: 'e5-5', name: 'Никитин Н.Н.', brigadeId: 'b5' },
+        ]
+    },
+    {
+        id: 'b6',
+        name: 'Бригада 6',
+        employees: [
+            { id: 'e6-1', name: 'Захаров З.З.', brigadeId: 'b6' },
+            { id: 'e6-2', name: 'Зайцев З.З.', brigadeId: 'b6' },
+            { id: 'e6-3', name: 'Соловьёв С.С.', brigadeId: 'b6' },
+            { id: 'e6-4', name: 'Борисов Б.Б.', brigadeId: 'b6' },
+            { id: 'e6-5', name: 'Яковлев Я.Я.', brigadeId: 'b6' },
+        ]
+    },
+    {
+        id: 'b7',
+        name: 'Бригада 7',
+        employees: [
+            { id: 'e7-1', name: 'Григорьев Г.Г.', brigadeId: 'b7' },
+            { id: 'e7-2', name: 'Романов Р.Р.', brigadeId: 'b7' },
+            { id: 'e7-3', name: 'Воробьёв В.В.', brigadeId: 'b7' },
+            { id: 'e7-4', name: 'Сергеев С.С.', brigadeId: 'b7' },
+            { id: 'e7-5', name: 'Кузьмин К.К.', brigadeId: 'b7' },
+        ]
+    },
+    {
+        id: 'b8',
+        name: 'Бригада 8',
+        employees: [
+            { id: 'e8-1', name: 'Фролов Ф.Ф.', brigadeId: 'b8' },
+            { id: 'e8-2', name: 'Александров А.А.', brigadeId: 'b8' },
+            { id: 'e8-3', name: 'Дмитриев Д.Д.', brigadeId: 'b8' },
+            { id: 'e8-4', name: 'Королёв К.К.', brigadeId: 'b8' },
+            { id: 'e8-5', name: 'Гусев Г.Г.', brigadeId: 'b8' },
+        ]
+    },
+    {
+        id: 'b9',
+        name: 'Бригада 9',
+        employees: [
+            { id: 'e9-1', name: 'Киселёв К.К.', brigadeId: 'b9' },
+            { id: 'e9-2', name: 'Ильин И.И.', brigadeId: 'b9' },
+            { id: 'e9-3', name: 'Максимов М.М.', brigadeId: 'b9' },
+            { id: 'e9-4', name: 'Поляков П.П.', brigadeId: 'b9' },
+            { id: 'e9-5', name: 'Сорокин С.С.', brigadeId: 'b9' },
+        ]
+    },
+    {
+        id: 'b10',
+        name: 'Бригада 10',
+        employees: [
+            { id: 'e10-1', name: 'Виноградов В.В.', brigadeId: 'b10' },
+            { id: 'e10-2', name: 'Ковалёв К.К.', brigadeId: 'b10' },
+            { id: 'e10-3', name: 'Белов Б.Б.', brigadeId: 'b10' },
+            { id: 'e10-4', name: 'Медведев М.М.', brigadeId: 'b10' },
+            { id: 'e10-5', name: 'Антонов А.А.', brigadeId: 'b10' },
+        ]
+    },
+];
 
 const ALL_EMPLOYEES = BRIGADES.flatMap(b => b.employees);
 const getEmpById = (id) => ALL_EMPLOYEES.find(e => e.id === id);
 
 const LINES = [
-    { id: 'l1', name: 'Линия 1/1' },
-    { id: 'l2', name: 'Линия 2/1' },
-    { id: 'l3', name: 'Линия 3/1' },
-    { id: 'l4', name: 'Линия 4/1' },
-    { id: 'l5', name: 'Линия 5/1' },
-    { id: 'l6', name: 'Линия 6/1' },
-    { id: 'l7', name: 'Линия 7/1' },
-    { id: 'l8', name: 'Линия 8/1' },
+    { id: 'l1', name: 'Линия 1' },
+    { id: 'l2', name: 'Линия 2' },
+    { id: 'l3', name: 'Линия 3' },
+    { id: 'l4', name: 'Линия 4' },
+    { id: 'l5', name: 'Линия 5' },
+    { id: 'l6', name: 'Линия 6' },
+    { id: 'l7', name: 'Линия 7' },
+    { id: 'l8', name: 'Линия 8' },
 ];
 
 const generateLinePlan = () => {
@@ -115,6 +274,7 @@ function DraggableEmployee({ employee, sourceInfo, isOverlay = false }) {
             style={style}
             {...listeners}
             {...attributes}
+            data-no-drag-scroll
             className={`w-full px-1 py-[2px] mb-[2px] text-[10px] font-medium leading-tight rounded bg-white border border-gray-300 shadow-sm cursor-grab active:cursor-grabbing truncate
                 ${isOverlay ? 'ring-2 ring-blue-400 shadow-lg scale-105 z-50' : ''}`}
             title={employee.name}
@@ -204,6 +364,7 @@ function DraggableShift({ shiftCode, empId, dayIdx, isOverlay = false }) {
             style={style}
             {...listeners}
             {...attributes}
+            data-no-drag-scroll
             className={`w-full h-full min-h-[24px] flex items-center justify-center font-semibold text-[11px] border rounded cursor-grab active:cursor-grabbing select-none ${shift.color}`}
         >
             {shift.code}
@@ -251,12 +412,20 @@ function EmployeePlanningPage() {
     const [activeDragData, setActiveDragData] = useState(null);
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, empId: null, dayIdx: null });
 
+    const { ref: scrollRef, onMouseDown: onScrollMouseDown, onClickCapture: onScrollClickCapture } = useDragScroll();
+
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
         useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
     );
 
     const handleDragStart = (event) => setActiveDragData(event.active.data.current);
+
+    useEffect(() => {
+        console.log("======================")
+        console.log(planByLine)
+        console.log(planByEmp)
+    }, [planByLine, planByEmp]);
 
     const handleDragEnd = (event) => {
         const { active, over } = event;
@@ -346,10 +515,10 @@ function EmployeePlanningPage() {
 
     // ── Рендер: По линиям ──
     const renderLinesView = () => (
-        <table className="border-collapse text-center w-full">
+        <table className="border-collapse text-center w-full min-w-max">
             <thead className="sticky top-0 z-20 bg-white">
             <tr>
-                <th rowSpan={2} className="sticky left-0 z-30 bg-white p-2 border-r border-b border-gray-300 font-semibold text-left text-sm text-gray-600 w-[120px] min-w-[120px]">
+                <th rowSpan={2} className="sticky left-0 z-40 bg-white p-2 text-center border-r border-b border-gray-300 font-semibold text-sm text-gray-600 w-[120px] min-w-[120px]">
                     Линия
                 </th>
                 {Array.from({ length: DAYS_IN_MONTH }).map((_, i) => {
@@ -358,18 +527,18 @@ function EmployeePlanningPage() {
                     return (
                         <th key={i} colSpan={2} className={`p-1 border-r border-b border-gray-300 text-xs font-medium ${isWeekend ? 'bg-gray-100 text-gray-800' : 'bg-white text-gray-500'}`}>
                             {i + 1}
-                            <div className="text-[9px] font-normal opacity-60 mt-0.5">
+                            <div className="text-[9px] font-normal opacity-60">
                                 {['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'][date.getDay()]}
                             </div>
                         </th>
                     );
                 })}
             </tr>
-            <tr>
+            <tr className="border">
                 {Array.from({ length: DAYS_IN_MONTH }).map((_, i) => (
                     <React.Fragment key={i}>
-                        <th className="p-0.5 border-r border-b border-gray-300 text-[10px] font-medium bg-blue-50 text-blue-800 min-w-[100px] w-[100px]">Д</th>
-                        <th className="p-0.5 border-r border-b border-gray-300 text-[10px] font-medium bg-indigo-50 text-indigo-800 min-w-[100px] w-[100px]">Н</th>
+                        <th className="p-1 border-r border-b border-gray-300 text-[10px] font-medium bg-amber-50 text-blue-800 min-w-[100px] w-[100px]">Д</th>
+                        <th className="p-1 border-r border-b border-gray-300 text-[10px] font-medium bg-slate-100 text-indigo-800 min-w-[100px] w-[100px]">Н</th>
                     </React.Fragment>
                 ))}
             </tr>
@@ -377,7 +546,7 @@ function EmployeePlanningPage() {
             <tbody>
             {LINES.map(line => (
                 <tr key={line.id} className="virtual-row">
-                    <td className="sticky left-0 z-10 bg-white p-2 border-r border-b border-gray-200 font-medium text-sm whitespace-nowrap">
+                    <td className="sticky left-0 z-30 bg-white p-2 border-r border-b border-gray-200 font-medium text-sm whitespace-nowrap">
                         {line.name}
                     </td>
                     {Array.from({ length: DAYS_IN_MONTH }).map((_, dayIdx) => {
@@ -401,10 +570,10 @@ function EmployeePlanningPage() {
 
     // ── Рендер: По сотрудникам ──
     const renderEmployeesView = () => (
-        <table className="border-collapse text-center w-full">
+        <table className="border-collapse text-center w-full min-w-max">
             <thead className="sticky top-0 z-20 bg-white">
             <tr>
-                <th className="sticky left-0 z-30 bg-white p-2 border-r border-b border-gray-300 font-semibold text-left text-sm text-gray-600 w-[150px] min-w-[150px]">
+                <th className="sticky left-0 z-40 bg-white p-2 border-r border-b border-gray-300 font-semibold text-left text-sm text-gray-600 w-[150px] min-w-[150px]">
                     Сотрудник
                 </th>
                 {Array.from({ length: DAYS_IN_MONTH }).map((_, i) => {
@@ -424,7 +593,7 @@ function EmployeePlanningPage() {
             <tbody>
             {ALL_EMPLOYEES.map(emp => (
                 <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="sticky left-0 z-10 bg-white p-1.5 border-r border-b border-gray-200 font-medium text-xs whitespace-nowrap">
+                    <td className="sticky left-0 z-30 bg-white p-1.5 border-r border-b border-gray-200 font-medium text-xs whitespace-nowrap">
                         {emp.name}
                     </td>
                     {Array.from({ length: DAYS_IN_MONTH }).map((_, dayIdx) => (
@@ -482,8 +651,13 @@ function EmployeePlanningPage() {
 
                     {/* Внешний контейнер — только layout, без скролла */}
                     <div className="flex-1 p-4 bg-white relative min-h-0">
-                        {/* Скроллящийся контейнер — фиксированная высота/ширина, скролл внутри */}
-                        <div className="h-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+                        {/* Скроллящийся контейнер с drag-to-scroll */}
+                        <div
+                            ref={scrollRef}
+                            onMouseDown={onScrollMouseDown}
+                            onClickCapture={onScrollClickCapture}
+                            className="h-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-sm cursor-grab"
+                        >
                             {/* Внутренний padding через отдельный div, чтобы отступ справа не съедался */}
                             <div className=" min-w-max">
                                 <DndContext
@@ -495,7 +669,6 @@ function EmployeePlanningPage() {
 
                                     {/* ... DragOverlay ... */}
                                 </DndContext>
-                            </div>
 
                                 {/* Легенда */}
                                 {viewMode === 'employees' && (
@@ -511,6 +684,7 @@ function EmployeePlanningPage() {
                                         ))}
                                     </div>
                                 )}
+                            </div>
                         </div>
                     </div>
                 </div>
